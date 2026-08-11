@@ -25,7 +25,14 @@
     .app { width:min(100%,560px); margin:auto; padding:18px 12px 48px; }
     .hero { padding:4px 4px 15px; }
     .eyebrow { color:var(--gold); font-size:12px; letter-spacing:.18em; font-weight:800; }
+    .title-row { display:flex; align-items:center; gap:9px; }
     h1 { margin:5px 0 3px; font-size:26px; line-height:1.15; }
+    .help-button {
+      display:grid; place-items:center; width:25px; height:25px; padding:0; margin-top:4px;
+      border:1px solid #b69747; border-radius:50%; color:#21190a;
+      background:linear-gradient(#ffe59a,#c99932); font-weight:950; cursor:pointer;
+      box-shadow:0 0 12px rgba(239,199,94,.22);
+    }
     .subtitle { color:var(--muted); font-size:13px; line-height:1.5; }
     .panel {
       background:linear-gradient(180deg,rgba(32,27,42,.97),rgba(22,18,29,.97));
@@ -63,6 +70,21 @@
     .section-head { margin-bottom:10px; }
     .section-head h2 { margin:0; font-size:16px; }
     .section-head span { color:var(--muted); font-size:11px; }
+    .collapsible { padding:0; overflow:hidden; }
+    .collapsible summary {
+      display:flex; align-items:center; gap:9px; padding:13px; cursor:pointer;
+      list-style:none; font-size:16px; font-weight:850; user-select:none;
+    }
+    .collapsible summary::-webkit-details-marker { display:none; }
+    .collapsible summary::after {
+      content:"＋"; display:grid; place-items:center; width:24px; height:24px;
+      border-radius:50%; background:#2c2436; color:var(--gold); font-size:16px;
+    }
+    .collapsible[open] summary { border-bottom:1px solid #342b3e; }
+    .collapsible[open] summary::after { content:"－"; }
+    .summary-meta { margin-left:auto; color:var(--muted); font-size:11px; font-weight:500; }
+    .collapse-body { padding:13px; }
+    .collapse-actions { display:flex; justify-content:flex-end; margin-bottom:10px; }
     .preview { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px; }
     .preview-item {
       min-width:0; text-align:center; padding:6px 2px; border-radius:9px;
@@ -170,6 +192,33 @@
     .log div { padding:7px 8px; background:#110e16; border-left:3px solid #5b5066; font-size:11px; line-height:1.45; }
     .log .good { border-color:var(--green); }
     .log .bad { border-color:var(--red); }
+    .help-overlay {
+      position:fixed; z-index:50; inset:0; display:grid; place-items:center; padding:14px;
+      background:rgba(6,5,9,.78); backdrop-filter:blur(7px);
+    }
+    .help-overlay[hidden] { display:none; }
+    .help-dialog {
+      width:min(100%,540px); max-height:min(88vh,780px); overflow:hidden;
+      border:1px solid #5a4b69; border-radius:18px;
+      background:linear-gradient(180deg,#241d2d,#141119); box-shadow:0 28px 70px #000b;
+    }
+    .help-head {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px; border-bottom:1px solid #403449;
+    }
+    .help-head h2 { margin:0; font-size:18px; }
+    .help-close {
+      width:30px; height:30px; padding:0; border:1px solid #62546e; border-radius:50%;
+      color:var(--text); background:#30273a; cursor:pointer; font-size:18px;
+    }
+    .help-content { max-height:calc(min(88vh,780px) - 60px); overflow:auto; padding:4px 16px 18px; }
+    .help-section { padding:13px 0; border-bottom:1px solid #352c3e; }
+    .help-section:last-child { border-bottom:0; }
+    .help-section h3 { margin:0 0 7px; color:#f4d57e; font-size:14px; }
+    .help-section p,.help-section li { color:#d3c9dc; font-size:11px; line-height:1.65; }
+    .help-section p { margin:0; }
+    .help-section ul { margin:0; padding-left:18px; }
+    body.help-open { overflow:hidden; }
     .toast {
       position:fixed; z-index:10; left:50%; bottom:18px; transform:translate(-50%,15px);
       width:min(calc(100% - 30px),500px); background:#f3dda0; color:#20190e; border-radius:12px;
@@ -188,7 +237,10 @@
 <main class="app" id="app">
   <header class="hero">
     <div class="eyebrow">INTERACTIVE RULE PROTOTYPE</div>
-    <h1>梅林的魔法书 3.0</h1>
+    <div class="title-row">
+      <h1>梅林的魔法书 3.0</h1>
+      <button type="button" class="help-button" id="helpButton" aria-label="查看全部玩法介绍" aria-haspopup="dialog">?</button>
+    </div>
     <div class="subtitle">光暗拔河 · 横纵三消 · 跨玩家投影</div>
   </header>
 
@@ -233,19 +285,99 @@
       <button class="action primary" id="convert">使用转化牌</button>
       <span class="pill" id="convertCount">转化牌 0</span>
     </div>
-    <div class="rule-note">抽取顺序：普通70% / 稀有30% → 天使50% / 恶魔50% → 对应子池内等权。可重复抽到同名卡。转化牌不占手牌，转化结果也遵循相同抽取规则。</div>
   </section>
 
-  <section class="panel">
-    <div class="section-head"><h2>跨玩家投影</h2><span id="projectionCount">机会 0</span></div>
-    <div id="projection"></div>
-  </section>
+  <details class="panel collapsible">
+    <summary><span>跨玩家投影</span><span class="summary-meta" id="projectionCount">机会 0</span></summary>
+    <div class="collapse-body" id="projection"></div>
+  </details>
 
-  <section class="panel">
-    <div class="section-head"><h2>结算记录</h2><button class="action" id="reset">重新挑战本章节</button></div>
-    <div class="log" id="log"></div>
-  </section>
+  <details class="panel collapsible">
+    <summary><span>结算记录</span><span class="summary-meta">点击展开</span></summary>
+    <div class="collapse-body">
+      <div class="collapse-actions"><button class="action" id="reset">重新挑战本章节</button></div>
+      <div class="log" id="log"></div>
+    </div>
+  </details>
 </main>
+<div class="help-overlay" id="helpModal" hidden>
+  <section class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <header class="help-head">
+      <h2 id="helpTitle">全部玩法介绍</h2>
+      <button type="button" class="help-close" id="helpClose" aria-label="关闭玩法介绍">×</button>
+    </header>
+    <div class="help-content">
+      <section class="help-section">
+        <h3>1. 核心目标</h3>
+        <p>使用固定3张手牌处理个人棋盘事件，在生命压力下救出俘虏、提升章节、积累积分，并通过光暗拔河激活形态和跨玩家投影。</p>
+      </section>
+      <section class="help-section">
+        <h3>2. 个人棋盘与事件攻击</h3>
+        <ul>
+          <li>棋盘为4列×3排；最下方是第一排，也是最靠近玩家的一排。</li>
+          <li>上方预览区显示即将补入棋盘的事件。</li>
+          <li>第一排事件按自身倒计时攻击玩家，单次伤害等于事件生成时的初始生命上限。</li>
+          <li>事件生命降至0才会消除；消除后同列事件下落并从预览区补位。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>3. 卡牌、目标与抽取</h3>
+        <ul>
+          <li>始终持有3张手牌：使用1张后立即摸取1张，允许出现同名卡。</li>
+          <li>抽取先判定普通70%／稀有30%，再判定天使50%／恶魔50%，最后在对应子池内等权随机。</li>
+          <li>天使卡以改变风、雷、火、电属性并制造共鸣为主；恶魔卡以直接伤害、处决、吞噬及范围摧毁为主。</li>
+          <li>施法目标分为第一排、任意目标和无需指定；伤害按小、中、大档标识。</li>
+          <li>转化牌不占手牌，可将1张手牌随机变成另一张牌，转化结果沿用正常抽取规则。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>4. 三消共鸣与下落连锁</h3>
+        <ul>
+          <li>仅横向或纵向连续3个以上相同元素形成共鸣；斜线及普通相邻不生效。</li>
+          <li>横纵共鸣可以共用一个格子，共用格在同一组结算中只受伤1次。</li>
+          <li>净化造成的属性变化会检查共鸣；恶魔击杀后的下落也会再次检查共鸣。</li>
+          <li>单次恶魔操作最多触发5轮落位共鸣；达到第5轮后生成不可消除的封印壁垒并停止连锁。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>5. 光暗拔河与连续使用</h3>
+        <ul>
+          <li>天使卡把进度推向光明并降低黑暗，恶魔卡反向推动；两侧不能同时积累。</li>
+          <li>未变身时，同色牌推进对应形态；变身后，同色牌维持进度，异色牌把进度拉回0并使形态消失。</li>
+          <li>连续使用天使卡会回复生命，但收益逐次衰减，最终按生命上限百分比反噬。</li>
+          <li>连续使用恶魔卡会提高全部攻击力，但收益逐次衰减，最终按百分比削减攻击力，最低不低于基础值的20%。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>6. 天使与恶魔形态</h3>
+        <ul>
+          <li>每日150点体力，目标节奏约每25点体力激活1次形态，即每天约6次。</li>
+          <li>天使形态立即令个人棋盘积分提高10%；投影任务成功后提高至20%。</li>
+          <li>恶魔形态立即令全部攻击力提高20%；投影任务成功后提高至40%。</li>
+          <li>形态任务只决定效果是否翻倍，不会阻塞玩家继续出牌。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>7. 章节、生命与成长事件</h3>
+        <ul>
+          <li>每救出3名被困俘虏提升1个章节；基础生命、基础攻击随章节提高，每章额外累加2%积分加成。</li>
+          <li>生命归零后从当前章节重新开始，不退回上一章；章节与活动内永久成长保留。</li>
+          <li>事件包括普通、被困俘虏、生命回复、生命上限、攻击成长和转化牌事件。</li>
+          <li>生命上限事件在提高上限时同步回复等量生命；攻击成长事件固定提高本次活动的全部攻击力。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>8. 跨玩家投影</h3>
+        <ul>
+          <li>投影完全取代公共棋盘，可在实时活跃玩家之间切换目标。</li>
+          <li>天使投影改变友方第一排目标的属性；目标对友方可见，形成结果且未被恶魔技能击杀即完成任务。</li>
+          <li>恶魔投影把敌方第一排目标变成更强的深渊眷属；任务目标对敌方隐藏，由敌方直接击杀时完成任务。</li>
+          <li>无论天使还是恶魔使用投影技能，棋盘所有者都会收到技能提示。</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -689,6 +821,20 @@
     addLog("投影任务完成："+(state.form==="angel"?"个人积分加成提高至20%。":"全部攻击力加成提高至40%。"),"good");
     state.angelMark=null;state.abyssMark=null;toast("投影任务成功，形态效果翻倍");render();
   }
+  function openHelp() {
+    $("helpModal").hidden=false;
+    document.body.classList.add("help-open");
+    $("helpClose").focus();
+  }
+  function closeHelp() {
+    $("helpModal").hidden=true;
+    document.body.classList.remove("help-open");
+    $("helpButton").focus();
+  }
+  $("helpButton").addEventListener("click",openHelp);
+  $("helpClose").addEventListener("click",closeHelp);
+  $("helpModal").addEventListener("click",function(event){if(event.target===$("helpModal"))closeHelp();});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!$("helpModal").hidden)closeHelp();});
   $("convert").addEventListener("click",function(){if(state.conversion<=0)return;state.convertMode=!state.convertMode;state.selected=null;$("instruction").textContent=state.convertMode?"请选择要随机转化的1张手牌。":"已取消转化。";renderBoard();renderHand();});
   $("reset").addEventListener("click",function(){restartChapter(false);});
   state=freshState();
