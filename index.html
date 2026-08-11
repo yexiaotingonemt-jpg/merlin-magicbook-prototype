@@ -80,6 +80,41 @@
     }
     .event.targetable { cursor:pointer; border-color:#fff2aa; box-shadow:0 0 0 2px rgba(239,199,94,.32); }
     .event.targetable:active { transform:scale(.96); }
+    .resolving button { pointer-events:none; }
+    .event.fx-transmute { animation:transmute .34s ease both; z-index:2; }
+    .event.fx-hit { animation:hit .3s ease both; z-index:2; }
+    .event.fx-resonate { animation:resonate .42s ease both; z-index:2; }
+    .event.fx-eliminate { animation:eliminate .42s ease forwards; z-index:3; }
+    .event.fx-drop { animation:drop .46s cubic-bezier(.2,.8,.25,1) both; z-index:1; }
+    @keyframes transmute {
+      0% { filter:brightness(1); transform:scale(1); }
+      45% { filter:brightness(2.2) saturate(1.4); transform:scale(1.06); box-shadow:0 0 22px #ffe394; }
+      100% { filter:brightness(1); transform:scale(1); }
+    }
+    @keyframes hit {
+      0%,100% { transform:translateX(0); filter:brightness(1); }
+      25% { transform:translateX(-5px) scale(.98); filter:brightness(1.9); }
+      55% { transform:translateX(5px) scale(.98); box-shadow:0 0 20px #e86c74; }
+      75% { transform:translateX(-2px); }
+    }
+    @keyframes resonate {
+      0% { transform:scale(1); filter:brightness(1); }
+      40% { transform:scale(1.08); filter:brightness(2); box-shadow:0 0 25px #9fffe0; }
+      100% { transform:scale(1); filter:brightness(1); }
+    }
+    @keyframes eliminate {
+      0% { opacity:1; transform:scale(1) rotate(0); filter:brightness(1); }
+      45% { opacity:1; transform:scale(1.12) rotate(-2deg); filter:brightness(2.7); box-shadow:0 0 28px #fff0a2; }
+      100% { opacity:0; transform:scale(.25) rotate(8deg); filter:brightness(3); }
+    }
+    @keyframes drop {
+      0% { opacity:.15; transform:translateY(-62px) scale(.96); }
+      70% { opacity:1; transform:translateY(5px) scale(1.01); }
+      100% { opacity:1; transform:translateY(0) scale(1); }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      .event.fx-transmute,.event.fx-hit,.event.fx-resonate,.event.fx-eliminate,.event.fx-drop { animation-duration:.01ms; }
+    }
     .event.front { outline:1px solid rgba(239,199,94,.45); outline-offset:2px; }
     .element-wind { background:linear-gradient(145deg,#1c685e,#123c42); }
     .element-thunder { background:linear-gradient(145deg,#624396,#30264f); }
@@ -180,8 +215,7 @@
     <div class="section-head"><h2>个人棋盘 4×3</h2><span>下方为靠近玩家的一排</span></div>
     <div class="preview" id="preview" aria-label="待补位事件"></div>
     <div class="board" id="board" role="grid" aria-label="四列三排个人棋盘"></div>
-    <p class="instruction" id="instruction">选择一张手牌，再选择合法施法目标。</p>
-    <div class="rule-note">共鸣只检查横向或纵向连续3个以上同元素；横纵可共用一个格子。事件生命归零才消除。第一排事件会按各自倒计时攻击玩家，伤害等于事件初始生命上限。</div>
+    <p id="instruction" hidden aria-live="polite">选择一张手牌，再选择合法施法目标。</p>
   </section>
 
   <section class="panel">
@@ -294,7 +328,7 @@
       maxHealth:base.maxHealth||500,health:base.maxHealth||500,chapter:base.chapter||1,rescued:0,
       permanentAttack:base.permanentAttack||0,attackFactor:base.attackFactor||1,
       balance:0,form:null,boosted:false,streak:0,turn:0,projection:0,
-      conversion:base.conversion||0,selected:null,convertMode:false,
+      conversion:base.conversion||0,selected:null,convertMode:false,resolving:false,
       hand:[drawCard(),drawCard(),drawCard()],board:initialBoard(),
       preview:[makeEvent(),makeEvent(),makeEvent(),makeEvent()],
       projectionBoard:[makeEvent("wind"),makeEvent("fire"),makeEvent("wind"),makeEvent("electric")],
@@ -368,6 +402,20 @@
       btn.addEventListener("click",function(){playCard(Number(btn.getAttribute("data-event")));});
     });
   }
+  function wait(ms) { return new Promise(function(resolve){setTimeout(resolve,ms);}); }
+  function uniqueIndices(list) {
+    return list.filter(function(value,index,array){return value>=0&&array.indexOf(value)===index;});
+  }
+  async function animateCells(indices,className,duration) {
+    var nodes=uniqueIndices(indices||[]).map(function(index){return document.querySelector("[data-event=\""+index+"\"]");}).filter(Boolean);
+    nodes.forEach(function(node){void node.offsetWidth;node.classList.add(className);});
+    if(nodes.length)await wait(duration);
+    nodes.forEach(function(node){node.classList.remove(className);});
+  }
+  async function animateRefill(moved) {
+    renderBoard();
+    await animateCells(moved,"fx-drop",460);
+  }
   function renderHand() {
     $("hand").innerHTML=state.hand.map(function(card,i){
       return "<button type=\"button\" class=\"card "+card.faction+(state.selected===i?" selected":"")+(state.convertMode?" convert-target":"")+"\" data-card=\""+i+"\">"+
@@ -432,6 +480,7 @@
     return card.target==="any";
   }
   function selectCard(index) {
+    if(state.resolving)return;
     if(state.convertMode){ transformCard(index); return; }
     var card=state.hand[index];
     if(card.target==="none"){ state.selected=index; playCard(null); return; }
@@ -468,14 +517,20 @@
     return groups.map(function(s){return Array.from(s);});
   }
   function applyResonance(card,changed,label) {
-    var groups=mergeLines(getMatchLines(changed)),dead=false;
+    var groups=mergeLines(getMatchLines(changed)),dead=false,affected=[],deadIndices=[];
     groups.forEach(function(group){
       var size=group.length,scale=size>=6?1.6:size===5?1.4:size===4?1.2:1;
       var damage=Math.round(finalAttack(card)*scale);
-      group.forEach(function(i){if(!state.board[i].locked){state.board[i].hp-=damage;if(state.board[i].hp<=0)dead=true;}});
+      group.forEach(function(i){
+        affected.push(i);
+        if(!state.board[i].locked){
+          state.board[i].hp-=damage;
+          if(state.board[i].hp<=0){dead=true;deadIndices.push(i);}
+        }
+      });
       addLog((label||"共鸣")+"："+size+"格共享结算，每个目标受到 "+damage+" 点伤害。","good");
     });
-    return {groups:groups.length,dead:dead};
+    return {groups:groups.length,dead:dead,affected:uniqueIndices(affected),deadIndices:uniqueIndices(deadIndices)};
   }
   function rewardEvent(e) {
     state.score+=e.score*scoreMultiplier();
@@ -502,13 +557,19 @@
     var e=makeEvent();e.kind="sealed";e.kindLabel="不可消除·封印壁垒";e.hp=9999;e.maxHp=9999;e.locked=true;e.score=0;state.board[0]=e;
     addLog("落位共鸣达到5轮：生成1个不可消除的封印壁垒，连锁终止。","bad");
   }
-  function resolveDemonFalls(card,moved) {
+  async function resolveDemonFalls(card,moved) {
     for(var round=1;round<=5;round++){
       var result=applyResonance(card,moved,"落位共鸣第"+round+"轮");
       if(!result.groups)break;
-      if(round===5){forceSealedEvent();break;}
+      await animateCells(result.affected,"fx-resonate",420);
+      if(result.dead)await animateCells(result.deadIndices,"fx-eliminate",420);
+      if(round===5){
+        if(result.dead){moved=refillBoard();await animateRefill(moved);}
+        forceSealedEvent();renderBoard();await animateCells([0],"fx-drop",460);break;
+      }
       if(!result.dead)break;
       moved=refillBoard();
+      await animateRefill(moved);
     }
   }
   function applyRhythm(card) {
@@ -558,36 +619,57 @@
     addLog(death?"生命归零：从章节 "+state.chapter+" 重新开始，章节与活动成长保留。":"已重新开始章节 "+state.chapter+"。","bad");
     $("instruction").textContent="选择一张手牌，再选择合法施法目标。";render();
   }
-  function playCard(index) {
+  async function playCard(index) {
+    if(state.resolving)return;
     if(state.selected===null){$("instruction").textContent="请先选择一张手牌。";return;}
     var handIndex=state.selected,card=state.hand[handIndex];
     if(card.target!=="none"&&!isValidTarget(card,index)){toast(card.target==="front"?"此牌只能选择第一排":"目标不合法");return;}
     if(state.stamina<card.cost){addLog("体力不足，无法继续出牌。","bad");renderLog();return;}
-    state.stamina-=card.cost;
-    if(card.mode==="purify"){
-      var changed=card.range==="frontrow"?[8,9,10,11]:[index];
-      changed.forEach(function(i){state.board[i].element=card.element;});
-      var resonance=applyResonance(card,changed,"净化共鸣");
-      if(resonance.dead)refillBoard();
-      addLog("使用「"+card.name+"」，改变 "+changed.length+" 个事件属性。");
-    }else{
-      var targets=directTargets(index,card.range),damage=finalAttack(card),dead=false;
-      targets.forEach(function(i){
-        var e=state.board[i],d=damage;
-        if(card.range==="execute"&&e.hp<=e.maxHp*.5)d=Math.round(d*1.5);
-        var before=e.hp;if(!e.locked)e.hp-=d;if(e.hp<=0&&!e.locked)dead=true;
-        if(card.range==="devour"&&e.hp<=0&&!e.locked){
-          var overflow=Math.max(0,d-before),next=state.board.findIndex(function(x,idx){return idx!==i&&x.hp>0&&!x.locked;});
-          if(overflow&&next>=0){state.board[next].hp-=overflow;if(state.board[next].hp<=0)dead=true;addLog("吞噬溢出：另一个事件受到 "+overflow+" 点伤害。","good");}
+    state.resolving=true;root.classList.add("resolving");
+    try {
+      state.stamina-=card.cost;
+      if(card.mode==="purify"){
+        var changed=card.range==="frontrow"?[8,9,10,11]:[index];
+        changed.forEach(function(i){state.board[i].element=card.element;});
+        renderBoard();
+        await animateCells(changed,"fx-transmute",340);
+        var resonance=applyResonance(card,changed,"净化共鸣");
+        if(resonance.groups)await animateCells(resonance.affected,"fx-resonate",420);
+        if(resonance.dead){
+          await animateCells(resonance.deadIndices,"fx-eliminate",420);
+          var purifyMoved=refillBoard();
+          await animateRefill(purifyMoved);
         }
-      });
-      addLog("使用「"+card.name+"」，对 "+targets.length+" 个目标造成"+card.tier+"档直接伤害。");
-      if(dead){var moved=refillBoard();resolveDemonFalls(card,moved);}
+        addLog("使用「"+card.name+"」，改变 "+changed.length+" 个事件属性。");
+      }else{
+        var targets=directTargets(index,card.range),hitTargets=targets.slice(),damage=finalAttack(card),dead=false;
+        targets.forEach(function(i){
+          var e=state.board[i],d=damage;
+          if(card.range==="execute"&&e.hp<=e.maxHp*.5)d=Math.round(d*1.5);
+          var before=e.hp;if(!e.locked)e.hp-=d;if(e.hp<=0&&!e.locked)dead=true;
+          if(card.range==="devour"&&e.hp<=0&&!e.locked){
+            var overflow=Math.max(0,d-before),next=state.board.findIndex(function(x,idx){return idx!==i&&x.hp>0&&!x.locked;});
+            if(overflow&&next>=0){hitTargets.push(next);state.board[next].hp-=overflow;if(state.board[next].hp<=0)dead=true;addLog("吞噬溢出：另一个事件受到 "+overflow+" 点伤害。","good");}
+          }
+        });
+        renderBoard();
+        await animateCells(hitTargets,"fx-hit",300);
+        addLog("使用「"+card.name+"」，对 "+targets.length+" 个目标造成"+card.tier+"档直接伤害。");
+        if(dead){
+          var directDead=[];state.board.forEach(function(e,i){if(e.hp<=0&&!e.locked)directDead.push(i);});
+          await animateCells(directDead,"fx-eliminate",420);
+          var moved=refillBoard();
+          await animateRefill(moved);
+          await resolveDemonFalls(card,moved);
+        }
+      }
+      applyRhythm(card);updateBalance(card);
+      state.hand[handIndex]=drawCard();state.selected=null;state.convertMode=false;
+      $("instruction").textContent="已结算「"+card.name+"」并摸取1张牌。";
+      advanceTurn();
+    } finally {
+      state.resolving=false;root.classList.remove("resolving");render();
     }
-    applyRhythm(card);updateBalance(card);
-    state.hand[handIndex]=drawCard();state.selected=null;state.convertMode=false;
-    $("instruction").textContent="已结算「"+card.name+"」并摸取1张牌。";
-    advanceTurn();render();
   }
   function transformCard(index) {
     if(state.conversion<=0)return;
