@@ -146,6 +146,10 @@
     .icon svg { width:100%; height:100%; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
     .element-name { display:flex; align-items:center; gap:3px; font-weight:800; font-size:12px; }
     .kind { font-size:9px; color:rgba(255,255,255,.83); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .rarity-common { color:#e7e0ea; }
+    .rarity-rare { color:#9dd8ff; }
+    .rarity-epic { color:#e3b2ff; }
+    .rarity-quest { color:#ffe08a; }
     .hp { height:6px; background:rgba(0,0,0,.45); border-radius:99px; overflow:hidden; margin:12px 0 7px; }
     .hp span { display:block; height:100%; background:#7de2ad; }
     .event-bottom { position:relative; font-size:9px; color:#f3ecf8; }
@@ -362,6 +366,8 @@
         <ul>
           <li>每救出3名被困俘虏提升1个章节；基础生命、基础攻击随章节提高，每章额外累加2%积分加成。</li>
           <li>生命归零后从当前章节重新开始，不退回上一章；章节与活动内永久成长保留。</li>
+          <li>事件稀有度与刷新权重：普通事件（普通）50%、生命回复（普通）15%、被困俘虏（任务）10%、攻击成长（稀有）10%、转化牌（稀有）10%、生命上限（史诗）5%。</li>
+          <li>所有补位事件均按上述权重独立随机；权重总计100%，同类事件可以连续出现。</li>
           <li>事件基础生命：生命回复70、转化牌80、普通事件90、攻击成长110、生命上限120、被困俘虏130。</li>
           <li>高生命事件的攻击间隔更长：70生命每2回合攻击；80～90生命每3回合攻击；110～130生命每4回合攻击。</li>
           <li>生命上限事件在提高上限时同步回复等量生命；攻击成长事件固定提高本次活动的全部攻击力。</li>
@@ -398,12 +404,12 @@
     return "<span class=\"icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\""+m.color+"\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\""+m.path+"\"></path></svg></span>";
   }
   var kindPool = [
-    {kind:"normal",label:"普通事件",weight:55},
-    {kind:"trapped",label:"被困俘虏",weight:10},
-    {kind:"healing",label:"生命回复",weight:9},
-    {kind:"vitality",label:"生命上限",weight:8},
-    {kind:"attack",label:"攻击成长",weight:9},
-    {kind:"convert",label:"转化牌",weight:9}
+    {kind:"normal",label:"普通事件",rarity:"普通",rarityClass:"common",weight:50},
+    {kind:"healing",label:"生命回复",rarity:"普通",rarityClass:"common",weight:15},
+    {kind:"trapped",label:"被困俘虏",rarity:"任务",rarityClass:"quest",weight:10},
+    {kind:"attack",label:"攻击成长",rarity:"稀有",rarityClass:"rare",weight:10},
+    {kind:"convert",label:"转化牌",rarity:"稀有",rarityClass:"rare",weight:10},
+    {kind:"vitality",label:"生命上限",rarity:"史诗",rarityClass:"epic",weight:5}
   ];
   var eventStats = {
     healing:{hp:70,interval:2},
@@ -441,7 +447,7 @@
     var k=forceKind ? kindPool.filter(function(x){return x.kind===forceKind;})[0] : weightedChoice(kindPool);
     var el=forceElement || elements[Math.floor(Math.random()*elements.length)];
     var stats=eventStats[k.kind]||eventStats.normal;
-    return {id:uid++,element:el,kind:k.kind,kindLabel:k.label,hp:stats.hp,maxHp:stats.hp,score:14+Math.floor(stats.hp/8),interval:stats.interval,countdown:stats.interval,locked:false};
+    return {id:uid++,element:el,kind:k.kind,kindLabel:k.label,rarity:k.rarity,rarityClass:k.rarityClass,hp:stats.hp,maxHp:stats.hp,score:14+Math.floor(stats.hp/8),interval:stats.interval,countdown:stats.interval,locked:false};
   }
   function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
   function drawCard(excludeName) {
@@ -529,13 +535,13 @@
     var card=state.selected===null?null:state.hand[state.selected];
     var targetable=!compact&&card&&isValidTarget(card,index);
     return "<button type=\"button\" class=\"event element-"+event.element+(index>=8&&!compact?" front":"")+(targetable?" targetable":"")+"\" data-event=\""+index+"\" "+(targetable?"":"tabindex=\"-1\"")+">"+
-      "<div class=\"event-top\"><span class=\"element-name\">"+icon(event.element)+meta[event.element].label+"</span><span class=\"kind\">"+event.kindLabel+"</span></div>"+
+      "<div class=\"event-top\"><span class=\"element-name\">"+icon(event.element)+meta[event.element].label+"</span><span class=\"kind rarity-"+event.rarityClass+"\">"+event.kindLabel+"·"+event.rarity+"</span></div>"+
       "<div class=\"hp\"><span style=\"width:"+pct+"%\"></span></div>"+
       "<div class=\"event-bottom\"><span>生命 "+Math.max(0,event.hp)+"</span><span>"+event.score+"分</span></div>"+
       (!compact&&index>=8?"<div class=\"countdown\">"+(event.locked?"无法消除":"攻击倒计时 "+event.countdown)+"</div>":"")+"</button>";
   }
   function renderBoard() {
-    $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"</div>";}).join("");
+    $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"<br><span class=\"rarity-"+e.rarityClass+"\">"+e.rarity+"</span></div>";}).join("");
     $("board").innerHTML=state.board.map(function(e,i){return eventHtml(e,i,false);}).join("");
     Array.prototype.forEach.call(document.querySelectorAll("[data-event]"),function(btn){
       btn.addEventListener("click",function(){playCard(Number(btn.getAttribute("data-event")));});
@@ -693,7 +699,7 @@
     var moved=[];state.board.forEach(function(e,i){if(e.id!==before[i])moved.push(i);});return moved;
   }
   function forceSealedEvent() {
-    var e=makeEvent();e.kind="sealed";e.kindLabel="不可消除·封印壁垒";e.hp=9999;e.maxHp=9999;e.locked=true;e.score=0;state.board[0]=e;
+    var e=makeEvent();e.kind="sealed";e.kindLabel="封印壁垒";e.rarity="特殊";e.rarityClass="epic";e.hp=9999;e.maxHp=9999;e.locked=true;e.score=0;state.board[0]=e;
     addLog("落位共鸣达到5轮：生成1个不可消除的封印壁垒，连锁终止。","bad");
   }
   async function resolveDemonFalls(card,moved) {
@@ -819,7 +825,7 @@
   function useProjection(index) {
     if(state.projection<=0)return;
     if(state.form==="angel"){state.projectionBoard[index].element=state.projectionElement;state.angelMark=index;addLog("天使投影技能已使用：友方可见目标与属性变化提示。","good");}
-    else{var e=state.projectionBoard[index];e.kindLabel="深渊眷属";e.hp=Math.round(e.hp*1.7);e.maxHp=e.hp;state.abyssMark=index;addLog("恶魔投影技能已使用：敌方收到提示，但看不到任务目标。","bad");}
+    else{var e=state.projectionBoard[index];e.kindLabel="深渊眷属";e.rarity="投影";e.rarityClass="quest";e.hp=Math.round(e.hp*1.7);e.maxHp=e.hp;state.abyssMark=index;addLog("恶魔投影技能已使用：敌方收到提示，但看不到任务目标。","bad");}
     state.projection-=1;render();
   }
   function completeProjection(success) {
