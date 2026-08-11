@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [source, setSource] = useState("/prototype/index.html");
+  const [source, setSource] = useState("/prototype/index.html?hand=paired");
 
   useEffect(() => {
-    setSource(`/prototype/index.html${window.location.search}`);
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("hand")) params.set("hand", "paired");
+    setSource(`/prototype/index.html?${params.toString()}`);
   }, []);
 
   return (

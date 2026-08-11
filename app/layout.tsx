@@ -10,16 +10,16 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "梅林的魔法书 · 可玩原型",
-    description: "体验光暗卡牌、事件掉落、元素共鸣与危机事件的手机竖屏玩法原型。",
+    description: "体验固定一光一暗的双手牌、事件掉落、元素共鸣与光暗变身玩法。",
     openGraph: {
       title: "梅林的魔法书",
-      description: "光暗共鸣 · 可玩原型",
+      description: "固定一光一暗双手牌 · 可玩原型",
       images: [`${origin}/og.png`],
     },
     twitter: {
       card: "summary_large_image",
       title: "梅林的魔法书",
-      description: "光暗共鸣 · 可玩原型",
+      description: "固定一光一暗双手牌 · 可玩原型",
       images: [`${origin}/og.png`],
     },
   };

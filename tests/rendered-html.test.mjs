@@ -22,7 +22,7 @@ test("renders the playable game shell", async () => {
   const html = await response.text();
   assert.match(html, /梅林的魔法书/);
   assert.match(html, /iframe/);
-  assert.match(html, /prototype\/index\.html/);
+  assert.match(html, /prototype\/index\.html\?hand=paired/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
 
