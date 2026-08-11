@@ -1354,11 +1354,11 @@ html&gt;body{padding:0}&lt;/style&gt;
 
     &lt;div class=&quot;merlin-status&quot;&gt;
       &lt;div class=&quot;merlin-meter-block&quot;&gt;
-        &lt;div class=&quot;merlin-meter-head&quot;&gt;&lt;span&gt;☀ 光明值&lt;/span&gt;&lt;strong id=&quot;mp-light-value&quot;&gt;0 / 100&lt;/strong&gt;&lt;/div&gt;
+        &lt;div class=&quot;merlin-meter-head&quot;&gt;&lt;span&gt;☀ 光明值&lt;/span&gt;&lt;strong id=&quot;mp-light-value&quot;&gt;0 / 50&lt;/strong&gt;&lt;/div&gt;
         &lt;div class=&quot;merlin-track&quot;&gt;&lt;div class=&quot;merlin-fill light&quot; id=&quot;mp-light-fill&quot;&gt;&lt;/div&gt;&lt;/div&gt;
       &lt;/div&gt;
       &lt;div class=&quot;merlin-meter-block&quot;&gt;
-        &lt;div class=&quot;merlin-meter-head&quot;&gt;&lt;span&gt;☾ 黑暗值&lt;/span&gt;&lt;strong id=&quot;mp-dark-value&quot;&gt;0 / 100&lt;/strong&gt;&lt;/div&gt;
+        &lt;div class=&quot;merlin-meter-head&quot;&gt;&lt;span&gt;☾ 黑暗值&lt;/span&gt;&lt;strong id=&quot;mp-dark-value&quot;&gt;0 / 50&lt;/strong&gt;&lt;/div&gt;
         &lt;div class=&quot;merlin-track&quot;&gt;&lt;div class=&quot;merlin-fill dark&quot; id=&quot;mp-dark-fill&quot;&gt;&lt;/div&gt;&lt;/div&gt;
       &lt;/div&gt;
       &lt;div class=&quot;merlin-form-block&quot;&gt;
@@ -1531,10 +1531,10 @@ html&gt;body{padding:0}&lt;/style&gt;
       function renderMeters() {
         $(&#x27;mp-score&#x27;).textContent = Math.round(state.score).toLocaleString(&#x27;zh-CN&#x27;);
         $(&#x27;mp-stamina&#x27;).textContent = &#x27;体力 &#x27; + state.stamina + &#x27; / 150&#x27;;
-        $(&#x27;mp-light-value&#x27;).textContent = Math.floor(state.light) + &#x27; / 100&#x27;;
-        $(&#x27;mp-dark-value&#x27;).textContent = Math.floor(state.dark) + &#x27; / 100&#x27;;
-        $(&#x27;mp-light-fill&#x27;).style.width = Math.min(100, state.light) + &#x27;%&#x27;;
-        $(&#x27;mp-dark-fill&#x27;).style.width = Math.min(100, state.dark) + &#x27;%&#x27;;
+        $(&#x27;mp-light-value&#x27;).textContent = Math.floor(state.light) + &#x27; / 50&#x27;;
+        $(&#x27;mp-dark-value&#x27;).textContent = Math.floor(state.dark) + &#x27; / 50&#x27;;
+        $(&#x27;mp-light-fill&#x27;).style.width = Math.min(100, state.light / 50 * 100) + &#x27;%&#x27;;
+        $(&#x27;mp-dark-fill&#x27;).style.width = Math.min(100, state.dark / 50 * 100) + &#x27;%&#x27;;
         $(&#x27;mp-form-name&#x27;).textContent = state.form === &#x27;angel&#x27; ? &#x27;天使形态&#x27; : state.form === &#x27;demon&#x27; ? &#x27;恶魔形态&#x27; : &#x27;中立形态&#x27;;
         $(&#x27;mp-form-bonus&#x27;).textContent = formBonusText();
         const pips = $(&#x27;mp-pips&#x27;);
@@ -1614,7 +1614,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       function renderProjection() {
         const panel = $(&#x27;mp-projection&#x27;);
         if (!state.form) {
-          panel.innerHTML = &#x27;&lt;p class=&quot;merlin-projection-empty&quot;&gt;光明值或黑暗值达到100后激活形态，并获得一次投影机会。&lt;/p&gt;&#x27;;
+          panel.innerHTML = &#x27;&lt;p class=&quot;merlin-projection-empty&quot;&gt;光明值或黑暗值达到50后激活形态，并获得一次投影机会。&lt;/p&gt;&#x27;;
           return;
         }
         const angel = state.form === &#x27;angel&#x27;;
@@ -1723,13 +1723,13 @@ html&gt;body{padding:0}&lt;/style&gt;
           state.boosted = false;
           addLog(&#x27;黑暗倾向降至0，恶魔形态消失。&#x27;, &#x27;bad&#x27;);
         }
-        if (state.light &gt;= 100 &amp;&amp; state.tendency &gt; 0) activateForm(&#x27;angel&#x27;);
-        if (state.dark &gt;= 100 &amp;&amp; state.tendency &lt; 0) activateForm(&#x27;demon&#x27;);
+        if (state.light &gt;= 50 &amp;&amp; state.tendency &gt; 0) activateForm(&#x27;angel&#x27;);
+        if (state.dark &gt;= 50 &amp;&amp; state.tendency &lt; 0) activateForm(&#x27;demon&#x27;);
       }
 
       function activateForm(form) {
-        if (form === &#x27;angel&#x27;) state.light -= 100;
-        else state.dark -= 100;
+        if (form === &#x27;angel&#x27;) state.light -= 50;
+        else state.dark -= 50;
         const same = state.form === form;
         state.form = form;
         state.tendency = form === &#x27;angel&#x27; ? 5 : -5;
@@ -1936,11 +1936,11 @@ html&gt;body{padding:0}&lt;/style&gt;
       $(&#x27;mp-demo-form&#x27;).addEventListener(&#x27;click&#x27;, function () {
         const faction = state.selectedCard !== null ? state.hand[state.selectedCard].faction : (state.tendency &lt; 0 ? &#x27;demon&#x27; : &#x27;angel&#x27;);
         if (faction === &#x27;angel&#x27;) {
-          state.light = 100;
+          state.light = 50;
           state.tendency = Math.max(1, state.tendency);
           activateForm(&#x27;angel&#x27;);
         } else {
-          state.dark = 100;
+          state.dark = 50;
           state.tendency = Math.min(-1, state.tendency);
           activateForm(&#x27;demon&#x27;);
         }
