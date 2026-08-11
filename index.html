@@ -362,7 +362,8 @@
         <ul>
           <li>每救出3名被困俘虏提升1个章节；基础生命、基础攻击随章节提高，每章额外累加2%积分加成。</li>
           <li>生命归零后从当前章节重新开始，不退回上一章；章节与活动内永久成长保留。</li>
-          <li>事件包括普通、被困俘虏、生命回复、生命上限、攻击成长和转化牌事件。</li>
+          <li>事件基础生命：生命回复70、转化牌80、普通事件90、攻击成长110、生命上限120、被困俘虏130。</li>
+          <li>高生命事件的攻击间隔更长：70生命每2回合攻击；80～90生命每3回合攻击；110～130生命每4回合攻击。</li>
           <li>生命上限事件在提高上限时同步回复等量生命；攻击成长事件固定提高本次活动的全部攻击力。</li>
         </ul>
       </section>
@@ -404,6 +405,14 @@
     {kind:"attack",label:"攻击成长",weight:9},
     {kind:"convert",label:"转化牌",weight:9}
   ];
+  var eventStats = {
+    healing:{hp:70,interval:2},
+    convert:{hp:80,interval:3},
+    normal:{hp:90,interval:3},
+    attack:{hp:110,interval:4},
+    vitality:{hp:120,interval:4},
+    trapped:{hp:130,interval:4}
+  };
   var cards = [
     {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",attack:52,cost:8,desc:"将任意1个目标转化为风；若形成横纵三消，触发大档共鸣伤害。"},
     {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",attack:52,cost:8,desc:"将任意1个目标转化为雷；若形成横纵三消，触发大档共鸣伤害。"},
@@ -431,10 +440,8 @@
   function makeEvent(forceElement,forceKind) {
     var k=forceKind ? kindPool.filter(function(x){return x.kind===forceKind;})[0] : weightedChoice(kindPool);
     var el=forceElement || elements[Math.floor(Math.random()*elements.length)];
-    var hp=62+Math.floor(Math.random()*45);
-    if(k.kind==="trapped") hp+=18;
-    var interval=hp>=100?2:hp>=82?3:4;
-    return {id:uid++,element:el,kind:k.kind,kindLabel:k.label,hp:hp,maxHp:hp,score:14+Math.floor(hp/8),interval:interval,countdown:interval,locked:false};
+    var stats=eventStats[k.kind]||eventStats.normal;
+    return {id:uid++,element:el,kind:k.kind,kindLabel:k.label,hp:stats.hp,maxHp:stats.hp,score:14+Math.floor(stats.hp/8),interval:stats.interval,countdown:stats.interval,locked:false};
   }
   function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
   function drawCard(excludeName) {
