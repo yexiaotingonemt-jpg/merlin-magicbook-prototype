@@ -59,8 +59,13 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /drawCard\(null,targetFaction\)/);
   assert.match(game, /普通70%／稀有30%/);
   assert.match(game, /HAND_DAMAGE_MULTIPLIER=1\.3/);
-  assert.match(game, /simulatedPurificationGroup/);
-  assert.match(game, /purificationPreviewCoefficient/);
+  assert.match(game, /simulatedPurificationLines/);
+  assert.match(game, /purificationPreviewDamage/);
+  assert.match(game, /candidateDamage\+=Math\.floor\(attack\*handDamageCoefficient\(standardPerCellCoefficient/);
+  assert.match(game, /damageByIndex\[i\]=\(damageByIndex\[i\]\|\|0\)\+lineDamage/);
+  assert.match(game, /applyResonance\(moved\.indices/);
+  assert.match(game, /while\(moved&&moved\.indices&&moved\.indices\.length\)/);
+  assert.doesNotMatch(game, /function mergeLines/);
   assert.match(game, /state\.boosted\?2:1\.5/);
   assert.match(game, /state\.boosted\?1\.4:1\.2/);
   const adminReset = await readFile(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url), "utf8");

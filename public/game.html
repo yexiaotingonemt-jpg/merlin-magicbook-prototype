@@ -644,9 +644,10 @@
         <h3>4. 三消共鸣与下落连锁</h3>
         <ul>
           <li>仅横向或纵向连续3个以上相同元素形成共鸣；斜线及普通相邻不生效。</li>
-          <li>横纵共鸣可以共用一个格子，共用格在同一组结算中只受伤1次。</li>
-          <li>净化造成的属性变化会检查共鸣；恶魔击杀后的下落也会再次检查共鸣。</li>
-          <li>单次恶魔操作最多触发5轮落位共鸣，伤害依次为20%、15%、10%、5%、5%；之后只补位，不再检查第6轮。</li>
+          <li>横纵共鸣可以共用一个格子；同一格同时属于横向与纵向共鸣时，本轮受到2次共鸣伤害。</li>
+          <li>净化造成属性变化后会预览并结算完整共鸣线，包括其他受到伤害的事件和横纵交叉的双次伤害。</li>
+          <li>摧毁触发下落后，仅遍历本轮发生位移的事件格，记录其横纵轴产生的全部共鸣线；所有位移格遍历结束后再同时结算。</li>
+          <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定。连锁伤害依次为20%、15%、10%，第4轮及以后均为5%。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -970,7 +971,7 @@
     $("convertCount").textContent="转化牌 "+state.conversion;
     $("projectionCount").textContent="机会 "+state.projection+" · 贡献 "+state.socialContribution;
   }
-  function simulatedPurificationGroup(card,targetIndex) {
+  function simulatedPurificationLines(card,targetIndex) {
     if(!card||card.mode!=="purify")return [];
     var changed=card.range==="frontrow"?[8,9,10,11]:[targetIndex];
     var simulated=state.board.map(function(event){return event.element;});
@@ -984,28 +985,30 @@
       row=0;
       while(row<3){start=row;element=simulated[row*4+col];while(row<3&&simulated[row*4+col]===element)row++;run=[];for(var y=start;y<row;y++)run.push(y*4+col);if(run.length>=3)lines.push(run);}
     }
-    var touched=[];
-    lines.forEach(function(line){if(line.some(function(i){return changed.indexOf(i)>=0;}))touched=touched.concat(line);});
-    return uniqueIndices(touched);
+    return lines.filter(function(line){return line.some(function(i){return changed.indexOf(i)>=0;});});
   }
-  function purificationPreviewCoefficient(card,eventIndex) {
+  function purificationPreviewDamage(card,eventIndex) {
     var candidates=card.range==="frontrow"?[8]:state.board.map(function(_,index){return index;});
-    var coefficient=0;
+    var damage=0,attack=projectedAttackForCard(card);
     candidates.forEach(function(targetIndex){
       if(!isValidTarget(card,targetIndex))return;
-      var group=simulatedPurificationGroup(card,targetIndex);
-      if(group.indexOf(eventIndex)>=0)coefficient=Math.max(coefficient,standardPerCellCoefficient(group.length));
+      var lines=simulatedPurificationLines(card,targetIndex),candidateDamage=0;
+      lines.forEach(function(line){
+        if(line.indexOf(eventIndex)>=0)candidateDamage+=Math.floor(attack*handDamageCoefficient(standardPerCellCoefficient(line.length)));
+      });
+      damage=Math.max(damage,candidateDamage);
     });
-    return coefficient?handDamageCoefficient(coefficient):0;
+    return damage;
   }
   function damagePreview(card,event,index) {
     if(!card||!event)return null;
-    var coefficient=handDamageCoefficient(card.coeff);
+    var coefficient=handDamageCoefficient(card.coeff),damage;
     if(card.mode==="purify"){
-      coefficient=purificationPreviewCoefficient(card,index);
-      if(!coefficient)return null;
+      damage=purificationPreviewDamage(card,index);
+      if(!damage)return null;
+    }else{
+      damage=Math.floor(projectedAttackForCard(card)*coefficient);
     }
-    var damage=Math.floor(projectedAttackForCard(card)*coefficient);
     if(card.mode==="destroy"&&card.range==="execute"&&event.hp<=event.maxHp*.5)damage=Math.floor(damage*1.5);
     return {damage:Math.max(0,damage),index:index};
   }
@@ -1200,22 +1203,18 @@
     if(changed&&changed.length)lines=lines.filter(function(line){return line.some(function(i){return changed.indexOf(i)>=0;});});
     return lines;
   }
-  function mergeLines(lines) {
-    var groups=lines.map(function(line){return new Set(line);}),merged=true;
-    while(merged){merged=false;outer:for(var i=0;i<groups.length;i++)for(var j=i+1;j<groups.length;j++){var hit=false;groups[i].forEach(function(v){if(groups[j].has(v))hit=true;});if(hit){groups[j].forEach(function(v){groups[i].add(v);});groups.splice(j,1);merged=true;break outer;}}}
-    return groups.map(function(s){return Array.from(s);});
-  }
   function applyResonance(changed,label,damage) {
-    var groups=mergeLines(getMatchLines(changed)),dead=false,affected=[],deadIndices=[];
-    groups.forEach(function(group){
-      var groupDamage=typeof damage==="function"?damage(group.length):damage;
-      group.forEach(function(i){
-        affected.push(i);state.board[i].hp-=groupDamage;
-        if(state.board[i].hp<=0){dead=true;deadIndices.push(i);}
-      });
-      addLog((label||"共鸣")+"："+group.length+"格，每个目标受到 "+groupDamage+" 点伤害。","good");
+    var lines=getMatchLines(changed),damageByIndex={},dead=false,affected=[],deadIndices=[];
+    lines.forEach(function(line){
+      var lineDamage=typeof damage==="function"?damage(line.length):damage;
+      line.forEach(function(i){damageByIndex[i]=(damageByIndex[i]||0)+lineDamage;});
     });
-    return {groups:groups.length,dead:dead,affected:uniqueIndices(affected),deadIndices:uniqueIndices(deadIndices)};
+    Object.keys(damageByIndex).forEach(function(key){
+      var i=Number(key);affected.push(i);state.board[i].hp-=damageByIndex[i];
+      if(state.board[i].hp<=0){dead=true;deadIndices.push(i);}
+    });
+    if(lines.length)addLog((label||"共鸣")+"：同时结算 "+lines.length+" 条共鸣线；横纵交叉格按命中次数叠加伤害。","good");
+    return {groups:lines.length,lines:lines,dead:dead,affected:affected,deadIndices:deadIndices,damageByIndex:damageByIndex};
   }
   function claimConversion(e) {
     if(e.kind!=="convert"||e.claimed)return;
@@ -1258,12 +1257,13 @@
     return {indices:moved,moves:moves};
   }
   async function resolveDemonFalls(attackSnapshot,moved) {
-    var coefficients=[.20,.15,.10,.05,.05];
-    for(var round=1;round<=5;round++){
-      var damage=Math.floor(attackSnapshot*handDamageCoefficient(coefficients[round-1]));
-      // 每次下落完成后重新扫描全盘。共鸣可能由新落位棋子与未移动棋子共同构成，
-      // 仅用 moved 过滤会漏掉连线另一端的合法目标。
-      var result=applyResonance(null,"落位共鸣第"+round+"轮",damage);
+    var coefficients=[.20,.15,.10,.05],round=1;
+    while(moved&&moved.indices&&moved.indices.length){
+      var coefficient=coefficients[Math.min(round-1,coefficients.length-1)];
+      var damage=Math.floor(attackSnapshot*handDamageCoefficient(coefficient));
+      // 先收集所有位移格横纵轴上的共鸣线，再统一结算。同一条线只记录一次，
+      // 横纵交叉格会在两条线上分别记伤，因此本轮承受双倍共鸣伤害。
+      var result=applyResonance(moved.indices,"落位共鸣第"+round+"轮",damage);
       if(!result.groups)break;
       showBoardCue("落位共鸣 · "+round,"resonance",650);
       await wait(110);
@@ -1271,7 +1271,7 @@
       if(result.dead)await animateCells(result.deadIndices,"fx-eliminate",420);
       if(!result.dead)break;
       moved=refillBoard();await animateRefill(moved);
-      if(round===5)addLog("落位共鸣达到5轮，本次连锁结束；补位事件仍可正常处理。","bad");
+      round+=1;
     }
   }
   function showResultModal(title,message,buttonText) {
