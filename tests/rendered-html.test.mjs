@@ -35,6 +35,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(shell, /api\/leaderboard/);
   assert.match(shell, /api\/projection/);
   assert.match(shell, /api\/reset/);
+  assert.match(shell, /投影机会已激活/);
+  assert.match(shell, /setProjectionOpen\(true\)/);
+  assert.doesNotMatch(shell, /setTab\("projection"\)/);
 });
 
 test("serves hydration assets and the standalone game directly on Cloudflare Pages", async () => {

@@ -1,5 +1,5 @@
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const serverDir = resolve(root, "dist/server");
