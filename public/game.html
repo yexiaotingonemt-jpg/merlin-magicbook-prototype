@@ -634,7 +634,7 @@
         <ul>
           <li>始终持有3张手牌：使用1张后立即摸取1张，允许出现同名卡。</li>
           <li>抽取先判定普通70%／稀有30%，再判定天使50%／恶魔50%，最后在对应子池内等权随机。</li>
-          <li>天使卡以改变风、雷、火、电属性并制造共鸣为主；恶魔卡以直接伤害、处决、吞噬及范围摧毁为主。</li>
+          <li>天使卡以改变风、雷、火、电属性并制造共鸣为主；恶魔卡以单体、十字、横排、竖列及全屏直接伤害为主，不再附带额外效果。</li>
           <li>施法目标分为第一排、任意目标和无需指定；伤害按小、中、大档标识。</li>
           <li>所有手牌伤害在原标准倍率上统一提高30%，卡面显示提高后的实际伤害和攻击百分比。</li>
           <li>转化牌不占手牌，可将1张目标手牌转化为另一阵营的随机牌；稀有度仍按普通70%／稀有30%，对应阵营卡池内等权重随机。</li>
@@ -750,11 +750,9 @@
     {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为火；四格共鸣每格造成45%攻击伤害。"},
     {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为电；四格共鸣每格造成45%攻击伤害。"},
     {name:"摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"single",tier:"大",coeff:1,cost:1,desc:"对任意1个目标造成100%攻击的直接伤害。"},
-    {name:"处决",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"execute",tier:"大",coeff:1,cost:1,desc:"造成100%攻击伤害；目标生命高于50%时提高至150%。"},
-    {name:"吞噬",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"devour",tier:"大",coeff:1,cost:1,desc:"造成100%攻击伤害；转移80%溢出伤害，转移上限为50%攻击。"},
     {name:"震荡摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"cross",tier:"小",coeff:.40,cost:1,desc:"对目标及上下左右每格造成40%攻击伤害，总倍率200%。"},
-    {name:"灭世横扫",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"row",tier:"大",coeff:.45,cost:1,desc:"横排每格造成45%攻击伤害；直接击杀向相邻目标爆炸10%攻击。"},
-    {name:"深渊坍塌",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"column",tier:"大",coeff:1.45/3,cost:1,desc:"竖列每格造成48.3%攻击伤害；向上转移50%溢出，额外伤害上限40%攻击。"},
+    {name:"深渊坍塌",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"column",tier:"大",coeff:1.45/3,cost:1,desc:"竖列每格造成48.3%攻击伤害。"},
+    {name:"灭世横扫",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"row",tier:"大",coeff:.45,cost:1,desc:"横排每格造成45%攻击伤害。"},
     {name:"深渊灭界",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"all",tier:"中",coeff:2.5/12,cost:1,desc:"点击任意1个事件作为施法锚点，对全屏每格造成约20.8%攻击伤害，总倍率250%。"}
   ];
   var state;
@@ -922,11 +920,9 @@
       if(card.range==="frontrow")return "将第一排全部合法事件转化为"+meta[card.element].label+"；四格共鸣时，每格造成"+label4+"的伤害。";
       return "将任意1个目标转化为"+meta[card.element].label+"；三格共鸣时每格造成"+label3+"的伤害，四格共鸣时每格造成"+label4+"的伤害。";
     }
-    if(card.range==="execute")return "造成"+label+"的伤害；目标生命高于50%时，改为造成"+damageLabel(Math.floor(damage*1.5),effectiveCoefficient*1.5)+"的伤害。";
-    if(card.range==="devour")return "造成"+label+"的伤害；击杀后转移80%溢出伤害，最多转移"+damageLabel(Math.floor(attack*handDamageCoefficient(.5)),handDamageCoefficient(.5))+"的伤害。";
     if(card.range==="cross")return "对目标及其上下左右每格造成"+label+"的伤害。";
-    if(card.range==="row")return "横排每格造成"+label+"的伤害；直接击杀后，相邻目标额外受到"+damageLabel(Math.floor(attack*handDamageCoefficient(.1)),handDamageCoefficient(.1))+"的伤害。";
-    if(card.range==="column")return "竖列每格造成"+label+"的伤害；向上转移50%溢出，最多额外造成"+damageLabel(Math.floor(attack*handDamageCoefficient(.4)),handDamageCoefficient(.4))+"的伤害。";
+    if(card.range==="row")return "横排每格造成"+label+"的伤害。";
+    if(card.range==="column")return "竖列每格造成"+label+"的伤害。";
     if(card.range==="all")return "全屏每格造成"+label+"的伤害；12格理论总倍率为"+percentLabel(effectiveCoefficient*12)+"。";
     return "对任意1个目标造成"+label+"的伤害。";
   }
@@ -941,8 +937,9 @@
     return chapter*angel;
   }
   function cardProbability(card) {
-    if(card.rarity==="normal") return "8.75%";
-    return card.faction==="angel"?"3.75%":"5.00%";
+    var rarityChance=card.rarity==="normal"?.7:.3;
+    var poolSize=cards.filter(function(candidate){return candidate.rarity===card.rarity&&candidate.faction===card.faction;}).length;
+    return (rarityChance*.5/poolSize*100).toFixed(2)+"%";
   }
   function targetLabel(card) {
     if(card.target==="front")return "第一排";
@@ -1035,7 +1032,6 @@
     }else{
       damage=Math.floor(projectedAttackForCard(card)*coefficient);
     }
-    if(card.mode==="destroy"&&card.range==="execute"&&event.hp>event.maxHp*.5)damage=Math.floor(damage*1.5);
     return {damage:Math.max(0,damage),index:index};
   }
   function eventHtml(event,index,compact) {
@@ -1398,18 +1394,8 @@
         }
         addLog("使用「"+card.name+"」，改变 "+changed.length+" 个事件属性。");
       }else{
-        var targets=directTargets(index,card.range),hitTargets=targets.slice(),attackSnapshot=playerAttack(),damage=Math.floor(attackSnapshot*handDamageCoefficient(card.coeff)),dead=false,records=[];
-        targets.forEach(function(i){var e=state.board[i],d=damage;if(card.range==="execute"&&e.hp>e.maxHp*.5)d=Math.floor(d*1.5);var before=e.hp;e.hp-=d;if(d>0)claimConversion(e);records.push({index:i,before:before,damage:d,overflow:Math.max(0,d-before)});if(e.hp<=0)dead=true;});
-        if(card.range==="devour"&&records[0].overflow>0){
-          var candidates=state.board.map(function(e,i){return {e:e,i:i};}).filter(function(x){return x.i!==index&&x.e.hp>0;}).sort(function(a,b){return a.e.hp-b.e.hp;});
-          if(candidates.length){var transfer=Math.floor(Math.min(records[0].overflow*.8,attackSnapshot*handDamageCoefficient(.5))),next=candidates[0];next.e.hp-=transfer;if(transfer>0)claimConversion(next.e);hitTargets.push(next.i);if(next.e.hp<=0)dead=true;addLog("吞噬溢出：转移 "+transfer+" 点伤害。","good");}
-        }
-        if(card.range==="row"){
-          var exploded=new Set();records.filter(function(r){return state.board[r.index].hp<=0;}).forEach(function(r){var col=r.index%4;[r.index-1,r.index+1].forEach(function(n){if(n>=0&&n<12&&Math.floor(n/4)===Math.floor(r.index/4)&&state.board[n].hp>0&&!exploded.has(n)){var d=Math.floor(attackSnapshot*handDamageCoefficient(.1));state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);exploded.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});});
-        }
-        if(card.range==="column"){
-          var overflowed=new Set();records.slice().reverse().forEach(function(r){var n=r.index-4;if(r.overflow>0&&n>=0&&state.board[n].hp>0&&!overflowed.has(n)){var d=Math.floor(Math.min(r.overflow*.5,attackSnapshot*handDamageCoefficient(.4)));state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);overflowed.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});
-        }
+        var targets=directTargets(index,card.range),hitTargets=targets.slice(),attackSnapshot=playerAttack(),damage=Math.floor(attackSnapshot*handDamageCoefficient(card.coeff)),dead=false;
+        targets.forEach(function(i){var e=state.board[i];e.hp-=damage;if(damage>0)claimConversion(e);if(e.hp<=0)dead=true;});
         renderBoard();
         await animateCells(hitTargets,"fx-hit",300);
         addLog("使用「"+card.name+"」，对 "+targets.length+" 个目标造成"+card.tier+"档直接伤害。");
@@ -1507,7 +1493,12 @@
       state.balance=Math.max(-50,Math.min(50,Number(state.balance)||0));
       if(state.form==="angel")state.balance=50;if(state.form==="demon")state.balance=-50;
       state.board=(incoming.board||state.board).map(function(e){return normalizeEventTiming(Object.assign({},e));});
-      state.hand=(incoming.hand||state.hand).map(function(card){return Object.assign({},card);});
+      state.hand=(incoming.hand||state.hand).map(function(card){
+        var migrated=Object.assign({},card);
+        if(migrated.name==="处决"||migrated.name==="吞噬")return drawCard(null,"demon");
+        if(migrated.name==="深渊坍塌")migrated.rarity="normal";
+        return migrated;
+      });
       state.preview=(incoming.preview||state.preview).map(function(e){return normalizeEventTiming(Object.assign({},e));});
       state.projectionBoard=(incoming.projectionBoard||state.projectionBoard).map(function(e){return Object.assign({},e);});
       if(needsEventHealthMigration){
