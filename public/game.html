@@ -647,7 +647,7 @@
           <li>横纵共鸣可以共用一个格子；同一格同时属于横向与纵向共鸣时，本轮受到2次共鸣伤害。</li>
           <li>净化造成属性变化后会预览并结算完整共鸣线，包括其他受到伤害的事件和横纵交叉的双次伤害。</li>
           <li>事件消除并触发下落后，仅遍历本轮发生位移的事件格，记录其横纵轴产生的全部共鸣线；所有位移格遍历结束后再同时结算。</li>
-          <li>每次共鸣命中均造成触发时攻击力50%的伤害，天使与恶魔来源使用同一标准，伤害不随连锁轮次削减。</li>
+          <li>每次共鸣命中均造成触发时攻击力100%的伤害，天使与恶魔来源使用同一标准，伤害不随连锁轮次削减。</li>
           <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定，连锁次数不设上限。</li>
           <li>共鸣伤害、事件消除、下落补位及后续连锁全部完成前，敌方倒计时与攻击结算保持等待；只有棋盘稳定后才进入敌方行动。</li>
         </ul>
@@ -908,7 +908,7 @@
   function damageLabel(value,coefficient) {
     return value+"（"+percentLabel(coefficient)+"）";
   }
-  function resonanceDamage(attack) { return Math.floor(attack*.5); }
+  function resonanceDamage(attack) { return Math.floor(attack); }
   function cardDescription(card) {
     if(card.mode==="purify"){
       if(card.range==="frontrow")return "将第一排全部目标转化为"+meta[card.element].label+"。";

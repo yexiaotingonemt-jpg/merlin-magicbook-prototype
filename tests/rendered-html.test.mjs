@@ -91,7 +91,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /state\.maxHealth=previousMax\+200/);
   assert.match(game, /simulatedPurificationLines/);
   assert.match(game, /purificationPreviewDamage/);
-  assert.match(game, /function resonanceDamage\(attack\) \{ return Math\.floor\(attack\*\.5\); \}/);
+  assert.match(game, /function resonanceDamage\(attack\) \{ return Math\.floor\(attack\); \}/);
+  assert.match(game, /每次共鸣命中均造成触发时攻击力100%的伤害/);
+  assert.doesNotMatch(game, /function resonanceDamage\(attack\) \{ return Math\.floor\(attack\*\.5\); \}/);
   assert.match(game, /candidateDamage\+=resonanceDamage\(attack\)/);
   assert.match(game, /damageByIndex\[i\]=\(damageByIndex\[i\]\|\|0\)\+lineDamage/);
   assert.match(game, /function resolveFallResonance\(attackSnapshot,moved\)/);
