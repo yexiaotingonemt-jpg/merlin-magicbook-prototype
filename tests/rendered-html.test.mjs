@@ -59,6 +59,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /drawCard\(null,targetFaction\)/);
   assert.match(game, /普通70%／稀有30%/);
   assert.match(game, /HAND_DAMAGE_MULTIPLIER=1\.3/);
+  assert.match(game, /baseHealth:300,maxHealth:base\.maxHealth\|\|300,health:base\.maxHealth\|\|300/);
+  assert.match(game, /Number\(incoming\.baseHealth\)!==300/);
+  assert.match(game, /state\.maxHealth=previousMax\+200/);
   assert.match(game, /simulatedPurificationLines/);
   assert.match(game, /purificationPreviewDamage/);
   assert.match(game, /candidateDamage\+=Math\.floor\(attack\*handDamageCoefficient\(standardPerCellCoefficient/);

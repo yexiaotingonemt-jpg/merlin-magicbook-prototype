@@ -555,7 +555,7 @@
         <div class="overview-combat">
           <div class="status-grid">
             <div class="stat">
-              <div class="meter-head"><span>玩家生命</span><b id="healthText">100 / 100</b></div>
+              <div class="meter-head"><span>玩家生命</span><b id="healthText">300 / 300</b></div>
               <div class="track"><div class="fill health" id="healthFill"></div></div>
               <div class="small">生命归零后重试本章节</div>
             </div>
@@ -803,7 +803,7 @@
     var base=keep||{};
     var next={
       score:base.score||0,stamina:base.stamina===undefined?150:base.stamina,
-      maxHealth:base.maxHealth||100,health:base.maxHealth||100,chapter:base.chapter||1,rescued:0,
+      baseHealth:300,maxHealth:base.maxHealth||300,health:base.maxHealth||300,chapter:base.chapter||1,rescued:0,
       permanentAttack:base.permanentAttack||0,
       balance:0,form:null,boosted:false,streak:0,turn:0,projection:0,
       conversion:base.conversion||0,socialContribution:base.socialContribution||0,selected:null,convertMode:false,resolving:false,pendingChapterUps:0,
@@ -1283,7 +1283,7 @@
     });
   }
   function chapterKeep() {
-    return {score:state.score,stamina:state.stamina,maxHealth:state.maxHealth,chapter:state.chapter,permanentAttack:state.permanentAttack,conversion:state.conversion,socialContribution:state.socialContribution,elementPool:state.elementPool};
+    return {score:state.score,stamina:state.stamina,baseHealth:state.baseHealth,maxHealth:state.maxHealth,chapter:state.chapter,permanentAttack:state.permanentAttack,conversion:state.conversion,socialContribution:state.socialContribution,elementPool:state.elementPool};
   }
   async function restartChapter(death) {
     var chapter=state.chapter,keep=chapterKeep();
@@ -1472,6 +1472,11 @@
       var incoming=message.state;
       var oldProjectionIds=new Set((state.board||[]).map(function(e){return e.remoteProjection&&e.remoteProjection.id;}).filter(Boolean));
       state=Object.assign(freshState(),incoming);
+      if(Number(incoming.baseHealth)!==300){
+        var previousMax=Math.max(1,Number(incoming.maxHealth)||100),previousHealth=Number(incoming.health);
+        if(!Number.isFinite(previousHealth))previousHealth=previousMax;
+        state.baseHealth=300;state.maxHealth=previousMax+200;state.health=Math.min(state.maxHealth,Math.max(0,previousHealth+200));
+      }
       state.balance=Math.max(-50,Math.min(50,Number(state.balance)||0));
       if(state.form==="angel")state.balance=50;if(state.form==="demon")state.balance=-50;
       state.board=(incoming.board||state.board).map(function(e){return normalizeEventTiming(Object.assign({},e));});
