@@ -1,0 +1,1430 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14111d">
+  <title>梅林的魔法书 3.0｜可交互原型</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#08070c; --panel:#18131f; --panel2:#211a2a; --line:#40354d;
+      --text:#fffaf0; --muted:#bcb1c7; --gold:#f2ca62; --gold2:#a87519; --red:#df6b70;
+      --green:#6bd6a6; --blue:#71baf0; --purple:#b394e0; --shadow:0 18px 42px rgba(0,0,0,.38);
+    }
+    * { box-sizing:border-box; }
+    html { background:#07060a; }
+    body {
+      margin:0; color:var(--text); font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;
+      background-color:#07060a;
+      background-image:
+        linear-gradient(180deg,rgba(8,6,14,.18),rgba(5,4,9,.62) 58%,rgba(4,3,7,.86)),
+        radial-gradient(circle at 50% 24%,rgba(119,72,169,.16),transparent 34rem),
+        url("merlin-assets/merlin-magicbook-background-left.webp");
+      background-position:center,50% -8%,center top;
+      background-repeat:no-repeat;
+      background-size:auto,auto,cover;
+      background-attachment:fixed;
+      min-height:100vh;
+    }
+    body::before {
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.08;
+      background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+      background-size:28px 28px; mask-image:linear-gradient(to bottom,#000,transparent 72%);
+    }
+    button { font:inherit; }
+    .app {
+      width:min(100%,1220px); margin:auto; padding:16px 12px 56px; position:relative;
+      display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; align-items:start;
+    }
+    .desktop-column { min-width:0; display:flex; flex-direction:column; gap:16px; }
+    .desktop-column > .panel { margin-bottom:0; }
+    .hero { padding:5px 5px 14px; }
+    .hero-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .eyebrow { color:var(--gold); font-size:12px; letter-spacing:.18em; font-weight:800; }
+    .chapter-badge {
+      display:flex; align-items:center; gap:9px; padding:6px 11px; border-radius:12px;
+      color:#d5c8df; background:linear-gradient(145deg,#2c2038,#17111e); border:1px solid #65507d;
+      box-shadow:inset 0 1px rgba(255,255,255,.05),0 5px 14px rgba(0,0,0,.2); font-size:9px; white-space:nowrap;
+    }
+    .chapter-badge b { color:#e3c9ff; font-size:23px; line-height:1; letter-spacing:-.04em; font-variant-numeric:tabular-nums; text-shadow:0 0 14px rgba(220,194,255,.2); }
+    .title-row { display:flex; align-items:center; gap:9px; }
+    h1 { margin:5px 0 3px; font-size:27px; line-height:1.15; letter-spacing:-.03em; text-shadow:0 3px 18px rgba(0,0,0,.45); }
+    .help-button {
+      display:grid; place-items:center; width:25px; height:25px; padding:0; margin-top:4px;
+      border:1px solid #b69747; border-radius:50%; color:#21190a;
+      background:linear-gradient(#ffe59a,#c99932); font-weight:950; cursor:pointer;
+      box-shadow:0 0 12px rgba(239,199,94,.22);
+    }
+    .subtitle { color:var(--muted); font-size:13px; line-height:1.5; }
+    .panel {
+      background:linear-gradient(155deg,rgba(35,28,45,.97),rgba(19,15,26,.98));
+      border:1px solid var(--line); border-radius:20px; padding:14px; margin-bottom:13px;
+      box-shadow:var(--shadow); position:relative; overflow:hidden;
+    }
+    .panel::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent); pointer-events:none; }
+    .overview-panel { background:linear-gradient(150deg,rgba(41,31,51,.98),rgba(18,14,25,.98)); }
+    .overview-split { display:grid; grid-template-columns:1.04fr .96fr; gap:10px; align-items:stretch; }
+    .overview-main,.overview-combat { min-width:0; }
+    .overview-main { padding-right:10px; border-right:1px solid #40344b; }
+    .overview-main .progress-grid { grid-template-columns:1fr; gap:6px; margin-top:9px; }
+    .overview-main .progress-item { display:grid; grid-template-columns:1fr auto; align-items:center; gap:5px; padding:7px 9px; }
+    .overview-main .progress-label { margin:0; }
+    .overview-main .progress-value { font-size:13px; text-align:right; }
+    .overview-main .prisoner-track { grid-column:1/-1; width:100%; margin-top:1px; }
+    .overview-combat .status-grid { grid-template-columns:1fr; gap:8px; margin-top:0; height:100%; }
+    .overview-combat .stat { display:flex; flex-direction:column; justify-content:center; }
+    .board-panel { border-color:#4d405b; position:relative; }
+    .alignment-panel { background:linear-gradient(135deg,rgba(35,25,45,.98),rgba(27,21,23,.98)); }
+    .hand-panel { border-color:#514359; }
+    .topline,.section-head,.meter-head,.card-meta,.event-top,.event-bottom,.row {
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .topline strong { color:var(--gold); font-size:23px; font-variant-numeric:tabular-nums; text-shadow:0 0 16px rgba(242,202,98,.2); }
+    .pill {
+      border:1px solid #635472; color:#e7dff0; background:rgba(47,38,58,.88);
+      border-radius:999px; padding:5px 9px; font-size:12px; white-space:nowrap;
+    }
+    .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+    .progress-grid { display:grid; grid-template-columns:.9fr 1.25fr 1fr; gap:8px; margin-top:12px; }
+    .progress-item {
+      min-width:0; padding:9px 10px; border-radius:13px; border:1px solid #40344a;
+      background:linear-gradient(155deg,#1a1521,#100d15); box-shadow:inset 0 1px rgba(255,255,255,.035);
+    }
+    .progress-item.prisoner { border-color:#386d61; background:linear-gradient(155deg,#19332f,#0f1718); }
+    .progress-item.bonus { border-color:#77602c; background:linear-gradient(155deg,#382d16,#17130d); }
+    .progress-label { display:block; color:var(--muted); font-size:9px; line-height:1.2; margin-bottom:4px; }
+    .progress-value { display:block; color:var(--text); font-size:15px; line-height:1.15; font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .progress-item.prisoner .progress-value { color:#93e7c8; }
+    .progress-item.bonus .progress-value { color:#ffe08a; }
+    .prisoner-track { height:4px; margin-top:7px; border-radius:99px; overflow:hidden; background:#07100f; }
+    .prisoner-track span { display:block; height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#4dae91,#9af0ce); box-shadow:0 0 7px rgba(107,214,166,.35); transition:width .3s ease; }
+    .stat { background:linear-gradient(160deg,#15111b,#0e0c12); border:1px solid #372d41; border-radius:14px; padding:10px; min-width:0; box-shadow:inset 0 1px rgba(255,255,255,.03); }
+    .stat.wide { grid-column:1/-1; }
+    .meter-head { font-size:12px; color:var(--muted); }
+    .meter-head b { color:var(--text); }
+    .track { height:9px; border-radius:99px; overflow:hidden; background:#070609; margin:8px 0 5px; box-shadow:inset 0 1px 3px #000; }
+    .fill { height:100%; width:0; border-radius:inherit; transition:width .25s ease; }
+    .fill.light { background:linear-gradient(90deg,#b78820,#ffe396); }
+    .fill.dark { margin-left:auto; background:linear-gradient(90deg,#b95b88,#67408a); }
+    .fill.health { background:linear-gradient(90deg,#438d6f,#7de2ad); }
+    .small { color:var(--muted); font-size:11px; line-height:1.45; }
+    .balance {
+      position:relative; height:14px; margin:10px 0 7px; border-radius:99px;
+      background:linear-gradient(90deg,#c89423 0 50%,#4c2866 50% 100%);
+      box-shadow:inset 0 2px 4px #0008,0 0 18px rgba(140,86,175,.12);
+      overflow:visible;
+    }
+    .balance-progress {
+      position:absolute; top:0; bottom:0; left:0; width:50%; border-radius:99px;
+      background:linear-gradient(90deg,#9d6b17,#ffe183); box-shadow:0 0 12px rgba(242,202,98,.45);
+      transition:left .5s cubic-bezier(.2,.8,.2,1),width .5s cubic-bezier(.2,.8,.2,1),background .25s;
+    }
+    .balance-marker {
+      position:absolute; top:-3px; left:calc(50% - 3px);
+      width:5px; height:20px; border-radius:4px; background:#fff8df; box-shadow:0 0 10px #fff,0 0 20px #eac65d;
+      transition:left .5s cubic-bezier(.2,.8,.2,1);
+    }
+    .form-center { display:grid; justify-items:center; gap:1px; color:var(--text); }
+    .form-center b { color:var(--text); }
+    .balance-value { color:var(--gold); font-size:10px; font-weight:850; font-variant-numeric:tabular-nums; }
+    .balance-value.dark { color:#d4a8ff; }
+    .section-head { margin-bottom:10px; }
+    .section-head h2 { margin:0; font-size:17px; letter-spacing:-.01em; }
+    .section-head span { color:var(--muted); font-size:11px; }
+    .collapsible { padding:0; overflow:hidden; }
+    .collapsible summary {
+      display:flex; align-items:center; gap:9px; padding:13px; cursor:pointer;
+      list-style:none; font-size:16px; font-weight:850; user-select:none;
+    }
+    .collapsible summary::-webkit-details-marker { display:none; }
+    .collapsible summary::after {
+      content:"＋"; display:grid; place-items:center; width:24px; height:24px;
+      border-radius:50%; background:#2c2436; color:var(--gold); font-size:16px;
+    }
+    .collapsible[open] summary { border-bottom:1px solid #342b3e; }
+    .collapsible[open] summary::after { content:"－"; }
+    .summary-meta { margin-left:auto; color:var(--muted); font-size:11px; font-weight:500; }
+    .collapse-body { padding:13px; }
+    .collapse-actions { display:flex; justify-content:flex-end; margin-bottom:10px; }
+    .utility-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start; }
+    .utility-grid > .panel { min-width:0; margin-bottom:0; }
+    .utility-grid .collapsible summary { padding:12px 11px; font-size:14px; gap:6px; }
+    .utility-grid .summary-meta { font-size:9px; }
+    .utility-grid .collapse-body { padding:10px; }
+    .preview { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:10px; padding:7px; border-radius:13px; background:#0e0b13; border:1px solid #2e2636; }
+    .preview-item {
+      min-width:0; text-align:center; padding:6px 2px; border-radius:9px;
+      background:linear-gradient(180deg,#18131e,#100d15); border:1px dashed #554660; font-size:10px; color:var(--muted);
+    }
+    .board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .event {
+      min-width:0; min-height:116px; border-radius:14px; padding:8px 7px; color:white;
+      border:1px solid rgba(255,255,255,.19); position:relative; overflow:hidden;
+      text-align:left; cursor:default; transition:transform .14s,border-color .14s,box-shadow .14s;
+      box-shadow:inset 0 1px rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.22);
+    }
+    .event::before {
+      content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+      background:radial-gradient(circle at 30% 5%,rgba(255,255,255,.28),transparent 45%);
+    }
+    .event.targetable { cursor:pointer; border-color:#fff2aa; box-shadow:0 0 0 2px rgba(239,199,94,.34),0 0 14px rgba(239,199,94,.14); }
+    .event.lethal-preview {
+      border-color:#ff7771;
+      box-shadow:0 0 0 2px rgba(255,72,65,.42),0 0 16px rgba(255,53,47,.2),inset 0 0 12px rgba(156,18,23,.1);
+    }
+    .lethal-mark {
+      position:absolute; z-index:4; top:35px; right:6px; padding:2px 5px; border-radius:5px;
+      color:#fff5df; background:rgba(155,18,24,.92); border:1px solid rgba(255,188,170,.75);
+      box-shadow:0 0 8px rgba(255,58,49,.32); font-size:8px; font-weight:900; letter-spacing:.04em;
+    }
+    .remote-angel-mark { position:absolute; z-index:4; left:5px; top:35px; padding:2px 5px; border-radius:999px; color:#503006; background:linear-gradient(135deg,#fff0a2,#d6a437); border:1px solid #fff3b8; font-size:8px; font-weight:900; box-shadow:0 0 10px rgba(255,220,104,.55); }
+    @keyframes targetPulse { 50% { filter:brightness(1.15); transform:translateY(-2px); } }
+    .event.targetable:active { transform:scale(.96); }
+    .resolving button { pointer-events:none; }
+    .event.fx-transmute { animation:transmute .34s ease both; z-index:2; }
+    .event.fx-hit { animation:hit .3s ease both; z-index:2; }
+    .event.fx-resonate { animation:resonate .42s ease both; z-index:2; }
+    .event.fx-eliminate { animation:eliminate .42s ease forwards; z-index:3; }
+    .event.fx-drop { animation:drop .46s cubic-bezier(.2,.8,.25,1) both; z-index:1; }
+    .event.fx-land { animation:landPulse .28s ease-out both; z-index:2; }
+    .board-fx-cue {
+      position:absolute; z-index:12; left:50%; top:48%; transform:translate(-50%,-50%) scale(.86);
+      padding:7px 16px; border:1px solid rgba(255,231,150,.72); border-radius:999px;
+      color:#fff5c9; background:rgba(28,19,38,.9); box-shadow:0 8px 28px #000a,0 0 24px rgba(239,199,94,.28);
+      font-size:13px; font-weight:900; letter-spacing:.12em; pointer-events:none; opacity:0;
+      animation:boardCue .62s ease both;
+    }
+    .board-fx-cue.resonance { color:#baffea; border-color:rgba(139,255,220,.75); box-shadow:0 8px 28px #000a,0 0 28px rgba(105,255,213,.34); }
+    .event.fx-attacking-source { opacity:.18; filter:brightness(.72); }
+    .enemy-striker {
+      position:fixed; z-index:80; margin:0; pointer-events:none; transform-origin:center;
+      will-change:transform,filter,opacity; box-shadow:0 18px 45px rgba(0,0,0,.65),0 0 24px rgba(235,83,91,.4);
+    }
+    .hand-panel.fx-enemy-impact { animation:enemyHandImpact .32s ease both; }
+    .hand-panel.fx-enemy-impact::after {
+      content:""; position:absolute; z-index:6; inset:0; pointer-events:none; border-radius:inherit;
+      background:radial-gradient(circle at 50% 15%,rgba(255,233,178,.62),rgba(226,49,61,.36) 35%,transparent 72%);
+      animation:enemyImpactFlash .32s ease both;
+    }
+    @keyframes transmute {
+      0% { filter:brightness(1); transform:scale(1); }
+      45% { filter:brightness(2.2) saturate(1.4); transform:scale(1.06); box-shadow:0 0 22px #ffe394; }
+      100% { filter:brightness(1); transform:scale(1); }
+    }
+    @keyframes hit {
+      0%,100% { transform:translateX(0); filter:brightness(1); }
+      25% { transform:translateX(-5px) scale(.98); filter:brightness(1.9); }
+      55% { transform:translateX(5px) scale(.98); box-shadow:0 0 20px #e86c74; }
+      75% { transform:translateX(-2px); }
+    }
+    @keyframes resonate {
+      0% { transform:scale(1); filter:brightness(1); }
+      40% { transform:scale(1.08); filter:brightness(2); box-shadow:0 0 25px #9fffe0; }
+      100% { transform:scale(1); filter:brightness(1); }
+    }
+    @keyframes eliminate {
+      0% { opacity:1; transform:scale(1) rotate(0); filter:brightness(1); }
+      45% { opacity:1; transform:scale(1.12) rotate(-2deg); filter:brightness(2.7); box-shadow:0 0 28px #fff0a2; }
+      100% { opacity:0; transform:scale(.25) rotate(8deg); filter:brightness(3); }
+    }
+    @keyframes drop {
+      0% { opacity:.15; transform:translateY(-62px) scale(.96); }
+      70% { opacity:1; transform:translateY(5px) scale(1.01); }
+      100% { opacity:1; transform:translateY(0) scale(1); }
+    }
+    @keyframes landPulse {
+      0% { filter:brightness(1); box-shadow:inset 0 1px rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.22); }
+      45% { filter:brightness(1.45); box-shadow:inset 0 1px rgba(255,255,255,.18),0 0 22px rgba(255,222,124,.5); }
+      100% { filter:brightness(1); box-shadow:inset 0 1px rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.22); }
+    }
+    @keyframes boardCue {
+      0% { opacity:0; transform:translate(-50%,-50%) scale(.82); }
+      20%,68% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+      100% { opacity:0; transform:translate(-50%,-58%) scale(1.05); }
+    }
+    @keyframes enemyHandImpact {
+      0%,100% { transform:translate(0,0); filter:brightness(1); }
+      20% { transform:translate(-6px,3px) rotate(-.5deg); filter:brightness(1.45); }
+      42% { transform:translate(7px,-2px) rotate(.5deg); }
+      66% { transform:translate(-3px,1px); }
+    }
+    @keyframes enemyImpactFlash { 0% { opacity:0; } 20% { opacity:1; } 100% { opacity:0; } }
+    @media (prefers-reduced-motion:reduce) {
+      .event.targetable,.event.lethal-preview,.lethal-mark,.hp-damage-preview,.event.fx-transmute,.event.fx-hit,.event.fx-resonate,.event.fx-eliminate,.event.fx-drop,.event.fx-land,.board-fx-cue,.hand-panel.fx-enemy-impact,.hand-panel.fx-enemy-impact::after { animation-duration:.01ms; }
+    }
+    .event.front { outline:1px solid rgba(255,211,96,.72); outline-offset:2px; box-shadow:inset 0 -4px rgba(255,194,63,.26),0 7px 18px rgba(0,0,0,.32); }
+    .element-wind,
+    .element-thunder,
+    .element-fire,
+    .element-electric {
+      background-position:center;
+      background-repeat:no-repeat;
+      background-size:cover;
+    }
+    .element-wind {
+      background-color:#123f3d;
+      background-image:linear-gradient(145deg,rgba(31,126,111,.18),rgba(3,23,27,.42)),url("merlin-assets/event-wind.webp");
+    }
+    .element-thunder {
+      background-color:#35234d;
+      background-image:linear-gradient(145deg,rgba(108,69,157,.14),rgba(16,10,31,.44)),url("merlin-assets/event-thunder.webp");
+    }
+    .element-fire {
+      background-color:#55211d;
+      background-image:linear-gradient(145deg,rgba(178,59,42,.16),rgba(38,9,9,.46)),url("merlin-assets/event-fire.webp");
+    }
+    .element-electric {
+      background-color:#183b5b;
+      background-image:linear-gradient(145deg,rgba(35,112,173,.12),rgba(6,20,40,.44)),url("merlin-assets/event-electric.webp");
+    }
+    .icon { display:inline-grid; place-items:center; width:25px; height:25px; vertical-align:middle; }
+    .icon svg { width:100%; height:100%; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+    .element-name { display:flex; align-items:center; gap:3px; font-weight:800; font-size:12px; }
+    .kind { max-width:52%; font-size:9px; color:rgba(255,255,255,.88); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; }
+    .rarity-common { color:#e7e0ea; }
+    .rarity-rare { color:#9dd8ff; }
+    .rarity-epic { color:#e3b2ff; }
+    .rarity-quest { color:#ffe08a; }
+    .hp { position:relative; height:7px; background:rgba(0,0,0,.52); border-radius:99px; overflow:hidden; margin:12px 0 8px; box-shadow:inset 0 1px 2px #000; }
+    .hp-current { display:block; height:100%; background:linear-gradient(90deg,#61d49c,#a1f2be); box-shadow:0 0 8px rgba(125,226,173,.48); transition:width .25s ease; }
+    .hp-damage-preview {
+      position:absolute; z-index:2; top:0; bottom:0; border-radius:99px;
+      background:linear-gradient(90deg,#61d49c,#a1f2be);
+      box-shadow:0 0 7px rgba(125,226,173,.72),inset 0 0 2px rgba(224,255,236,.6);
+      animation:damagePreview 1.6s ease-in-out infinite;
+    }
+    .lethal-preview .hp-damage-preview { background:linear-gradient(90deg,#61d49c,#b9ffd0); }
+    @keyframes damagePreview { 0%,100% { opacity:.7; } 50% { opacity:0; } }
+    .event-bottom { position:relative; font-size:9px; color:#f3ecf8; }
+    .countdown { position:relative; margin-top:8px; padding:4px 5px; border-radius:6px; font-size:9px; color:#ffe6a6; background:rgba(25,12,8,.34); border:1px solid rgba(255,220,137,.16); }
+    .hand { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+    .card {
+      min-width:0; min-height:180px; border-radius:6px 18px 12px 6px; padding:13px 20px 14px; text-align:left;
+      border:1px solid transparent; color:var(--text); cursor:pointer; position:relative;
+      overflow:hidden; display:flex; flex-direction:column;
+      transition:transform .14s,box-shadow .14s,border-color .14s,filter .14s;
+    }
+    .card > * { position:relative; z-index:1; }
+    .card::before {
+      content:""; position:absolute; inset:0; height:auto; border-radius:inherit;
+      background:var(--page-overlay); pointer-events:none;
+    }
+    .card::after { display:none; }
+    .rare-emblem {
+      position:absolute!important; z-index:3!important; right:7px; bottom:7px;
+      width:30px; height:30px; display:grid; place-items:center; pointer-events:none;
+      border-radius:50%; transform:rotate(-7deg);
+    }
+    .rare-emblem svg { width:24px; height:24px; overflow:visible; }
+    .card.angel .rare-emblem {
+      color:#744711;
+      background:radial-gradient(circle at 38% 30%,#f9e8a7 0 12%,#d2a84d 40%,#9d671e 75%,#70410d 100%);
+      border:1px solid rgba(255,241,166,.9);
+      box-shadow:inset 0 0 0 2px rgba(112,65,13,.28),inset 1px 1px 2px rgba(255,250,205,.72),0 2px 4px rgba(91,48,5,.42);
+      filter:drop-shadow(0 1px 0 rgba(255,244,176,.75));
+    }
+    .card.demon .rare-emblem {
+      color:#d1b5dc;
+      background:radial-gradient(circle at 38% 30%,#826690 0 10%,#4c3158 42%,#251929 76%,#0e0a11 100%);
+      border:1px solid rgba(190,158,204,.58);
+      box-shadow:inset 0 0 0 2px rgba(10,6,12,.48),inset 1px 1px 2px rgba(221,192,232,.2),0 2px 5px rgba(0,0,0,.72);
+      filter:drop-shadow(0 1px 0 #09070b) drop-shadow(0 -1px 0 rgba(225,199,235,.14));
+    }
+    .rare-emblem .relief-shadow { fill:none; stroke:rgba(0,0,0,.45); stroke-width:2.8; stroke-linecap:round; stroke-linejoin:round; transform:translateY(.8px); }
+    .rare-emblem .relief-face { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .card.angel {
+      --card-accent:#bd861b; --page-overlay:linear-gradient(145deg,rgba(255,249,219,.06),rgba(117,72,19,.08));
+      color:#39230c; border-color:#b9822d;
+      background-color:#d9bd75;
+      background-image:url("merlin-assets/card-page-angel.webp");
+      background-position:center; background-repeat:no-repeat; background-size:100% 100%;
+      box-shadow:inset 0 1px rgba(255,248,205,.68),0 10px 22px #0008;
+    }
+    .card.demon {
+      --card-accent:#b29acb; --page-overlay:radial-gradient(circle at 50% 38%,rgba(133,101,151,.09),transparent 62%);
+      color:#f1e8f6; border-color:#776581;
+      background-color:#211d28;
+      background-image:url("merlin-assets/card-page-demon-v3.webp");
+      background-position:center; background-repeat:no-repeat; background-size:100% 100%;
+      box-shadow:inset 0 1px rgba(239,221,248,.13),0 10px 22px #0009;
+    }
+    .card:active { transform:scale(.97); }
+    @media (hover:hover) { .card:hover { filter:brightness(1.08); transform:translateY(-2px); } }
+    .card.selected { border-color:#fff5b6; box-shadow:0 0 0 2px rgba(239,199,94,.45),0 14px 30px #000a,0 0 22px rgba(239,199,94,.16); transform:translateY(-4px); filter:brightness(1.08); }
+    .card.convert-target { box-shadow:0 0 0 2px var(--purple); }
+    .card-name { display:flex; align-items:center; justify-content:center; gap:4px; font-size:15px; font-weight:900; margin:2px 8px 8px; line-height:1.25; letter-spacing:-.01em; text-align:center; }
+    .card-name .icon { flex:0 0 auto; width:20px; height:20px; }
+    .card-desc { color:#d5ceda; font-size:10px; line-height:1.45; min-height:58px; margin:0 7px; }
+    .damage-value { color:#ff6868; font-weight:950; }
+    .card-footer {
+      display:flex; align-items:flex-end; justify-content:center; align-self:stretch;
+      width:100%; margin-top:auto; padding-top:10px;
+    }
+    .card.angel .card-desc { color:#4f3718; }
+    .card.angel .damage-value { color:#b4201c; }
+    .card.angel .range-caption { color:#5d421d; }
+    .card.angel .range-icon { background:rgba(84,50,12,.16); border-color:rgba(84,50,12,.24); box-shadow:inset 0 1px 3px rgba(84,50,12,.22); }
+    .card.angel .range-cell { background:rgba(73,43,9,.12); border-color:rgba(73,43,9,.16); }
+    .card.angel .range-cell.active {
+      background:#8f68b2; border-color:#4e3266;
+      box-shadow:inset 0 0 0 1px rgba(232,205,255,.58);
+    }
+    .range-wrap { flex:0 0 auto; display:grid; justify-items:center; gap:3px; margin-inline:auto; }
+    .range-icon {
+      display:grid; grid-template-columns:repeat(4,6px); grid-template-rows:repeat(3,6px); gap:2px;
+      padding:4px; border-radius:6px; background:rgba(5,4,7,.48); border:1px solid rgba(255,255,255,.14);
+      box-shadow:inset 0 1px 3px #0009; overflow:hidden;
+    }
+    .range-cell { width:6px; height:6px; border-radius:1.5px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.07); }
+    .range-cell.active {
+      background:#e3b63e; border-color:#fff0a2;
+      box-shadow:inset 0 0 0 1px rgba(99,59,7,.58);
+    }
+    .range-caption { display:none; }
+    .instruction {
+      margin:10px 0 0; color:#f3dc94; font-size:12px; line-height:1.5;
+      background:#110e16; border-radius:9px; padding:8px 9px;
+    }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .action,.choice {
+      border:1px solid #655674; color:var(--text); background:linear-gradient(#342a40,#251e2e);
+      border-radius:11px; padding:9px 11px; cursor:pointer; font-size:11px;
+    }
+    .action.primary { color:#211a0c; background:linear-gradient(#ffe49a,#d7a836); border-color:#f2cc68; font-weight:800; }
+    .action:disabled { opacity:.4; cursor:not-allowed; }
+    .choice.active { border-color:var(--gold); color:#ffe39b; }
+    .rule-note {
+      margin-top:10px; color:var(--muted); font-size:10px; line-height:1.55;
+      border-top:1px solid #332b3d; padding-top:9px;
+    }
+    .projection-empty { color:var(--muted); font-size:12px; line-height:1.6; margin:0; }
+    .projection-board { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
+    .projection-event {
+      min-width:0; border:1px solid #5a4d68; border-radius:10px; color:white; padding:8px 3px;
+      font-size:10px; cursor:pointer; min-height:72px;
+    }
+    .projection-event.marked { box-shadow:0 0 0 2px #ffe394; }
+    .projection-event.abyss { box-shadow:0 0 0 2px #bd6dca; }
+    .log { max-height:190px; overflow:auto; display:flex; flex-direction:column; gap:6px; }
+    .log div { padding:7px 8px; background:#110e16; border-left:3px solid #5b5066; font-size:11px; line-height:1.45; }
+    .log .good { border-color:var(--green); }
+    .log .bad { border-color:var(--red); }
+    .help-overlay {
+      position:fixed; z-index:50; inset:0; display:grid; place-items:center; padding:14px;
+      background:rgba(6,5,9,.78); backdrop-filter:blur(7px);
+    }
+    .help-overlay[hidden] { display:none; }
+    .help-dialog {
+      width:min(100%,540px); max-height:min(88vh,780px); overflow:hidden;
+      border:1px solid #5a4b69; border-radius:18px;
+      background:linear-gradient(180deg,#241d2d,#141119); box-shadow:0 28px 70px #000b;
+    }
+    .help-head {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px; border-bottom:1px solid #403449;
+    }
+    .help-head h2 { margin:0; font-size:18px; }
+    .help-close {
+      width:30px; height:30px; padding:0; border:1px solid #62546e; border-radius:50%;
+      color:var(--text); background:#30273a; cursor:pointer; font-size:18px;
+    }
+    .help-content { max-height:calc(min(88vh,780px) - 60px); overflow:auto; padding:4px 16px 18px; }
+    .help-section { padding:13px 0; border-bottom:1px solid #352c3e; }
+    .help-section:last-child { border-bottom:0; }
+    .help-section h3 { margin:0 0 7px; color:#f4d57e; font-size:14px; }
+    .help-section p,.help-section li { color:#d3c9dc; font-size:11px; line-height:1.65; }
+    .help-section p { margin:0; }
+    .help-section ul { margin:0; padding-left:18px; }
+    body.help-open { overflow:hidden; }
+    .result-overlay {
+      position:fixed; z-index:70; inset:0; display:grid; place-items:center; padding:14px;
+      background:rgba(6,5,9,.82); backdrop-filter:blur(8px);
+    }
+    .result-overlay[hidden] { display:none; }
+    .result-dialog {
+      width:min(100%,390px); padding:22px 20px 18px; text-align:center;
+      border:1px solid #655473; border-radius:18px;
+      background:linear-gradient(180deg,#2a2134,#151119); box-shadow:0 28px 70px #000c,0 0 32px rgba(219,185,103,.12);
+    }
+    .result-dialog h2 { margin:0 0 10px; color:#f4d57e; font-size:22px; }
+    .result-dialog p { margin:0; color:#d8cfdf; font-size:12px; line-height:1.7; white-space:pre-line; }
+    .result-confirm {
+      margin-top:17px; min-width:150px; padding:10px 18px; border:1px solid #d5ad4e; border-radius:11px;
+      color:#281b07; background:linear-gradient(#ffe89a,#c99731); font-weight:900; cursor:pointer;
+      box-shadow:0 8px 20px #0007,0 0 18px rgba(240,196,83,.18);
+    }
+    body.result-open { overflow:hidden; }
+    .toast {
+      position:fixed; z-index:10; left:50%; bottom:18px; transform:translate(-50%,15px);
+      width:min(calc(100% - 30px),500px); background:#f3dda0; color:#20190e; border-radius:12px;
+      padding:10px 12px; font-size:12px; font-weight:700; opacity:0; pointer-events:none;
+      transition:.2s;
+    }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    @media (max-width:800px) {
+      .app { width:min(100%,580px); display:flex; flex-direction:column; gap:0; }
+      .desktop-column { display:contents; }
+      .hero { order:1; }
+      .overview-panel { order:2; }
+      .board-panel { order:3; }
+      .alignment-panel { order:4; }
+      .hand-panel { order:5; }
+      .utility-grid { order:6; }
+      .desktop-column > .panel { margin-bottom:13px; }
+    }
+    @media (max-width:390px) {
+      .app { padding:10px 7px 48px; } .hero { padding-inline:3px; } h1 { font-size:24px; }
+      .eyebrow { font-size:10px; letter-spacing:.12em; } .chapter-badge { padding:5px 8px; gap:6px; } .chapter-badge b { font-size:20px; }
+      .panel { padding:10px; border-radius:16px; margin-bottom:10px; }
+      .overview-split { gap:7px; } .overview-main { padding-right:7px; }
+      .overview-main .progress-grid { gap:5px; margin-top:7px; } .overview-main .progress-item { padding:6px 7px; }
+      .progress-value { font-size:13px; } .status-grid { gap:7px; } .stat { padding:8px; }
+      .utility-grid { gap:7px; } .utility-grid .collapsible summary { padding:10px 8px; font-size:13px; }
+      .utility-grid .summary-meta { display:none; }
+      .preview { gap:4px; padding:5px; } .preview-item { font-size:9px; }
+      .board { gap:5px; } .event { min-height:108px; padding:6px 4px; border-radius:11px; }
+      .event-top { gap:2px; } .element-name { font-size:11px; } .icon { width:22px; height:22px; }
+      .event-bottom,.countdown { font-size:8px; }
+      .hand { gap:6px; overflow-x:auto; padding:2px 2px 8px; scroll-snap-type:x proximity; }
+      .card { min-height:182px; padding:11px 15px 12px; border-radius:5px 14px 10px 5px; scroll-snap-align:start; }
+      .rare-emblem { right:5px; bottom:5px; width:27px; height:27px; }
+      .rare-emblem svg { width:21px; height:21px; }
+      .card.angel { padding-left:15px; }
+      .card-name { font-size:13px; } .card-desc { font-size:9px; } .card-power { font-size:9px; }
+      .card-footer { gap:4px; } .range-icon { grid-template-columns:repeat(4,5px); grid-template-rows:repeat(3,5px); gap:1.5px; padding:3px; }
+      .range-cell { width:5px; height:5px; }
+    }
+    @media (max-width:350px) {
+      .overview-split,.utility-grid { grid-template-columns:1fr; }
+      .overview-main { padding-right:0; padding-bottom:8px; border-right:0; border-bottom:1px solid #40344b; }
+      .hand { grid-template-columns:repeat(3,102px); }
+    }
+  </style>
+</head>
+<body>
+<main class="app" id="app">
+  <div class="desktop-column left-column">
+    <header class="hero">
+      <div class="hero-top">
+        <div class="eyebrow">INTERACTIVE RULE PROTOTYPE</div>
+        <div class="chapter-badge"><span>当前章节</span><b id="chapterValue">第1章</b></div>
+      </div>
+      <div class="title-row">
+        <h1>梅林的魔法书 3.0</h1>
+        <button type="button" class="help-button" id="helpButton" aria-label="查看全部玩法介绍" aria-haspopup="dialog">?</button>
+      </div>
+      <div class="subtitle">光暗拔河 · 横纵三消 · 跨玩家投影</div>
+    </header>
+
+    <section class="panel overview-panel">
+      <div class="overview-split">
+        <div class="overview-main">
+          <div class="topline">
+            <div><span class="small">活动积分</span><br><strong id="score">0</strong></div>
+            <span class="pill" id="stamina">体力 150 / 150</span>
+          </div>
+          <div class="progress-grid" aria-label="章节进度">
+            <div class="progress-item prisoner"><span class="progress-label">俘虏进度</span><b class="progress-value" id="prisonerValue">0 / 1</b><div class="prisoner-track"><span id="prisonerFill"></span></div></div>
+            <div class="progress-item bonus"><span class="progress-label">积分加成</span><b class="progress-value" id="chapterBonus">+0%</b></div>
+          </div>
+        </div>
+        <div class="overview-combat">
+          <div class="status-grid">
+            <div class="stat">
+              <div class="meter-head"><span>玩家生命</span><b id="healthText">100 / 100</b></div>
+              <div class="track"><div class="fill health" id="healthFill"></div></div>
+              <div class="small">生命归零后重试本章节</div>
+            </div>
+            <div class="stat">
+              <div class="meter-head"><span>全部攻击力</span><b id="attackText">50</b></div>
+              <div class="track"><div class="fill light" id="attackFill"></div></div>
+              <div class="small" id="rhythmText">连续倾向：0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel alignment-panel">
+      <div class="stat wide">
+        <div class="meter-head"><span>恶魔 100</span><span class="form-center"><b id="formText">中立形态</b><span class="balance-value" id="balanceValue">进度 0</span></span><span>100 天使</span></div>
+        <div class="balance" id="balance"><span class="balance-progress" id="balanceProgress"></span><span class="balance-marker" id="balanceMarker"></span></div>
+        <div class="row small"><span id="darkText">黑暗值 0</span><span id="formBonus">无形态加成</span><span id="lightText">光明值 0</span></div>
+      </div>
+    </section>
+
+    <div class="utility-grid">
+      <details class="panel collapsible">
+        <summary><span>跨玩家投影</span><span class="summary-meta" id="projectionCount">机会 0</span></summary>
+        <div class="collapse-body" id="projection"></div>
+      </details>
+      <details class="panel collapsible">
+        <summary><span>结算记录</span><span class="summary-meta">点击展开</span></summary>
+        <div class="collapse-body">
+          <div class="collapse-actions"><button class="action" id="reset">重新挑战本章节</button></div>
+          <div class="log" id="log"></div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="desktop-column right-column">
+    <section class="panel board-panel">
+      <div class="section-head"><h2>个人棋盘 4×3</h2><span>下方为靠近玩家的一排</span></div>
+      <div class="preview" id="preview" aria-label="待补位事件"></div>
+      <div class="board" id="board" role="grid" aria-label="四列三排个人棋盘"></div>
+      <p id="instruction" hidden aria-live="polite">选择一张手牌，再选择合法施法目标。</p>
+    </section>
+
+    <section class="panel hand-panel">
+      <div class="section-head"><h2>固定3张手牌</h2><span>用1张，按概率摸1张</span></div>
+      <div class="hand" id="hand"></div>
+      <div class="actions">
+        <button class="action primary" id="convert">使用转化牌</button>
+        <span class="pill" id="convertCount">转化牌 0</span>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="help-overlay" id="helpModal" hidden>
+  <section class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <header class="help-head">
+      <h2 id="helpTitle">全部玩法介绍</h2>
+      <button type="button" class="help-close" id="helpClose" aria-label="关闭玩法介绍">×</button>
+    </header>
+    <div class="help-content">
+      <section class="help-section">
+        <h3>1. 核心目标</h3>
+        <p>使用固定3张手牌处理个人棋盘事件，在生命压力下救出俘虏、提升章节、积累积分，并通过光暗拔河激活形态和跨玩家投影。</p>
+      </section>
+      <section class="help-section">
+        <h3>2. 个人棋盘与事件攻击</h3>
+        <ul>
+          <li>棋盘为4列×3排；最下方是第一排，也是最靠近玩家的一排。</li>
+          <li>从第1章开始，棋盘事件即可随机出现风、雷、火、电全部4种元素。</li>
+          <li>上方预览区显示即将补入棋盘的事件。</li>
+          <li>第一排事件按自身倒计时从左到右攻击，单次伤害等于当前生命上限；没有减伤、护盾或免死。</li>
+          <li>初、中级事件每1回合攻击，高级事件每2回合攻击；首次攻击倒计时为基础间隔+1。</li>
+          <li>事件生命降至0才会消除；消除后同列事件下落并从预览区补位。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>3. 卡牌、目标与抽取</h3>
+        <ul>
+          <li>始终持有3张手牌：使用1张后立即摸取1张，允许出现同名卡。</li>
+          <li>抽取先判定普通70%／稀有30%，再判定天使50%／恶魔50%，最后在对应子池内等权随机。</li>
+          <li>天使卡以改变风、雷、火、电属性并制造共鸣为主；恶魔卡以直接伤害、处决、吞噬及范围摧毁为主。</li>
+          <li>施法目标分为第一排、任意目标和无需指定；伤害按小、中、大档标识。</li>
+          <li>转化牌不占手牌，可将1张手牌随机变成另一张牌，转化结果沿用正常抽取规则。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>4. 三消共鸣与下落连锁</h3>
+        <ul>
+          <li>仅横向或纵向连续3个以上相同元素形成共鸣；斜线及普通相邻不生效。</li>
+          <li>横纵共鸣可以共用一个格子，共用格在同一组结算中只受伤1次。</li>
+          <li>净化造成的属性变化会检查共鸣；恶魔击杀后的下落也会再次检查共鸣。</li>
+          <li>单次恶魔操作最多触发5轮落位共鸣，伤害依次为20%、15%、10%、5%、5%；之后只补位，不再检查第6轮。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>5. 光暗拔河与连续使用</h3>
+        <ul>
+          <li>光暗进度范围为-100～+100；天使卡推动正值，恶魔卡推动负值。</li>
+          <li>Combo 1～5依次推进5、6、8、10、13点，Combo 6以后每张推进15点；异色卡终结原Combo。</li>
+          <li>未变身时，同色牌推进对应形态；变身后，同色牌维持进度，异色牌把进度拉回0并使形态消失。</li>
+          <li>连续使用天使卡会回复生命，但收益逐次衰减，最终按生命上限百分比反噬。</li>
+          <li>连续使用恶魔卡会提高全部攻击力，但收益逐次衰减，最终按百分比削减攻击力，最低不低于基础值的20%。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>6. 天使与恶魔形态</h3>
+        <ul>
+          <li>每名玩家每日150点体力，每张正常手牌固定消耗1点；每日变身次数由实际出牌结果产生。</li>
+          <li>天使形态立即令个人棋盘积分提高10%；投影任务成功后提高至20%。</li>
+          <li>恶魔形态立即令全部攻击力提高20%；投影任务成功后提高至40%。</li>
+          <li>形态任务只决定效果是否翻倍，不会阻塞玩家继续出牌。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>7. 章节、生命与成长事件</h3>
+        <ul>
+          <li>各章俘虏需求依次为1、2、2、3、3、4、4、5，之后每章5名。</li>
+          <li>每升1章生命上限+10、基础攻击+5，并累加4%积分加成；章节不设上限。</li>
+          <li>生命归零后从当前章节重新开始，不退回上一章；章节与活动内永久成长保留。</li>
+          <li>事件稀有度与刷新权重：普通事件（大量）50%、生命回复（一般）15%、被困俘虏（稀有）10%、攻击成长（一般）10%、转化牌（超稀有）10%、生命上限（稀有）5%。</li>
+          <li>所有补位事件均按上述权重独立随机；权重总计100%，同类事件可以连续出现。</li>
+          <li>事件生命按照预期攻击动态生成：普通初／中／高为45%／90%／135%，治疗20%，攻击与生命成长40%，俘虏160%，转化牌200%。</li>
+          <li>普通初／中／高级内部权重为6∶3∶2；所有生命、伤害、成长和积分统一向下取整。</li>
+          <li>治疗事件回复生命上限25%；攻击成长固定+1；生命上限成长+2并回复2。</li>
+        </ul>
+      </section>
+      <section class="help-section">
+        <h3>8. 跨玩家投影</h3>
+        <ul>
+          <li>投影完全取代公共棋盘，可在实时活跃玩家之间切换目标。</li>
+          <li>天使投影改变友方第一排目标的属性；目标对友方可见，形成结果且未被恶魔技能击杀即完成任务。</li>
+          <li>恶魔投影令目标生命和攻击提高25%，第一次共鸣伤害降低50%；目标隐藏，由敌方直接击杀时完成任务。</li>
+          <li>投影任务持续目标玩家3次正常操作；成功获得50点投影贡献并令当前形态效果翻倍。</li>
+          <li>无论天使还是恶魔使用投影技能，棋盘所有者都会收到技能提示。</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+</div>
+<div class="result-overlay" id="resultModal" hidden>
+  <section class="result-dialog" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultMessage">
+    <h2 id="resultTitle">章节提示</h2>
+    <p id="resultMessage"></p>
+    <button type="button" class="result-confirm" id="resultConfirm">确认</button>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("app");
+  function $(id) { return document.getElementById(id); }
+  var elements = ["wind","thunder","fire","electric"];
+  var meta = {
+    wind:{label:"风",color:"#8ce4d2",path:"M6 9c4-4 10-3 12 0 1 2-1 4-3 3M4 13h12c4 0 4 5 1 6M7 17h6"},
+    thunder:{label:"雷",color:"#d7b5ff",path:"M13 2 6 13h6l-1 9 7-12h-6z"},
+    fire:{label:"火",color:"#ffb080",path:"M13 2c1 5-4 6-2 10 1-2 3-3 4-5 3 3 5 6 3 10-2 5-10 6-13 1-3-5 2-9 5-12 0 4 3 5 3 8 1-3 2-5 0-8z"},
+    electric:{label:"电",color:"#8ed5ff",path:"M12 2v4m0 12v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M19 5l-3 3M8 16l-3 3M14 9l-5 5h4l-2 5 5-7h-4z"}
+  };
+  function icon(el) {
+    var m=meta[el];
+    return "<span class=\"icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\""+m.color+"\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\""+m.path+"\"></path></svg></span>";
+  }
+  var kindPool = [
+    {kind:"normal",label:"魔力乱流",rarity:"大量",rarityClass:"common",weight:50},
+    {kind:"healing",label:"生命之泉",rarity:"一般",rarityClass:"common",weight:15},
+    {kind:"trapped",label:"封印囚笼",rarity:"稀有",rarityClass:"quest",weight:10},
+    {kind:"attack",label:"战意赐福",rarity:"一般",rarityClass:"common",weight:10},
+    {kind:"convert",label:"转化秘页",rarity:"超稀有",rarityClass:"epic",weight:10},
+    {kind:"vitality",label:"生命圣契",rarity:"稀有",rarityClass:"rare",weight:5}
+  ];
+  var normalTiers = [
+    {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:1},
+    {tier:"中级",weight:3,hpRate:.90,scoreRate:1.2,danger:"中",interval:1},
+    {tier:"高级",weight:2,hpRate:1.35,scoreRate:1.5,danger:"高",interval:2}
+  ];
+  var eventRules = {
+    healing:{hpRate:.20,scoreRate:.50,danger:"初",interval:1},
+    attack:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
+    vitality:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
+    trapped:{hpRate:1.60,scoreRate:1.80,danger:"高",interval:2},
+    convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:2}
+  };
+  var cards = [
+    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为雷；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为火；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为电；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为风；四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为雷；四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为火；四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为电；四格共鸣每格造成45%攻击伤害。"},
+    {name:"摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"single",tier:"大",coeff:1,cost:1,desc:"对任意1个目标造成100%攻击的直接伤害。"},
+    {name:"处决",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"execute",tier:"大",coeff:1,cost:1,desc:"造成100%攻击伤害；目标生命不高于50%时提高至150%。"},
+    {name:"吞噬",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"devour",tier:"大",coeff:1,cost:1,desc:"造成100%攻击伤害；转移80%溢出伤害，转移上限为50%攻击。"},
+    {name:"震荡摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"cross",tier:"小",coeff:.40,cost:1,desc:"对目标及上下左右每格造成40%攻击伤害，总倍率200%。"},
+    {name:"灭世横扫",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"row",tier:"大",coeff:.45,cost:1,desc:"横排每格造成45%攻击伤害；直接击杀向相邻目标爆炸10%攻击。"},
+    {name:"深渊坍塌",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"column",tier:"大",coeff:1.45/3,cost:1,desc:"竖列每格造成48.3%攻击伤害；向上转移50%溢出，额外伤害上限40%攻击。"},
+    {name:"深渊灭界",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"all",tier:"中",coeff:2.5/12,cost:1,desc:"点击任意1个事件作为施法锚点，对全屏每格造成约20.8%攻击伤害，总倍率250%。"}
+  ];
+  var state;
+  var uid=1;
+  function weightedChoice(list) {
+    var total=list.reduce(function(a,b){return a+b.weight;},0), roll=Math.random()*total;
+    for(var i=0;i<list.length;i++){ roll-=list[i].weight; if(roll<=0)return list[i]; }
+    return list[list.length-1];
+  }
+  function chapterElements() { return elements.slice(); }
+  function prisonerRequirement(chapter) {
+    if(chapter===1)return 1;if(chapter<=3)return 2;if(chapter<=5)return 3;if(chapter<=7)return 4;return 5;
+  }
+  function baseAttack() { return 50+(state?state.chapter-1:0)*5+(state?state.permanentAttack:0); }
+  function expectedAttack() { return baseAttack()*1.2; }
+  function makeEvent(forceElement,forceKind,allElements) {
+    var k=forceKind ? kindPool.filter(function(x){return x.kind===forceKind;})[0] : weightedChoice(kindPool);
+    var elementPool=allElements?elements:(state&&state.elementPool?state.elementPool:elements);
+    var el=forceElement || elementPool[Math.floor(Math.random()*elementPool.length)];
+    var rule,tier=null;
+    if(k.kind==="normal"){tier=weightedChoice(normalTiers);rule=tier;}else rule=eventRules[k.kind];
+    var hp=Math.max(1,Math.floor(expectedAttack()*rule.hpRate));
+    var score=Math.floor(hp*rule.scoreRate);
+    return {id:uid++,element:el,kind:k.kind,kindLabel:k.kind==="normal"?"魔力乱流·"+tier.tier:k.label,rarity:k.rarity,rarityClass:k.rarityClass,
+      danger:rule.danger,hp:hp,maxHp:hp,score:score,interval:rule.interval,countdown:rule.interval+1,frontEnteredTurn:0,locked:false,claimed:false};
+  }
+  function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
+  function drawCard(excludeName) {
+    var rarity=Math.random()<.7?"normal":"rare";
+    var faction=Math.random()<.5?"angel":"demon";
+    var pool=cards.filter(function(c){return c.rarity===rarity&&c.faction===faction&&c.name!==excludeName;});
+    if(!pool.length) pool=cards.filter(function(c){return c.rarity===rarity&&c.faction===faction;});
+    return cloneCard(pool[Math.floor(Math.random()*pool.length)]);
+  }
+  function initialBoard() {
+    return Array.from({length:12},function(_,i){var e=makeEvent();if(i>=8)e.frontEnteredTurn=0;return e;});
+  }
+  function freshState(keep) {
+    var base=keep||{};
+    var next={
+      score:base.score||0,stamina:base.stamina===undefined?150:base.stamina,
+      maxHealth:base.maxHealth||100,health:base.maxHealth||100,chapter:base.chapter||1,rescued:0,
+      permanentAttack:base.permanentAttack||0,
+      balance:0,form:null,boosted:false,streak:0,turn:0,projection:0,
+      conversion:base.conversion||0,socialContribution:base.socialContribution||0,selected:null,convertMode:false,resolving:false,pendingChapterUps:0,
+      elementPool:chapterElements(base.chapter||1,base.elementPool),
+      hand:[],board:[],preview:[],projectionBoard:[],
+      projectionElement:"wind",projectionTarget:0,angelMark:null,abyssMark:null,projectionTurns:0,logs:[]
+    };
+    var previousState=state;state=next;
+    next.hand=[drawCard(),drawCard(),drawCard()];next.board=initialBoard();
+    next.preview=[makeEvent(),makeEvent(),makeEvent(),makeEvent()];
+    next.projectionBoard=[makeEvent("wind","normal",true),makeEvent("fire","normal",true),makeEvent("wind","normal",true),makeEvent("electric","normal",true)];
+    state=previousState;return next;
+  }
+  function addLog(text,tone) {
+    state.logs.unshift({text:text,tone:tone||""});
+    state.logs=state.logs.slice(0,22);
+  }
+  function toast(text) {
+    $("toast").textContent=text; $("toast").classList.add("show");
+    clearTimeout(toast.timer); toast.timer=setTimeout(function(){$("toast").classList.remove("show");},1800);
+  }
+  function comboStep(count) { return Math.max(-20,15-5*count)/100; }
+  function demonComboMultiplier() {
+    if(state.streak>=0)return 1;
+    var total=0;for(var i=1;i<=Math.abs(state.streak);i++)total+=comboStep(i);
+    return Math.max(.2,1+total);
+  }
+  function playerAttack() {
+    var value=baseAttack()*demonComboMultiplier();
+    if(state.form==="demon") value*=state.boosted?1.4:1.2;
+    return Math.max(Math.floor(baseAttack()*.2),Math.floor(value));
+  }
+  function finalAttack(card) {
+    return Math.floor(playerAttack()*card.coeff);
+  }
+  function projectedAttackForCard(card) {
+    var sign=card.faction==="angel"?1:-1;
+    var same=state.streak!==0&&Math.sign(state.streak)===sign;
+    var nextStreak=sign*(same?Math.abs(state.streak)+1:1),count=Math.abs(nextStreak);
+    var multiplier=1;
+    if(nextStreak<0){
+      var total=0;for(var i=1;i<=count;i++)total+=comboStep(i);
+      multiplier=Math.max(.2,1+total);
+    }
+    var projectedForm=state.form,projectedBoosted=state.boosted,projectedBalance=state.balance;
+    if(projectedForm!==card.faction){
+      projectedBalance=Math.max(-100,Math.min(100,projectedBalance+comboProgress(count)*sign));
+      if((projectedForm==="angel"&&projectedBalance<=0)||(projectedForm==="demon"&&projectedBalance>=0)){projectedForm=null;projectedBoosted=false;}
+      if(!projectedForm&&projectedBalance===100){projectedForm="angel";projectedBoosted=false;}
+      if(!projectedForm&&projectedBalance===-100){projectedForm="demon";projectedBoosted=false;}
+    }
+    var projectedAttack=baseAttack()*multiplier;
+    if(projectedForm==="demon")projectedAttack*=projectedBoosted?1.4:1.2;
+    return Math.max(Math.floor(baseAttack()*.2),Math.floor(projectedAttack));
+  }
+  function percentLabel(value) {
+    var percent=Math.round(value*1000)/10;
+    return (Number.isInteger(percent)?percent:percent.toFixed(1))+"%";
+  }
+  function damageLabel(value,coefficient) {
+    return value+"（"+percentLabel(coefficient)+"）";
+  }
+  function standardPerCellCoefficient(cellCount) {
+    if(cellCount<=1)return 1;
+    if(cellCount===2)return 1.20/2;
+    if(cellCount===3)return 1.45/3;
+    return 1.80/4;
+  }
+  function cardDescription(card) {
+    var attack=projectedAttackForCard(card),damage=Math.floor(attack*card.coeff),label=damageLabel(damage,card.coeff);
+    if(card.mode==="purify"){
+      var coefficient3=standardPerCellCoefficient(3),coefficient4=standardPerCellCoefficient(4);
+      var label3=damageLabel(Math.floor(attack*coefficient3),coefficient3),label4=damageLabel(Math.floor(attack*coefficient4),coefficient4);
+      if(card.range==="frontrow")return "将第一排全部合法事件转化为"+meta[card.element].label+"；四格共鸣时，每格造成"+label4+"的伤害。";
+      return "将任意1个目标转化为"+meta[card.element].label+"；三格共鸣时每格造成"+label3+"的伤害，四格共鸣时每格造成"+label4+"的伤害。";
+    }
+    if(card.range==="execute")return "造成"+label+"的伤害；目标生命不高于50%时，改为造成"+damageLabel(Math.floor(damage*1.5),1.5)+"的伤害。";
+    if(card.range==="devour")return "造成"+label+"的伤害；击杀后转移80%溢出伤害，最多转移"+damageLabel(Math.floor(attack*.5),.5)+"的伤害。";
+    if(card.range==="cross")return "对目标及其上下左右每格造成"+label+"的伤害。";
+    if(card.range==="row")return "横排每格造成"+label+"的伤害；直接击杀后，相邻目标额外受到"+damageLabel(Math.floor(attack*.1),.1)+"的伤害。";
+    if(card.range==="column")return "竖列每格造成"+label+"的伤害；向上转移50%溢出，最多额外造成"+damageLabel(Math.floor(attack*.4),.4)+"的伤害。";
+    if(card.range==="all")return "全屏每格造成"+label+"的伤害；12格理论总倍率为250%。";
+    return "对任意1个目标造成"+label+"的伤害。";
+  }
+  function emphasizeDamage(text) {
+    return text.replace(/(\d+(?:\.\d+)?)(（\d+(?:\.\d+)?%）)(?=的伤害)/g,function(_,damage,percent){
+      return "<span class=\"damage-value\">"+damage+"</span>"+percent;
+    });
+  }
+  function scoreMultiplier() {
+    var chapter=1+(state.chapter-1)*.04;
+    var angel=state.form==="angel"?(state.boosted?1.2:1.1):1;
+    return chapter*angel;
+  }
+  function cardProbability(card) {
+    if(card.rarity==="normal") return "8.75%";
+    return card.faction==="angel"?"3.75%":"5.00%";
+  }
+  function targetLabel(card) {
+    if(card.target==="front")return "第一排";
+    if(card.target==="none")return "无需指定";
+    return "任意目标";
+  }
+  function rangeVisual(card) {
+    if(card.range==="frontrow")return {active:[8,9,10,11],caption:"第一排4格"};
+    if(card.range==="row")return {active:[4,5,6,7],caption:"横排4格"};
+    if(card.range==="column")return {active:[1,5,9],caption:"竖列3格"};
+    if(card.range==="cross")return {active:[1,4,5,6,9],caption:"十字5格"};
+    if(card.range==="all")return {active:[0,1,2,3,4,5,6,7,8,9,10,11],caption:"全屏12格"};
+    return {active:[5],caption:"单体1格"};
+  }
+  function rangeIcon(card) {
+    var visual=rangeVisual(card),cells="";
+    for(var i=0;i<12;i++)cells+="<span class=\"range-cell"+(visual.active.indexOf(i)>=0?" active":"")+"\"></span>";
+    return "<span class=\"range-wrap\" role=\"img\" aria-label=\"攻击范围："+visual.caption+"\"><span class=\"range-icon\">"+cells+"</span><span class=\"range-caption\">"+visual.caption+"</span></span>";
+  }
+  function formBonusText() {
+    if(state.form==="angel")return "个人积分 +"+(state.boosted?"20%":"10%");
+    if(state.form==="demon")return "全部攻击 +"+(state.boosted?"40%":"20%");
+    return "无形态加成";
+  }
+  function renderStatus() {
+    $("score").textContent=Math.floor(state.score).toLocaleString("zh-CN");
+    $("stamina").textContent="体力 "+state.stamina+" / 150";
+    $("healthText").textContent=Math.max(0,Math.floor(state.health))+" / "+Math.floor(state.maxHealth);
+    $("healthFill").style.width=Math.max(0,state.health/state.maxHealth*100)+"%";
+    var requiredPrisoners=prisonerRequirement(state.chapter);
+    $("chapterValue").textContent="第"+state.chapter+"章";
+    $("prisonerValue").textContent=state.rescued+" / "+requiredPrisoners;
+    $("prisonerFill").style.width=Math.min(100,state.rescued/requiredPrisoners*100)+"%";
+    $("chapterBonus").textContent="+"+((state.chapter-1)*4)+"%";
+    $("attackText").textContent=playerAttack();
+    $("attackFill").style.width=Math.min(100,playerAttack()/Math.max(1,baseAttack()*1.5)*100)+"%";
+    var nextCombo=Math.abs(state.streak)+1;
+    $("rhythmText").textContent="Combo："+(state.streak>0?"天使 "+state.streak:state.streak<0?"恶魔 "+Math.abs(state.streak):"0")+" · 同色下张 "+comboProgress(nextCombo)+"进度";
+    var balancePosition=(state.balance+100)/2;
+    var balanceLeft=state.balance<0?balancePosition:0;
+    var balanceWidth=state.balance<0?100-balancePosition:balancePosition;
+    $("balanceMarker").style.left="calc("+balancePosition+"% - 3px)";
+    $("balanceProgress").style.left=balanceLeft+"%";
+    $("balanceProgress").style.width=balanceWidth+"%";
+    $("balanceProgress").style.background=state.balance<0?"linear-gradient(90deg,#b176da,#61357b)":"linear-gradient(90deg,#9d6b17,#ffe183)";
+    $("balanceValue").textContent=state.balance>0?"光明 +"+state.balance:state.balance<0?"黑暗 "+state.balance:"进度 0";
+    $("balanceValue").classList.toggle("dark",state.balance<0);
+    $("lightText").textContent="光明值 "+Math.max(0,state.balance);
+    $("darkText").textContent="黑暗值 "+Math.max(0,-state.balance);
+    $("formText").textContent=state.form==="angel"?"天使形态":state.form==="demon"?"恶魔形态":"中立形态";
+    $("formBonus").textContent=formBonusText();
+    $("convertCount").textContent="转化牌 "+state.conversion;
+    $("projectionCount").textContent="机会 "+state.projection+" · 贡献 "+state.socialContribution;
+  }
+  function purificationResonanceSize(card,index) {
+    if(!card||card.mode!=="purify")return 0;
+    var changed=card.range==="frontrow"?[8,9,10,11]:[index];
+    var simulated=state.board.map(function(event){return event.element;});
+    changed.forEach(function(i){simulated[i]=card.element;});
+    var lines=[],row,col,start,element,run;
+    for(row=0;row<3;row++){
+      col=0;
+      while(col<4){start=col;element=simulated[row*4+col];while(col<4&&simulated[row*4+col]===element)col++;run=[];for(var x=start;x<col;x++)run.push(row*4+x);if(run.length>=3)lines.push(run);}
+    }
+    for(col=0;col<4;col++){
+      row=0;
+      while(row<3){start=row;element=simulated[row*4+col];while(row<3&&simulated[row*4+col]===element)row++;run=[];for(var y=start;y<row;y++)run.push(y*4+col);if(run.length>=3)lines.push(run);}
+    }
+    var touched=[];
+    lines.forEach(function(line){if(line.some(function(i){return changed.indexOf(i)>=0;}))touched=touched.concat(line);});
+    return uniqueIndices(touched).length;
+  }
+  function damagePreview(card,event,index) {
+    if(!card||!event)return null;
+    var coefficient=card.coeff;
+    if(card.mode==="purify"){
+      var resonanceSize=purificationResonanceSize(card,index);
+      if(!resonanceSize)return null;
+      coefficient=standardPerCellCoefficient(resonanceSize);
+    }
+    var damage=Math.floor(projectedAttackForCard(card)*coefficient);
+    if(card.mode==="destroy"&&card.range==="execute"&&event.hp<=event.maxHp*.5)damage=Math.floor(damage*1.5);
+    return {damage:Math.max(0,damage),index:index};
+  }
+  function eventHtml(event,index,compact) {
+    var pct=Math.max(0,event.hp/event.maxHp*100);
+    var card=state.selected===null?null:state.hand[state.selected];
+    var targetable=!compact&&card&&isValidTarget(card,index);
+    var preview=targetable?damagePreview(card,event,index):null;
+    var lethal=preview&&preview.damage>=event.hp;
+    var damagePct=preview?Math.min(pct,preview.damage/event.maxHp*100):0;
+    var damageLeft=Math.max(0,pct-damagePct);
+    return "<button type=\"button\" class=\"event element-"+event.element+(index>=8&&!compact?" front":"")+(targetable?" targetable":"")+(lethal?" lethal-preview":"")+"\" data-event=\""+index+"\" data-event-id=\""+event.id+"\" "+(targetable?"":"tabindex=\"-1\"")+">"+
+      "<div class=\"event-top\"><span class=\"element-name\">"+icon(event.element)+meta[event.element].label+"</span><span class=\"kind\">"+event.kindLabel+"</span></div>"+
+      (lethal?"<span class=\"lethal-mark\">可击杀</span>":"")+
+      (event.remoteProjection&&event.remoteProjection.visible?"<span class=\"remote-angel-mark\">✦ "+event.remoteProjection.sender+"的圣印</span>":"")+
+      "<div class=\"hp\"><span class=\"hp-current\" style=\"width:"+(preview?damageLeft:pct)+"%\"></span>"+(preview?"<span class=\"hp-damage-preview\" style=\"left:"+damageLeft+"%;width:"+damagePct+"%\" aria-label=\"预计造成"+preview.damage+"点伤害\"></span>":"")+"</div>"+
+      "<div class=\"event-bottom\"><span>生命 "+Math.max(0,event.hp)+"</span><span>"+(event.score?event.score+"分":"无积分")+"</span></div>"+
+      (!compact&&index>=8?"<div class=\"countdown\">攻击 "+event.maxHp+" · 倒计时 "+event.countdown+"</div>":"")+"</button>";
+  }
+  function renderBoard() {
+    $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"</div>";}).join("");
+    $("board").innerHTML=state.board.map(function(e,i){return eventHtml(e,i,false);}).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-event]"),function(btn){
+      btn.addEventListener("click",function(){playCard(Number(btn.getAttribute("data-event")));});
+    });
+  }
+  function wait(ms) { return new Promise(function(resolve){setTimeout(resolve,ms);}); }
+  function uniqueIndices(list) {
+    return list.filter(function(value,index,array){return value>=0&&array.indexOf(value)===index;});
+  }
+  async function animateCells(indices,className,duration) {
+    var nodes=uniqueIndices(indices||[]).map(function(index){return document.querySelector("[data-event=\""+index+"\"]");}).filter(Boolean);
+    nodes.forEach(function(node){void node.offsetWidth;node.classList.add(className);});
+    if(nodes.length)await wait(duration);
+    nodes.forEach(function(node){node.classList.remove(className);});
+  }
+  function showBoardCue(text,className,duration) {
+    var panel=document.querySelector(".board-panel");if(!panel)return;
+    var old=panel.querySelector(".board-fx-cue");if(old)old.remove();
+    var cue=document.createElement("div");cue.className="board-fx-cue"+(className?" "+className:"");cue.textContent=text;panel.appendChild(cue);
+    setTimeout(function(){if(cue.parentNode)cue.remove();},duration||650);
+  }
+  async function animateRefill(transition) {
+    var moved=transition&&transition.indices?transition.indices:(transition||[]);
+    var moves=transition&&transition.moves?transition.moves:[];
+    var oldRects={};
+    Array.prototype.forEach.call(document.querySelectorAll("#board [data-event-id]"),function(node){oldRects[node.getAttribute("data-event-id")]=node.getBoundingClientRect();});
+    var previewRects=Array.prototype.map.call(document.querySelectorAll("#preview .preview-item"),function(node){return node.getBoundingClientRect();});
+    renderBoard();
+    showBoardCue("事件下落","",650);
+    var animations=[];
+    moves.forEach(function(move){
+      if(moved.indexOf(move.index)<0)return;
+      var node=document.querySelector("#board [data-event-id=\""+move.id+"\"]");if(!node)return;
+      var end=node.getBoundingClientRect(),start=oldRects[String(move.id)]||previewRects[move.index%4];
+      if(!start)return;
+      var dx=start.left-end.left,dy=start.top-end.top;
+      var distance=Math.max(Math.abs(dy),Math.abs(dx));
+      var motion=node.animate([
+        {transform:"translate3d("+dx+"px,"+dy+"px,0) scale(.97)",opacity:move.from<0?.35:1,filter:"brightness(1)"},
+        {transform:"translate3d(0,7px,0) scale(1.015)",opacity:1,filter:"brightness(1.18)",offset:.82},
+        {transform:"translate3d(0,0,0) scale(1)",opacity:1,filter:"brightness(1)"}
+      ],{duration:Math.min(720,440+distance*.45),delay:(move.index%4)*28,easing:"cubic-bezier(.2,.78,.22,1)",fill:"both"});
+      animations.push(motion.finished.catch(function(){}).then(function(){motion.cancel();}));
+    });
+    if(animations.length)await Promise.all(animations);else await animateCells(moved,"fx-drop",460);
+    await animateCells(moved,"fx-land",280);
+  }
+  async function animateEnemyAttack(index,onImpact) {
+    var source=document.querySelector("[data-event=\""+index+"\"]"),handPanel=document.querySelector(".hand-panel");
+    if(!source||!handPanel){if(onImpact)onImpact();return;}
+    var start=source.getBoundingClientRect(),target=handPanel.getBoundingClientRect();
+    var striker=source.cloneNode(true),scale=1.14;
+    striker.removeAttribute("data-event");striker.removeAttribute("tabindex");striker.setAttribute("aria-hidden","true");
+    striker.classList.remove("front","targetable");striker.classList.add("enemy-striker");
+    striker.style.left=start.left+"px";striker.style.top=start.top+"px";striker.style.width=start.width+"px";striker.style.height=start.height+"px";
+    document.body.appendChild(striker);source.classList.add("fx-attacking-source");
+    var hitX=target.left+target.width/2-start.width/2-start.left;
+    var hitY=target.top+Math.min(72,target.height*.22)-start.height/2-start.top;
+    var motion=striker.animate([
+      {transform:"translate3d(0,0,0) scale(1)",filter:"brightness(1)",offset:0},
+      {transform:"translate3d(0,-26px,0) scale("+scale+")",filter:"brightness(1.35)",offset:.30},
+      {transform:"translate3d("+hitX+"px,"+(hitY-24)+"px,0) scale("+(scale+0.04)+")",filter:"brightness(1.7)",offset:.73},
+      {transform:"translate3d("+hitX+"px,"+(hitY+8)+"px,0) scale(1.03)",filter:"brightness(2)",offset:.82},
+      {transform:"translate3d(0,0,0) scale(1)",filter:"brightness(1)",offset:1}
+    ],{duration:760,easing:"cubic-bezier(.22,.72,.2,1)",fill:"both"});
+    await wait(620);handPanel.classList.add("fx-enemy-impact");if(onImpact)onImpact();
+    await wait(140);await motion.finished.catch(function(){});
+    handPanel.classList.remove("fx-enemy-impact");source.classList.remove("fx-attacking-source");striker.remove();
+  }
+  function rareEmblem(card) {
+    if(card.rarity!=="rare")return "";
+    if(card.faction==="angel")return "<span class=\"rare-emblem\" aria-label=\"稀有天使牌·日轮羽印\"><svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><g class=\"relief-shadow\"><circle cx=\"16\" cy=\"14\" r=\"5\"/><path d=\"M16 3v4M7 7l3 3M25 7l-3 3M5 16h4M27 16h-4M16 21v7M12 24l4 4 4-4M7 20c2 3 5 4 9 3M25 20c-2 3-5 4-9 3\"/></g><g class=\"relief-face\"><circle cx=\"16\" cy=\"14\" r=\"5\"/><path d=\"M16 3v4M7 7l3 3M25 7l-3 3M5 16h4M27 16h-4M16 21v7M12 24l4 4 4-4M7 20c2 3 5 4 9 3M25 20c-2 3-5 4-9 3\"/></g></svg></span>";
+    return "<span class=\"rare-emblem\" aria-label=\"稀有恶魔牌·深渊角印\"><svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><g class=\"relief-shadow\"><path d=\"M12 23C7 20 5 14 7 7c2 4 5 5 8 6M20 23c5-3 7-9 5-16-2 4-5 5-8 6M11 18l5 9 5-9M13 17l3 3 3-3\"/></g><g class=\"relief-face\"><path d=\"M12 23C7 20 5 14 7 7c2 4 5 5 8 6M20 23c5-3 7-9 5-16-2 4-5 5-8 6M11 18l5 9 5-9M13 17l3 3 3-3\"/></g></svg></span>";
+  }
+  function renderHand() {
+    $("hand").innerHTML=state.hand.map(function(card,i){
+      return "<button type=\"button\" class=\"card "+card.faction+(card.rarity==="rare"?" rare":"")+(state.selected===i?" selected":"")+(state.convertMode?" convert-target":"")+"\" data-card=\""+i+"\">"+
+        rareEmblem(card)+"<div class=\"card-name\">"+(card.mode==="purify"?icon(card.element):"")+"<span>"+card.name+"</span></div><div class=\"card-desc\">"+emphasizeDamage(cardDescription(card))+"</div>"+
+        "<div class=\"card-footer\">"+rangeIcon(card)+"</div></button>";
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("[data-card]"),function(btn){
+      btn.addEventListener("click",function(){selectCard(Number(btn.getAttribute("data-card")));});
+    });
+    $("convert").disabled=state.conversion<=0;
+    $("convert").textContent=state.convertMode?"取消转化":"使用转化牌";
+  }
+  function renderProjection() {
+    var box=$("projection");
+    if(!state.form){
+      box.innerHTML="<p class=\"projection-empty\">光暗进度达到±100后激活形态并获得一次投影机会。天使目标公开，深渊眷属目标隐藏；任务成功获得50点投影贡献。</p>";
+      return;
+    }
+    var ally=state.form==="angel";
+    var html="<div class=\"row\"><div class=\"actions\"><button class=\"choice active\" data-switch=\"0\">"+(ally?"艾琳 · 友方":"诺克斯 · 敌方")+"</button><button class=\"choice\" data-switch=\"1\">"+(ally?"洛莉 · 友方":"卡戎 · 敌方")+"</button></div><span class=\"pill\">实时 · 活跃</span></div>";
+    if(state.projection<=0&&state.angelMark===null&&state.abyssMark===null){
+      box.innerHTML=html+"<p class=\"projection-empty\">当前投影机会已经使用。</p>"; bindProjection(); return;
+    }
+    if(ally){
+      html+="<p class=\"small\">选择天使要赋予的元素，再选择友方第一排事件。目标和技能提示均对友方可见。</p><div class=\"actions\">";
+      elements.forEach(function(el){html+="<button class=\"choice "+(state.projectionElement===el?"active":"")+"\" data-proj-element=\""+el+"\">"+icon(el)+meta[el].label+"</button>";});
+      html+="</div>";
+    }else{
+      html+="<p class=\"small\">深渊眷属生命与攻击提高25%，首次共鸣伤害降低50%。敌方只看到技能提示，看不到目标。</p>";
+    }
+    html+="<div class=\"projection-board\">";
+    state.projectionBoard.forEach(function(e,i){
+      html+="<button class=\"projection-event element-"+e.element+(state.angelMark===i?" marked":"")+(state.abyssMark===i?" abyss":"")+"\" data-proj-event=\""+i+"\">"+icon(e.element)+"<br>"+meta[e.element].label+" · 生命"+e.hp+"<br>"+(state.angelMark===i?"可见圣印":state.abyssMark===i?"深渊眷属":"普通事件")+"</button>";
+    });
+    html+="</div>";
+    if(state.angelMark!==null)html+="<div class=\"actions\"><button class=\"action primary\" id=\"allySuccess\">模拟友方形成共鸣且未被恶魔击杀</button></div>";
+    if(state.abyssMark!==null)html+="<div class=\"actions\"><button class=\"action primary\" id=\"demonSuccess\">模拟敌方直接击杀</button><button class=\"action\" id=\"demonFail\">模拟被共鸣消除</button></div>";
+    box.innerHTML=html; bindProjection();
+  }
+  function bindProjection() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-switch]"),function(btn){
+      btn.addEventListener("click",function(){state.projectionBoard=[makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true)];state.angelMark=null;state.abyssMark=null;renderProjection();});
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-proj-element]"),function(btn){
+      btn.addEventListener("click",function(){state.projectionElement=btn.getAttribute("data-proj-element");renderProjection();});
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-proj-event]"),function(btn){
+      btn.addEventListener("click",function(){useProjection(Number(btn.getAttribute("data-proj-event")));});
+    });
+    if($("allySuccess"))$("allySuccess").onclick=function(){completeProjection(true);};
+    if($("demonSuccess"))$("demonSuccess").onclick=function(){completeProjection(true);};
+    if($("demonFail"))$("demonFail").onclick=function(){completeProjection(false);};
+  }
+  function renderLog() {
+    $("log").innerHTML=state.logs.map(function(x){return "<div class=\""+x.tone+"\">"+x.text+"</div>";}).join("");
+  }
+  function publishMultiplayerState(actionFaction) {
+    if(window.parent===window)return;
+    try { window.parent.postMessage({type:"merlin:state",state:JSON.parse(JSON.stringify(state)),actionFaction:actionFaction||null},"*"); } catch(error) {}
+  }
+  function render() { renderStatus(); renderBoard(); renderHand(); renderProjection(); renderLog(); publishMultiplayerState(null); }
+  function isValidTarget(card,index) {
+    if(index===null||index<0||index>=state.board.length)return false;
+    if(card.target==="front")return index>=8;
+    return card.target==="any";
+  }
+  function selectCard(index) {
+    if(state.resolving)return;
+    if(state.convertMode){ transformCard(index); return; }
+    var card=state.hand[index];
+    if(card.target==="none"){ state.selected=index; playCard(null); return; }
+    state.selected=state.selected===index?null:index;
+    $("instruction").textContent=state.selected===null?"选择一张手牌，再选择合法施法目标。":"已选择「"+card.name+"」，请选择"+targetLabel(card)+"。";
+    renderBoard(); renderHand();
+    if(state.selected!==null){toast("已选择「"+card.name+"」，请点击棋盘目标");setTimeout(function(){$("board").scrollIntoView({behavior:"smooth",block:"center"});},80);}
+  }
+  function directTargets(index,range) {
+    if(range==="all")return state.board.map(function(_,i){return i;});
+    var row=Math.floor(index/4),col=index%4;
+    if(range==="row")return [row*4,row*4+1,row*4+2,row*4+3];
+    if(range==="column")return [col,col+4,col+8];
+    if(range==="cross"){
+      var a=[index]; if(row>0)a.push(index-4); if(row<2)a.push(index+4); if(col>0)a.push(index-1); if(col<3)a.push(index+1); return a;
+    }
+    return [index];
+  }
+  function getMatchLines(changed) {
+    var lines=[],r,c,start,el,run;
+    for(r=0;r<3;r++){
+      c=0;
+      while(c<4){start=c;el=state.board[r*4+c].element;while(c<4&&state.board[r*4+c].element===el)c++;run=[];for(var x=start;x<c;x++)run.push(r*4+x);if(run.length>=3)lines.push(run);}
+    }
+    for(c=0;c<4;c++){
+      r=0;
+      while(r<3){start=r;el=state.board[r*4+c].element;while(r<3&&state.board[r*4+c].element===el)r++;run=[];for(var y=start;y<r;y++)run.push(y*4+c);if(run.length>=3)lines.push(run);}
+    }
+    if(changed&&changed.length)lines=lines.filter(function(line){return line.some(function(i){return changed.indexOf(i)>=0;});});
+    return lines;
+  }
+  function mergeLines(lines) {
+    var groups=lines.map(function(line){return new Set(line);}),merged=true;
+    while(merged){merged=false;outer:for(var i=0;i<groups.length;i++)for(var j=i+1;j<groups.length;j++){var hit=false;groups[i].forEach(function(v){if(groups[j].has(v))hit=true;});if(hit){groups[j].forEach(function(v){groups[i].add(v);});groups.splice(j,1);merged=true;break outer;}}}
+    return groups.map(function(s){return Array.from(s);});
+  }
+  function applyResonance(changed,label,damage) {
+    var groups=mergeLines(getMatchLines(changed)),dead=false,affected=[],deadIndices=[];
+    groups.forEach(function(group){
+      var groupDamage=typeof damage==="function"?damage(group.length):damage;
+      group.forEach(function(i){
+        affected.push(i);state.board[i].hp-=groupDamage;
+        if(state.board[i].hp<=0){dead=true;deadIndices.push(i);}
+      });
+      addLog((label||"共鸣")+"："+group.length+"格，每个目标受到 "+groupDamage+" 点伤害。","good");
+    });
+    return {groups:groups.length,dead:dead,affected:uniqueIndices(affected),deadIndices:uniqueIndices(deadIndices)};
+  }
+  function claimConversion(e) {
+    if(e.kind!=="convert"||e.claimed)return;
+    e.claimed=true;
+    if(state.conversion<5){state.conversion+=1;addLog("转化牌事件：获得1张转化牌（"+state.conversion+"/5）。","good");}
+    else addLog("转化牌已达5张上限，本次奖励溢出。","bad");
+  }
+  function rewardEvent(e) {
+    if(e.score>0){var gained=Math.floor(e.score*scoreMultiplier());state.score+=gained;addLog(e.kindLabel+"：获得 "+gained+" 积分。","good");}
+    if(e.kind==="attack"){state.permanentAttack+=1;addLog("攻击成长：本次活动全部攻击力固定提高1。","good");}
+    if(e.kind==="convert")claimConversion(e);
+    if(e.kind==="healing"){
+      var heal=Math.min(state.maxHealth-state.health,Math.floor(state.maxHealth*.25));state.health+=heal;
+      addLog(heal>0?"生命回复事件：恢复 "+heal+" 点生命。":"生命已满，生命回复事件未产生效果。",heal>0?"good":"bad");
+    }
+    if(e.kind==="vitality"){state.maxHealth+=2;state.health=Math.min(state.maxHealth,state.health+2);addLog("生命上限事件：生命上限提高2，并恢复2生命。","good");}
+    if(e.kind==="trapped"){
+      state.rescued+=1;addLog("成功拯救俘虏（"+state.rescued+"/"+prisonerRequirement(state.chapter)+"）。","good");
+      var virtualChapter=state.chapter+state.pendingChapterUps,required=prisonerRequirement(virtualChapter);
+      while(state.rescued>=required){state.rescued-=required;state.pendingChapterUps+=1;virtualChapter+=1;required=prisonerRequirement(virtualChapter);}
+    }
+  }
+  function refillBoard() {
+    var before=state.board.map(function(e){return e.id;}),originById={};
+    state.board.forEach(function(e,i){originById[e.id]=i;});
+    var oldFront=new Set(state.board.slice(8).map(function(e){return e.id;}));
+    for(var col=0;col<4;col++){
+      var survivors=[];
+      for(var row=2;row>=0;row--){var e=state.board[row*4+col];if(e.hp>0)survivors.push(e);else rewardEvent(e);}
+      while(survivors.length<3){var next=state.preview.shift()||makeEvent();survivors.push(next);state.preview.push(makeEvent());}
+      for(row=2;row>=0;row--)state.board[row*4+col]=survivors[2-row];
+    }
+    for(var i=8;i<12;i++)if(!oldFront.has(state.board[i].id)){state.board[i].countdown=state.board[i].interval+1;state.board[i].frontEnteredTurn=state.turn+1;}
+    var moved=[],moves=[];
+    state.board.forEach(function(e,i){
+      if(e.id!==before[i])moved.push(i);
+      moves.push({index:i,from:Object.prototype.hasOwnProperty.call(originById,e.id)?originById[e.id]:-1,id:e.id});
+    });
+    return {indices:moved,moves:moves};
+  }
+  async function resolveDemonFalls(attackSnapshot,moved) {
+    var coefficients=[.20,.15,.10,.05,.05];
+    for(var round=1;round<=5;round++){
+      var damage=Math.floor(attackSnapshot*coefficients[round-1]);
+      // 每次下落完成后重新扫描全盘。共鸣可能由新落位棋子与未移动棋子共同构成，
+      // 仅用 moved 过滤会漏掉连线另一端的合法目标。
+      var result=applyResonance(null,"落位共鸣第"+round+"轮",damage);
+      if(!result.groups)break;
+      showBoardCue("落位共鸣 · "+round,"resonance",650);
+      await wait(110);
+      await animateCells(result.affected,"fx-resonate",420);
+      if(result.dead)await animateCells(result.deadIndices,"fx-eliminate",420);
+      if(!result.dead)break;
+      moved=refillBoard();await animateRefill(moved);
+      if(round===5)addLog("落位共鸣达到5轮，本次连锁结束；补位事件仍可正常处理。","bad");
+    }
+  }
+  function showResultModal(title,message,buttonText) {
+    return new Promise(function(resolve){
+      $("resultTitle").textContent=title;$("resultMessage").textContent=message;$("resultConfirm").textContent=buttonText||"确认";
+      $("resultModal").hidden=false;document.body.classList.add("result-open");
+      var finish=function(){$("resultConfirm").removeEventListener("click",finish);$("resultModal").hidden=true;document.body.classList.remove("result-open");resolve();};
+      $("resultConfirm").addEventListener("click",finish);$("resultConfirm").focus();
+    });
+  }
+  function chapterKeep() {
+    return {score:state.score,stamina:state.stamina,maxHealth:state.maxHealth,chapter:state.chapter,permanentAttack:state.permanentAttack,conversion:state.conversion,socialContribution:state.socialContribution,elementPool:state.elementPool};
+  }
+  async function restartChapter(death) {
+    var chapter=state.chapter,keep=chapterKeep();
+    if(death)await showResultModal("挑战失败","生命归零。\n将重新开始第"+chapter+"章，并刷新棋盘与预览区。","重新挑战");
+    state=freshState(keep);
+    addLog(death?"生命归零：从章节 "+state.chapter+" 重新开始，棋盘已刷新。":"已重新开始章节 "+state.chapter+"，棋盘已刷新。","bad");
+    $("instruction").textContent="选择一张手牌，再选择合法施法目标。";render();
+  }
+  async function completePendingChapter() {
+    if(!state.pendingChapterUps)return false;
+    var from=state.chapter,levels=state.pendingChapterUps,to=from+levels;
+    await showResultModal("章节完成","俘虏目标已经完成，且本次共鸣链已经结束。\n即将进入第"+to+"章，并刷新棋盘与预览区。","进入下一章");
+    state.chapter=to;state.maxHealth+=10*levels;state.health=Math.min(state.maxHealth,state.health+10*levels);state.elementPool=chapterElements(state.chapter,state.elementPool);state.pendingChapterUps=0;
+    state.board=initialBoard();state.preview=[makeEvent(),makeEvent(),makeEvent(),makeEvent()];state.turn=0;state.selected=null;state.convertMode=false;
+    addLog("进入章节 "+state.chapter+"：生命上限+"+(10*levels)+"、基础攻击+"+(5*levels)+"、积分层数+"+(4*levels)+"%，棋盘已刷新。","good");
+    $("instruction").textContent="第"+state.chapter+"章开始：选择一张手牌，再选择合法施法目标。";render();return true;
+  }
+  function comboProgress(count) { return count===1?5:count===2?6:count===3?8:count===4?10:count===5?13:15; }
+  function beginCombo(card) {
+    var sign=card.faction==="angel"?1:-1,same=state.streak!==0&&Math.sign(state.streak)===sign;
+    state.streak=sign*(same?Math.abs(state.streak)+1:1);
+    var count=Math.abs(state.streak),step=comboStep(count);
+    updateBalance(card,count);
+    if(card.faction==="angel"){
+      var amount=Math.floor(state.maxHealth*Math.abs(step));
+      if(step>0){state.health=Math.min(state.maxHealth,state.health+amount);addLog("天使Combo "+count+"：当前卡生效前恢复 "+amount+" 生命。","good");}
+      else if(step<0){state.health=Math.max(0,state.health-amount);addLog("天使Combo "+count+"：当前卡生效前反噬 "+amount+" 生命。","bad");}
+      else addLog("天使Combo "+count+"：本次生命效果为0。","");
+    }else addLog("恶魔Combo "+count+"：当前卡攻击调整为基准的 "+Math.floor(demonComboMultiplier()*100)+"%。",step>=0?"good":"bad");
+    return state.health>0;
+  }
+  function activateForm(form) {
+    state.form=form;state.balance=form==="angel"?100:-100;state.boosted=false;state.projection+=1;
+    state.angelMark=null;state.abyssMark=null;
+    state.projectionBoard=form==="angel"?[makeEvent("wind","normal",true),makeEvent("fire","normal",true),makeEvent("wind","normal",true),makeEvent("electric","normal",true)]:[makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true)];
+    addLog("形态激活："+(form==="angel"?"天使，个人积分立即 +10%。":"恶魔，全部攻击力立即 +20%。"),"good");toast(form==="angel"?"天使形态激活":"恶魔形态激活");
+  }
+  function updateBalance(card,count) {
+    if(state.form===card.faction){addLog((card.faction==="angel"?"天使":"恶魔")+"形态中使用同阵营牌：形态进度保持 "+state.balance+"。","");return;}
+    var oldForm=state.form,delta=comboProgress(count)*(card.faction==="angel"?1:-1);
+    var before=state.balance;
+    state.balance=Math.max(-100,Math.min(100,state.balance+delta));
+    var actual=state.balance-before;
+    addLog((card.faction==="angel"?"光明":"黑暗")+"进度 "+(actual>=0?"+":"")+actual+"："+before+" → "+state.balance+"。",actual===0?"":"good");
+    if((oldForm==="angel"&&state.balance<=0)||(oldForm==="demon"&&state.balance>=0)){
+      state.form=null;state.boosted=false;addLog("异色卡令形态消失；拔河进度保留为 "+state.balance+"。","bad");
+    }
+    if(!state.form&&state.balance===100)activateForm("angel");
+    if(!state.form&&state.balance===-100)activateForm("demon");
+  }
+  async function advanceTurn() {
+    state.turn+=1;
+    for(var i=8;i<12;i++){
+      var e=state.board[i];if(e.frontEnteredTurn===state.turn)continue;
+      e.countdown-=1;
+      if(e.countdown<=0){
+        var defeated=false;
+        await animateEnemyAttack(i,function(){state.health=Math.max(0,state.health-e.maxHp);e.countdown=e.interval;addLog("第"+(i-7)+"列事件攻击：造成 "+e.maxHp+" 伤害。","bad");renderStatus();renderLog();defeated=state.health<=0;});
+        if(defeated){await restartChapter(true);return true;}
+      }
+    }
+    return false;
+  }
+  async function playCard(index) {
+    if(state.resolving)return;
+    if(state.selected===null){$("instruction").textContent="请先选择一张手牌。";return;}
+    var handIndex=state.selected,card=state.hand[handIndex];
+    if(card.target!=="none"&&!isValidTarget(card,index)){toast(card.target==="front"?"此牌只能选择第一排":"目标不合法");return;}
+    if(state.stamina<card.cost){addLog("体力不足，无法继续出牌。","bad");renderLog();return;}
+    state.resolving=true;root.classList.add("resolving");
+    try {
+      state.stamina-=card.cost;
+      if(!beginCombo(card)){await restartChapter(true);return;}
+      if(card.mode==="purify"){
+        var changed=card.range==="frontrow"?[8,9,10,11]:[index];
+        changed.forEach(function(i){state.board[i].element=card.element;});
+        renderBoard();
+        await animateCells(changed,"fx-transmute",340);
+        var resonanceAttack=playerAttack();
+        var resonance=applyResonance(changed,"净化共鸣",function(groupSize){
+          return Math.floor(resonanceAttack*standardPerCellCoefficient(groupSize));
+        });
+        if(resonance.groups)await animateCells(resonance.affected,"fx-resonate",420);
+        if(resonance.dead){
+          await animateCells(resonance.deadIndices,"fx-eliminate",420);
+          var purifyMoved=refillBoard();
+          await animateRefill(purifyMoved);
+        }
+        addLog("使用「"+card.name+"」，改变 "+changed.length+" 个事件属性。");
+      }else{
+        var targets=directTargets(index,card.range),hitTargets=targets.slice(),attackSnapshot=playerAttack(),damage=Math.floor(attackSnapshot*card.coeff),dead=false,records=[];
+        targets.forEach(function(i){var e=state.board[i],d=damage;if(card.range==="execute"&&e.hp<=e.maxHp*.5)d=Math.floor(d*1.5);var before=e.hp;e.hp-=d;if(d>0)claimConversion(e);records.push({index:i,before:before,damage:d,overflow:Math.max(0,d-before)});if(e.hp<=0)dead=true;});
+        if(card.range==="devour"&&records[0].overflow>0){
+          var candidates=state.board.map(function(e,i){return {e:e,i:i};}).filter(function(x){return x.i!==index&&x.e.hp>0;}).sort(function(a,b){return a.e.hp-b.e.hp;});
+          if(candidates.length){var transfer=Math.floor(Math.min(records[0].overflow*.8,attackSnapshot*.5)),next=candidates[0];next.e.hp-=transfer;if(transfer>0)claimConversion(next.e);hitTargets.push(next.i);if(next.e.hp<=0)dead=true;addLog("吞噬溢出：转移 "+transfer+" 点伤害。","good");}
+        }
+        if(card.range==="row"){
+          var exploded=new Set();records.filter(function(r){return state.board[r.index].hp<=0;}).forEach(function(r){var col=r.index%4;[r.index-1,r.index+1].forEach(function(n){if(n>=0&&n<12&&Math.floor(n/4)===Math.floor(r.index/4)&&state.board[n].hp>0&&!exploded.has(n)){var d=Math.floor(attackSnapshot*.1);state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);exploded.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});});
+        }
+        if(card.range==="column"){
+          var overflowed=new Set();records.slice().reverse().forEach(function(r){var n=r.index-4;if(r.overflow>0&&n>=0&&state.board[n].hp>0&&!overflowed.has(n)){var d=Math.floor(Math.min(r.overflow*.5,attackSnapshot*.4));state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);overflowed.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});
+        }
+        renderBoard();
+        await animateCells(hitTargets,"fx-hit",300);
+        addLog("使用「"+card.name+"」，对 "+targets.length+" 个目标造成"+card.tier+"档直接伤害。");
+        if(dead){
+          var directDead=[];state.board.forEach(function(e,i){if(e.hp<=0)directDead.push(i);});
+          await animateCells(directDead,"fx-eliminate",420);
+          var moved=refillBoard();
+          await animateRefill(moved);
+          await resolveDemonFalls(attackSnapshot,moved);
+        }
+      }
+      state.hand[handIndex]=drawCard();state.selected=null;state.convertMode=false;
+      if(await completePendingChapter())return;
+      $("instruction").textContent="已结算「"+card.name+"」并摸取1张牌。";
+      await advanceTurn();
+      publishMultiplayerState(card.faction);
+    } finally {
+      state.resolving=false;root.classList.remove("resolving");render();
+    }
+  }
+  function transformCard(index) {
+    if(state.conversion<=0)return;
+    var old=state.hand[index];state.hand[index]=drawCard(old.name);state.conversion-=1;state.convertMode=false;state.selected=null;
+    addLog("转化牌：将「"+old.name+"」随机转化为「"+state.hand[index].name+"」。","good");
+    $("instruction").textContent="转化完成；转化牌不占手牌，也不消耗体力。";render();
+  }
+  function useProjection(index) {
+    if(state.projection<=0)return;
+    state.projection-=1;state.projectionTurns=3;
+    if(state.form==="angel"){
+      state.projectionBoard[index].element=state.projectionElement;state.angelMark=index;addLog("天使投影：目标公开，有效期3次操作。","good");
+      var el=state.projectionElement,start=index;while(start>0&&state.projectionBoard[start-1].element===el)start--;var end=index;while(end<3&&state.projectionBoard[end+1].element===el)end++;
+      if(end-start+1>=3){var d=Math.floor(playerAttack()*.25);for(var i=start;i<=end;i++)state.projectionBoard[i].hp-=d;addLog("天使投影立即形成共鸣：每格造成 "+d+" 伤害。","good");completeProjection(true);return;}
+    }else{
+      var e=state.projectionBoard[index],delta=Math.floor(e.maxHp*.25);e.originalMaxHp=e.maxHp;e.originalKindLabel=e.kindLabel;e.maxHp+=delta;e.hp+=delta;e.kindLabel="深渊眷属";e.rarity="投影";e.rarityClass="quest";state.abyssMark=index;
+      addLog("恶魔投影：生命与攻击提高 "+delta+"，目标对敌方隐藏。","bad");
+    }
+    render();
+  }
+  function completeProjection(success) {
+    var wasAbyss=state.abyssMark!==null,mark=wasAbyss?state.abyssMark:state.angelMark;
+    if(!success){addLog("投影任务失败：形态基础效果保持不变。","bad");}
+    else{state.boosted=true;state.socialContribution+=50;addLog("投影任务完成：获得50贡献，当前形态效果翻倍。","good");toast("投影任务成功，形态效果翻倍");}
+    if(wasAbyss&&mark!==null)state.projectionBoard[mark]=makeEvent(null,"normal",true);
+    state.angelMark=null;state.abyssMark=null;state.projectionTurns=0;render();
+  }
+  function openHelp() {
+    $("helpModal").hidden=false;
+    document.body.classList.add("help-open");
+    $("helpClose").focus();
+  }
+  function closeHelp() {
+    $("helpModal").hidden=true;
+    document.body.classList.remove("help-open");
+    $("helpButton").focus();
+  }
+  $("helpButton").addEventListener("click",openHelp);
+  $("helpClose").addEventListener("click",closeHelp);
+  $("helpModal").addEventListener("click",function(event){if(event.target===$("helpModal"))closeHelp();});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!$("helpModal").hidden)closeHelp();});
+  $("convert").addEventListener("click",function(){if(state.conversion<=0)return;state.convertMode=!state.convertMode;state.selected=null;$("instruction").textContent=state.convertMode?"请选择要随机转化的1张手牌。":"已取消转化。";renderBoard();renderHand();});
+  $("reset").addEventListener("click",async function(){await restartChapter(false);});
+  state=freshState();
+  addLog("原型已启动：抽牌使用70/30稀有度、50/50阵营的分层概率。","good");
+  addLog("提示：先选卡牌，再点击发光的合法目标。");
+  if(window.parent!==window){
+    document.body.classList.add("multiplayer-embedded");
+    var legacyProjection=$("projection");if(legacyProjection&&legacyProjection.closest("details"))legacyProjection.closest("details").style.display="none";
+    window.addEventListener("message",function(event){
+      var message=event.data||{};
+      if(message.type!=="merlin:load"&&message.type!=="merlin:load-remote"&&message.type!=="merlin:new")return;
+      if(message.type==="merlin:new"||!message.state){
+        state=freshState();addLog("新账号已创建：从第1章开始冒险。","good");render();return;
+      }
+      var incoming=message.state;
+      var oldProjectionIds=new Set((state.board||[]).map(function(e){return e.remoteProjection&&e.remoteProjection.id;}).filter(Boolean));
+      state=Object.assign(freshState(),incoming);
+      state.board=(incoming.board||state.board).map(function(e){return Object.assign({},e);});
+      state.hand=(incoming.hand||state.hand).map(function(card){return Object.assign({},card);});
+      state.preview=(incoming.preview||state.preview).map(function(e){return Object.assign({},e);});
+      state.logs=Array.isArray(incoming.logs)?incoming.logs:[];
+      var received=state.board.filter(function(e){return e.remoteProjection&&!oldProjectionIds.has(e.remoteProjection.id);});
+      received.forEach(function(e){
+        if(e.remoteProjection.visible)addLog(e.remoteProjection.sender+"的天使投影已改变第一排目标属性。","good");
+        else addLog("有玩家对你的第一排使用了恶魔技能，具体目标被隐藏。","bad");
+      });
+      render();
+      if(message.type==="merlin:load-remote"&&received.length)window.parent.postMessage({type:"merlin:notice",message:received[0].remoteProjection.visible?"收到公开的天使投影":"受到恶魔技能影响，目标未知"},"*");
+    });
+    window.parent.postMessage({type:"merlin:ready"},"*");
+  }
+  render();
+})();
+</script>
+</body>
+</html>
