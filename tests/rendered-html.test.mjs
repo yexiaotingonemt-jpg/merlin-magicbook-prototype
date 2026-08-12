@@ -62,6 +62,10 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /drawCard\(null,targetFaction\)/);
   assert.match(game, /普通70%／稀有30%/);
   assert.match(game, /HAND_DAMAGE_MULTIPLIER=1\.3/);
+  assert.match(game, /目标生命高于50%时/);
+  assert.match(game, /card\.range==="execute"&&event\.hp>event\.maxHp\*\.5/);
+  assert.match(game, /card\.range==="execute"&&e\.hp>e\.maxHp\*\.5/);
+  assert.doesNotMatch(game, /card\.range==="execute"&&(?:event|e)\.hp<=(?:event|e)\.maxHp\*\.5/);
   assert.match(game, /baseHealth:300,maxHealth:base\.maxHealth\|\|300,health:base\.maxHealth\|\|300/);
   assert.match(game, /Number\(incoming\.baseHealth\)!==300/);
   assert.match(game, /state\.maxHealth=previousMax\+200/);
