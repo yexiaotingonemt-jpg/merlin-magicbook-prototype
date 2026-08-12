@@ -51,6 +51,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /comboPenaltyRate/);
   assert.match(game, /healing-orb/);
   assert.match(game, /准备攻击/);
+  assert.match(game, /function eventAttack\(event\) \{ return Math\.floor\(event\.maxHp\*\.8\); \}/);
+  assert.match(game, /攻击 "\+eventAttack\(event\)/);
+  assert.match(game, /var damage=eventAttack\(e\);state\.health=Math\.max\(0,state\.health-damage\)/);
   assert.match(game, /if\(e\.countdown===0\)/);
   assert.match(game, /notifyParentModal/);
   assert.match(game, /modal:"help"/);

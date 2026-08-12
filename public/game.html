@@ -624,7 +624,7 @@
           <li>棋盘为4列×3排；最下方是第一排，也是最靠近玩家的一排。</li>
           <li>从第1章开始，棋盘事件即可随机出现风、雷、火、电全部4种元素。</li>
           <li>上方预览区显示即将补入棋盘的事件。</li>
-          <li>第一排事件按自身倒计时从左到右行动；倒计时降到0时显示“准备攻击”，下一次回合结算才发起攻击。</li>
+          <li>第一排事件按自身倒计时从左到右行动；倒计时降到0时显示“准备攻击”，下一次回合结算才发起攻击。事件攻击力统一为其生命上限的80%，并向下取整。</li>
           <li>攻击后重新进入倒计时。初、中级事件的基础间隔为1回合，高级事件为2回合；首次倒计时为基础间隔+1。</li>
           <li>事件生命降至0才会消除；消除后同列事件下落并从预览区补位。</li>
         </ul>
@@ -771,6 +771,7 @@
   }
   function baseAttack() { return 50+(state?state.chapter-1:0)*5+(state?state.permanentAttack:0); }
   function expectedAttack() { return baseAttack()*1.5; }
+  function eventAttack(event) { return Math.floor(event.maxHp*.8); }
   function makeEvent(forceElement,forceKind,allElements) {
     var k=forceKind ? kindPool.filter(function(x){return x.kind===forceKind;})[0] : weightedChoice(kindPool);
     var elementPool=allElements?elements:(state&&state.elementPool?state.elementPool:elements);
@@ -1026,7 +1027,7 @@
       (event.remoteProjection&&event.remoteProjection.visible?"<span class=\"remote-angel-mark\">✦ "+event.remoteProjection.sender+"的圣印</span>":"")+
       "<div class=\"hp\"><span class=\"hp-current\" style=\"width:"+(preview?damageLeft:pct)+"%\"></span>"+(preview?"<span class=\"hp-damage-preview\" style=\"left:"+damageLeft+"%;width:"+damagePct+"%\" aria-label=\"预计造成"+preview.damage+"点伤害\"></span>":"")+"</div>"+
       "<div class=\"event-bottom\"><span>生命 "+Math.max(0,event.hp)+"</span><span>"+(event.score?event.score+"分":"无积分")+"</span></div>"+
-      (!compact&&index>=8?"<div class=\"countdown"+(event.countdown===0?" ready":"")+"\">攻击 "+event.maxHp+" · "+(event.countdown===0?"准备攻击":"倒计时 "+event.countdown)+"</div>":"")+"</button>";
+      (!compact&&index>=8?"<div class=\"countdown"+(event.countdown===0?" ready":"")+"\">攻击 "+eventAttack(event)+" · "+(event.countdown===0?"准备攻击":"倒计时 "+event.countdown)+"</div>":"")+"</button>";
   }
   function renderBoard() {
     $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"</div>";}).join("");
@@ -1339,7 +1340,7 @@
       var e=state.board[i];if(e.frontEnteredTurn===state.turn)continue;
       if(e.countdown===0){
         var defeated=false;
-        await animateEnemyAttack(i,function(){state.health=Math.max(0,state.health-e.maxHp);e.countdown=e.interval;addLog("第"+(i-7)+"列事件攻击：造成 "+e.maxHp+" 伤害。","bad");renderStatus();renderLog();defeated=state.health<=0;});
+        await animateEnemyAttack(i,function(){var damage=eventAttack(e);state.health=Math.max(0,state.health-damage);e.countdown=e.interval;addLog("第"+(i-7)+"列事件攻击：造成 "+damage+" 伤害。","bad");renderStatus();renderLog();defeated=state.health<=0;});
         if(defeated){await restartChapter(true);return true;}
       }else e.countdown=Math.max(0,e.countdown-1);
     }
