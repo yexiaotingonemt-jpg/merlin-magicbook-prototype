@@ -310,6 +310,28 @@
       background:var(--page-overlay); pointer-events:none;
     }
     .card::after { display:none; }
+    .rare-emblem {
+      position:absolute!important; z-index:3!important; right:7px; bottom:7px;
+      width:30px; height:30px; display:grid; place-items:center; pointer-events:none;
+      border-radius:50%; transform:rotate(-7deg);
+    }
+    .rare-emblem svg { width:24px; height:24px; overflow:visible; }
+    .card.angel .rare-emblem {
+      color:#744711;
+      background:radial-gradient(circle at 38% 30%,#f9e8a7 0 12%,#d2a84d 40%,#9d671e 75%,#70410d 100%);
+      border:1px solid rgba(255,241,166,.9);
+      box-shadow:inset 0 0 0 2px rgba(112,65,13,.28),inset 1px 1px 2px rgba(255,250,205,.72),0 2px 4px rgba(91,48,5,.42);
+      filter:drop-shadow(0 1px 0 rgba(255,244,176,.75));
+    }
+    .card.demon .rare-emblem {
+      color:#d1b5dc;
+      background:radial-gradient(circle at 38% 30%,#826690 0 10%,#4c3158 42%,#251929 76%,#0e0a11 100%);
+      border:1px solid rgba(190,158,204,.58);
+      box-shadow:inset 0 0 0 2px rgba(10,6,12,.48),inset 1px 1px 2px rgba(221,192,232,.2),0 2px 5px rgba(0,0,0,.72);
+      filter:drop-shadow(0 1px 0 #09070b) drop-shadow(0 -1px 0 rgba(225,199,235,.14));
+    }
+    .rare-emblem .relief-shadow { fill:none; stroke:rgba(0,0,0,.45); stroke-width:2.8; stroke-linecap:round; stroke-linejoin:round; transform:translateY(.8px); }
+    .rare-emblem .relief-face { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
     .card.angel {
       --card-accent:#bd861b; --page-overlay:linear-gradient(145deg,rgba(255,249,219,.06),rgba(117,72,19,.08));
       color:#39230c; border-color:#b9822d;
@@ -465,6 +487,8 @@
       .event-bottom,.countdown { font-size:8px; }
       .hand { gap:6px; overflow-x:auto; padding:2px 2px 8px; scroll-snap-type:x proximity; }
       .card { min-height:182px; padding:11px 15px 12px; border-radius:5px 14px 10px 5px; scroll-snap-align:start; }
+      .rare-emblem { right:5px; bottom:5px; width:27px; height:27px; }
+      .rare-emblem svg { width:21px; height:21px; }
       .card.angel { padding-left:15px; }
       .card-name { font-size:13px; } .card-desc { font-size:9px; } .card-power { font-size:9px; }
       .card-footer { gap:4px; } .range-icon { grid-template-columns:repeat(4,5px); grid-template-rows:repeat(3,5px); gap:1.5px; padding:3px; }
@@ -674,12 +698,12 @@
     return "<span class=\"icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\""+m.color+"\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\""+m.path+"\"></path></svg></span>";
   }
   var kindPool = [
-    {kind:"normal",label:"普通事件",rarity:"大量",rarityClass:"common",weight:50},
-    {kind:"healing",label:"生命回复",rarity:"一般",rarityClass:"common",weight:15},
-    {kind:"trapped",label:"被困俘虏",rarity:"稀有",rarityClass:"quest",weight:10},
-    {kind:"attack",label:"攻击成长",rarity:"一般",rarityClass:"common",weight:10},
-    {kind:"convert",label:"转化牌",rarity:"超稀有",rarityClass:"epic",weight:10},
-    {kind:"vitality",label:"生命上限",rarity:"稀有",rarityClass:"rare",weight:5}
+    {kind:"normal",label:"魔力乱流",rarity:"大量",rarityClass:"common",weight:50},
+    {kind:"healing",label:"生命之泉",rarity:"一般",rarityClass:"common",weight:15},
+    {kind:"trapped",label:"封印囚笼",rarity:"稀有",rarityClass:"quest",weight:10},
+    {kind:"attack",label:"战意赐福",rarity:"一般",rarityClass:"common",weight:10},
+    {kind:"convert",label:"转化秘页",rarity:"超稀有",rarityClass:"epic",weight:10},
+    {kind:"vitality",label:"生命圣契",rarity:"稀有",rarityClass:"rare",weight:5}
   ];
   var normalTiers = [
     {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:1},
@@ -694,21 +718,21 @@
     convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:2}
   };
   var cards = [
-    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:.40,cost:1,desc:"将任意1个目标转化为风；形成三消时，共鸣组每格造成40%攻击伤害。"},
-    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",coeff:.40,cost:1,desc:"将任意1个目标转化为雷；形成三消时，共鸣组每格造成40%攻击伤害。"},
-    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",tier:"大",coeff:.40,cost:1,desc:"将任意1个目标转化为火；形成三消时，共鸣组每格造成40%攻击伤害。"},
-    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",tier:"大",coeff:.40,cost:1,desc:"将任意1个目标转化为电；形成三消时，共鸣组每格造成40%攻击伤害。"},
-    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",tier:"大",coeff:.29,cost:1,desc:"将第一排全部合法事件转化为风；共鸣组每格造成29%攻击伤害。"},
-    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",tier:"大",coeff:.29,cost:1,desc:"将第一排全部合法事件转化为雷；共鸣组每格造成29%攻击伤害。"},
-    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.29,cost:1,desc:"将第一排全部合法事件转化为火；共鸣组每格造成29%攻击伤害。"},
-    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.29,cost:1,desc:"将第一排全部合法事件转化为电；共鸣组每格造成29%攻击伤害。"},
+    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为雷；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为火；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为电；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为风；四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为雷；四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为火；四格共鸣每格造成45%攻击伤害。"},
+    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为电；四格共鸣每格造成45%攻击伤害。"},
     {name:"摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"single",tier:"大",coeff:1,cost:1,desc:"对任意1个目标造成100%攻击的直接伤害。"},
     {name:"处决",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"execute",tier:"大",coeff:1,cost:1,desc:"造成100%攻击伤害；目标生命不高于50%时提高至150%。"},
     {name:"吞噬",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"devour",tier:"大",coeff:1,cost:1,desc:"造成100%攻击伤害；转移80%溢出伤害，转移上限为50%攻击。"},
-    {name:"震荡摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"cross",tier:"小",coeff:.12,cost:1,desc:"对目标及上下左右每格造成12%攻击伤害。"},
-    {name:"灭世横扫",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"row",tier:"大",coeff:.29,cost:1,desc:"横排每格造成29%攻击伤害；直接击杀向相邻目标爆炸10%攻击。"},
-    {name:"深渊坍塌",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"column",tier:"大",coeff:.40,cost:1,desc:"竖列每格造成40%攻击伤害；向上转移50%溢出，额外伤害上限40%攻击。"},
-    {name:"深渊灭界",faction:"demon",rarity:"rare",mode:"destroy",target:"none",range:"all",tier:"中",coeff:.125,cost:1,desc:"无需指定目标，对全屏每格造成12.5%攻击伤害，总倍率150%。"}
+    {name:"震荡摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"cross",tier:"小",coeff:.40,cost:1,desc:"对目标及上下左右每格造成40%攻击伤害，总倍率200%。"},
+    {name:"灭世横扫",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"row",tier:"大",coeff:.45,cost:1,desc:"横排每格造成45%攻击伤害；直接击杀向相邻目标爆炸10%攻击。"},
+    {name:"深渊坍塌",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"column",tier:"大",coeff:1.45/3,cost:1,desc:"竖列每格造成48.3%攻击伤害；向上转移50%溢出，额外伤害上限40%攻击。"},
+    {name:"深渊灭界",faction:"demon",rarity:"rare",mode:"destroy",target:"any",range:"all",tier:"中",coeff:2.5/12,cost:1,desc:"点击任意1个事件作为施法锚点，对全屏每格造成约20.8%攻击伤害，总倍率250%。"}
   ];
   var state;
   var uid=1;
@@ -731,7 +755,7 @@
     if(k.kind==="normal"){tier=weightedChoice(normalTiers);rule=tier;}else rule=eventRules[k.kind];
     var hp=Math.max(1,Math.floor(expectedAttack()*rule.hpRate));
     var score=Math.floor(hp*rule.scoreRate);
-    return {id:uid++,element:el,kind:k.kind,kindLabel:k.kind==="normal"?"普通·"+tier.tier:k.label,rarity:k.rarity,rarityClass:k.rarityClass,
+    return {id:uid++,element:el,kind:k.kind,kindLabel:k.kind==="normal"?"魔力乱流·"+tier.tier:k.label,rarity:k.rarity,rarityClass:k.rarityClass,
       danger:rule.danger,hp:hp,maxHp:hp,score:score,interval:rule.interval,countdown:rule.interval+1,frontEnteredTurn:0,locked:false,claimed:false};
   }
   function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
@@ -812,18 +836,26 @@
   function damageLabel(value,coefficient) {
     return value+"（"+percentLabel(coefficient)+"）";
   }
+  function standardPerCellCoefficient(cellCount) {
+    if(cellCount<=1)return 1;
+    if(cellCount===2)return 1.20/2;
+    if(cellCount===3)return 1.45/3;
+    return 1.80/4;
+  }
   function cardDescription(card) {
     var attack=projectedAttackForCard(card),damage=Math.floor(attack*card.coeff),label=damageLabel(damage,card.coeff);
     if(card.mode==="purify"){
-      if(card.range==="frontrow")return "将第一排全部合法事件转化为"+meta[card.element].label+"；形成三消时，共鸣组每格造成"+label+"的伤害。";
-      return "将任意1个目标转化为"+meta[card.element].label+"；形成三消时，共鸣组每格造成"+label+"的伤害。";
+      var coefficient3=standardPerCellCoefficient(3),coefficient4=standardPerCellCoefficient(4);
+      var label3=damageLabel(Math.floor(attack*coefficient3),coefficient3),label4=damageLabel(Math.floor(attack*coefficient4),coefficient4);
+      if(card.range==="frontrow")return "将第一排全部合法事件转化为"+meta[card.element].label+"；四格共鸣时，每格造成"+label4+"的伤害。";
+      return "将任意1个目标转化为"+meta[card.element].label+"；三格共鸣时每格造成"+label3+"的伤害，四格共鸣时每格造成"+label4+"的伤害。";
     }
     if(card.range==="execute")return "造成"+label+"的伤害；目标生命不高于50%时，改为造成"+damageLabel(Math.floor(damage*1.5),1.5)+"的伤害。";
     if(card.range==="devour")return "造成"+label+"的伤害；击杀后转移80%溢出伤害，最多转移"+damageLabel(Math.floor(attack*.5),.5)+"的伤害。";
     if(card.range==="cross")return "对目标及其上下左右每格造成"+label+"的伤害。";
     if(card.range==="row")return "横排每格造成"+label+"的伤害；直接击杀后，相邻目标额外受到"+damageLabel(Math.floor(attack*.1),.1)+"的伤害。";
     if(card.range==="column")return "竖列每格造成"+label+"的伤害；向上转移50%溢出，最多额外造成"+damageLabel(Math.floor(attack*.4),.4)+"的伤害。";
-    if(card.range==="all")return "全屏每格造成"+label+"的伤害；12格合计最多造成"+damageLabel(damage*12,1.5)+"的伤害。";
+    if(card.range==="all")return "全屏每格造成"+label+"的伤害；12格理论总倍率为250%。";
     return "对任意1个目标造成"+label+"的伤害。";
   }
   function emphasizeDamage(text) {
@@ -893,8 +925,8 @@
     $("convertCount").textContent="转化牌 "+state.conversion;
     $("projectionCount").textContent="机会 "+state.projection+" · 贡献 "+state.socialContribution;
   }
-  function purificationCreatesResonance(card,index) {
-    if(!card||card.mode!=="purify")return true;
+  function purificationResonanceSize(card,index) {
+    if(!card||card.mode!=="purify")return 0;
     var changed=card.range==="frontrow"?[8,9,10,11]:[index];
     var simulated=state.board.map(function(event){return event.element;});
     changed.forEach(function(i){simulated[i]=card.element;});
@@ -907,12 +939,19 @@
       row=0;
       while(row<3){start=row;element=simulated[row*4+col];while(row<3&&simulated[row*4+col]===element)row++;run=[];for(var y=start;y<row;y++)run.push(y*4+col);if(run.length>=3)lines.push(run);}
     }
-    return lines.some(function(line){return line.some(function(i){return changed.indexOf(i)>=0;});});
+    var touched=[];
+    lines.forEach(function(line){if(line.some(function(i){return changed.indexOf(i)>=0;}))touched=touched.concat(line);});
+    return uniqueIndices(touched).length;
   }
   function damagePreview(card,event,index) {
     if(!card||!event)return null;
-    if(card.mode==="purify"&&!purificationCreatesResonance(card,index))return null;
-    var damage=Math.floor(projectedAttackForCard(card)*card.coeff);
+    var coefficient=card.coeff;
+    if(card.mode==="purify"){
+      var resonanceSize=purificationResonanceSize(card,index);
+      if(!resonanceSize)return null;
+      coefficient=standardPerCellCoefficient(resonanceSize);
+    }
+    var damage=Math.floor(projectedAttackForCard(card)*coefficient);
     if(card.mode==="destroy"&&card.range==="execute"&&event.hp<=event.maxHp*.5)damage=Math.floor(damage*1.5);
     return {damage:Math.max(0,damage),index:index};
   }
@@ -925,14 +964,14 @@
     var damagePct=preview?Math.min(pct,preview.damage/event.maxHp*100):0;
     var damageLeft=Math.max(0,pct-damagePct);
     return "<button type=\"button\" class=\"event element-"+event.element+(index>=8&&!compact?" front":"")+(targetable?" targetable":"")+(lethal?" lethal-preview":"")+"\" data-event=\""+index+"\" data-event-id=\""+event.id+"\" "+(targetable?"":"tabindex=\"-1\"")+">"+
-      "<div class=\"event-top\"><span class=\"element-name\">"+icon(event.element)+meta[event.element].label+"</span><span class=\"kind rarity-"+event.rarityClass+"\">"+event.kindLabel+"·"+event.rarity+"</span></div>"+
+      "<div class=\"event-top\"><span class=\"element-name\">"+icon(event.element)+meta[event.element].label+"</span><span class=\"kind\">"+event.kindLabel+"</span></div>"+
       (lethal?"<span class=\"lethal-mark\">可击杀</span>":"")+
       "<div class=\"hp\"><span class=\"hp-current\" style=\"width:"+(preview?damageLeft:pct)+"%\"></span>"+(preview?"<span class=\"hp-damage-preview\" style=\"left:"+damageLeft+"%;width:"+damagePct+"%\" aria-label=\"预计造成"+preview.damage+"点伤害\"></span>":"")+"</div>"+
       "<div class=\"event-bottom\"><span>生命 "+Math.max(0,event.hp)+"</span><span>"+(event.score?event.score+"分":"无积分")+"</span></div>"+
       (!compact&&index>=8?"<div class=\"countdown\">攻击 "+event.maxHp+" · 倒计时 "+event.countdown+"</div>":"")+"</button>";
   }
   function renderBoard() {
-    $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"<br><span class=\"rarity-"+e.rarityClass+"\">"+e.rarity+"</span></div>";}).join("");
+    $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"</div>";}).join("");
     $("board").innerHTML=state.board.map(function(e,i){return eventHtml(e,i,false);}).join("");
     Array.prototype.forEach.call(document.querySelectorAll("[data-event]"),function(btn){
       btn.addEventListener("click",function(){playCard(Number(btn.getAttribute("data-event")));});
@@ -1002,10 +1041,15 @@
     await wait(140);await motion.finished.catch(function(){});
     handPanel.classList.remove("fx-enemy-impact");source.classList.remove("fx-attacking-source");striker.remove();
   }
+  function rareEmblem(card) {
+    if(card.rarity!=="rare")return "";
+    if(card.faction==="angel")return "<span class=\"rare-emblem\" aria-label=\"稀有天使牌·日轮羽印\"><svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><g class=\"relief-shadow\"><circle cx=\"16\" cy=\"14\" r=\"5\"/><path d=\"M16 3v4M7 7l3 3M25 7l-3 3M5 16h4M27 16h-4M16 21v7M12 24l4 4 4-4M7 20c2 3 5 4 9 3M25 20c-2 3-5 4-9 3\"/></g><g class=\"relief-face\"><circle cx=\"16\" cy=\"14\" r=\"5\"/><path d=\"M16 3v4M7 7l3 3M25 7l-3 3M5 16h4M27 16h-4M16 21v7M12 24l4 4 4-4M7 20c2 3 5 4 9 3M25 20c-2 3-5 4-9 3\"/></g></svg></span>";
+    return "<span class=\"rare-emblem\" aria-label=\"稀有恶魔牌·深渊角印\"><svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><g class=\"relief-shadow\"><path d=\"M12 23C7 20 5 14 7 7c2 4 5 5 8 6M20 23c5-3 7-9 5-16-2 4-5 5-8 6M11 18l5 9 5-9M13 17l3 3 3-3\"/></g><g class=\"relief-face\"><path d=\"M12 23C7 20 5 14 7 7c2 4 5 5 8 6M20 23c5-3 7-9 5-16-2 4-5 5-8 6M11 18l5 9 5-9M13 17l3 3 3-3\"/></g></svg></span>";
+  }
   function renderHand() {
     $("hand").innerHTML=state.hand.map(function(card,i){
-      return "<button type=\"button\" class=\"card "+card.faction+(state.selected===i?" selected":"")+(state.convertMode?" convert-target":"")+"\" data-card=\""+i+"\">"+
-        "<div class=\"card-name\">"+(card.mode==="purify"?icon(card.element):"")+"<span>"+card.name+"</span></div><div class=\"card-desc\">"+emphasizeDamage(cardDescription(card))+"</div>"+
+      return "<button type=\"button\" class=\"card "+card.faction+(card.rarity==="rare"?" rare":"")+(state.selected===i?" selected":"")+(state.convertMode?" convert-target":"")+"\" data-card=\""+i+"\">"+
+        rareEmblem(card)+"<div class=\"card-name\">"+(card.mode==="purify"?icon(card.element):"")+"<span>"+card.name+"</span></div><div class=\"card-desc\">"+emphasizeDamage(cardDescription(card))+"</div>"+
         "<div class=\"card-footer\">"+rangeIcon(card)+"</div></button>";
     }).join("");
     Array.prototype.forEach.call(document.querySelectorAll("[data-card]"),function(btn){
@@ -1105,11 +1149,12 @@
   function applyResonance(changed,label,damage) {
     var groups=mergeLines(getMatchLines(changed)),dead=false,affected=[],deadIndices=[];
     groups.forEach(function(group){
+      var groupDamage=typeof damage==="function"?damage(group.length):damage;
       group.forEach(function(i){
-        affected.push(i);state.board[i].hp-=damage;
+        affected.push(i);state.board[i].hp-=groupDamage;
         if(state.board[i].hp<=0){dead=true;deadIndices.push(i);}
       });
-      addLog((label||"共鸣")+"："+group.length+"格，每个目标受到 "+damage+" 点伤害。","good");
+      addLog((label||"共鸣")+"："+group.length+"格，每个目标受到 "+groupDamage+" 点伤害。","good");
     });
     return {groups:groups.length,dead:dead,affected:uniqueIndices(affected),deadIndices:uniqueIndices(deadIndices)};
   }
@@ -1156,8 +1201,9 @@
     var coefficients=[.20,.15,.10,.05,.05];
     for(var round=1;round<=5;round++){
       var damage=Math.floor(attackSnapshot*coefficients[round-1]);
-      var changed=moved&&moved.indices?moved.indices:moved;
-      var result=applyResonance(changed,"落位共鸣第"+round+"轮",damage);
+      // 每次下落完成后重新扫描全盘。共鸣可能由新落位棋子与未移动棋子共同构成，
+      // 仅用 moved 过滤会漏掉连线另一端的合法目标。
+      var result=applyResonance(null,"落位共鸣第"+round+"轮",damage);
       if(!result.groups)break;
       showBoardCue("落位共鸣 · "+round,"resonance",650);
       await wait(110);
@@ -1256,7 +1302,10 @@
         changed.forEach(function(i){state.board[i].element=card.element;});
         renderBoard();
         await animateCells(changed,"fx-transmute",340);
-        var resonance=applyResonance(changed,"净化共鸣",finalAttack(card));
+        var resonanceAttack=playerAttack();
+        var resonance=applyResonance(changed,"净化共鸣",function(groupSize){
+          return Math.floor(resonanceAttack*standardPerCellCoefficient(groupSize));
+        });
         if(resonance.groups)await animateCells(resonance.affected,"fx-resonate",420);
         if(resonance.dead){
           await animateCells(resonance.deadIndices,"fx-eliminate",420);
