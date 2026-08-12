@@ -36,3 +36,12 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(shell, /api\/projection/);
   assert.match(shell, /api\/reset/);
 });
+
+test("serves hydration assets directly on Cloudflare Pages", async () => {
+  const prepareScript = await readFile(
+    new URL("../scripts/prepare-pages-deploy.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(prepareScript, /"\/_next\/static\/\*"/);
+  assert.match(prepareScript, /"\/game\.html"/);
+});

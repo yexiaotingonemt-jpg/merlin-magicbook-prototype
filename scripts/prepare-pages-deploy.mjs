@@ -17,7 +17,15 @@ await rm(deployRedirect, { force: true });
 
 await writeFile(
   resolve(clientDir, "_routes.json"),
-  JSON.stringify({ version: 1, include: ["/*"], exclude: ["/merlin-assets/*", "/favicon.svg"] }, null, 2) + "\n",
+  JSON.stringify(
+    {
+      version: 1,
+      include: ["/*"],
+      exclude: ["/_next/static/*", "/merlin-assets/*", "/game.html", "/*.svg"],
+    },
+    null,
+    2,
+  ) + "\n",
 );
 
 console.log(`Prepared Cloudflare Pages output at ${clientDir}`);
