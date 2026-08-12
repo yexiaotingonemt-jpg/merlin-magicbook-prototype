@@ -11,8 +11,8 @@ export async function POST(request: Request) {
   const now = new Date().toISOString();
   const db = getDb();
   await db.batch([
-    db.update(accounts).set({ stateJson: "", score: 0, chapter: 1, updatedAt: now, activeAt: now }),
     db.delete(projections),
+    db.delete(accounts),
   ]);
 
   return Response.json({ ok: true, updatedAt: now });

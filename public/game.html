@@ -636,6 +636,7 @@
           <li>抽取先判定普通70%／稀有30%，再判定天使50%／恶魔50%，最后在对应子池内等权随机。</li>
           <li>天使卡以改变风、雷、火、电属性并制造共鸣为主；恶魔卡以直接伤害、处决、吞噬及范围摧毁为主。</li>
           <li>施法目标分为第一排、任意目标和无需指定；伤害按小、中、大档标识。</li>
+          <li>所有手牌伤害在原标准倍率上统一提高30%，卡面显示提高后的实际伤害和攻击百分比。</li>
           <li>转化牌不占手牌，可将1张目标手牌转化为另一阵营的随机牌；稀有度仍按普通70%／稀有30%，对应阵营卡池内等权重随机。</li>
         </ul>
       </section>
@@ -662,8 +663,8 @@
         <h3>6. 天使与恶魔形态</h3>
         <ul>
           <li>每名玩家每日150点体力，每张正常手牌固定消耗1点；每日变身次数由实际出牌结果产生。</li>
-          <li>天使形态立即令个人棋盘积分提高10%；投影任务成功后提高至20%。</li>
-          <li>恶魔形态立即令全部攻击力提高20%；投影任务成功后提高至40%。</li>
+          <li>天使形态立即令个人棋盘积分提高20%；投影任务成功后提高至40%。</li>
+          <li>恶魔形态立即令全部攻击力提高50%；投影任务成功后提高至100%。</li>
           <li>形态任务只决定效果是否翻倍，不会阻塞玩家继续出牌。</li>
         </ul>
       </section>
@@ -757,6 +758,7 @@
   ];
   var state;
   var uid=1;
+  var HAND_DAMAGE_MULTIPLIER=1.3;
   function weightedChoice(list) {
     var total=list.reduce(function(a,b){return a+b.weight;},0), roll=Math.random()*total;
     for(var i=0;i<list.length;i++){ roll-=list[i].weight; if(roll<=0)return list[i]; }
@@ -767,7 +769,7 @@
     if(chapter===1)return 1;if(chapter<=3)return 2;if(chapter<=5)return 3;if(chapter<=7)return 4;return 5;
   }
   function baseAttack() { return 50+(state?state.chapter-1:0)*5+(state?state.permanentAttack:0); }
-  function expectedAttack() { return baseAttack()*1.2; }
+  function expectedAttack() { return baseAttack()*1.5; }
   function makeEvent(forceElement,forceKind,allElements) {
     var k=forceKind ? kindPool.filter(function(x){return x.kind===forceKind;})[0] : weightedChoice(kindPool);
     var elementPool=allElements?elements:(state&&state.elementPool?state.elementPool:elements);
@@ -849,11 +851,12 @@
   }
   function playerAttack() {
     var value=baseAttack()*angelAttackMultiplier();
-    if(state.form==="demon") value*=state.boosted?1.4:1.2;
+    if(state.form==="demon") value*=state.boosted?2:1.5;
     return Math.max(Math.floor(baseAttack()*.2),Math.floor(value));
   }
+  function handDamageCoefficient(coefficient) { return coefficient*HAND_DAMAGE_MULTIPLIER; }
   function finalAttack(card) {
-    return Math.floor(playerAttack()*card.coeff);
+    return Math.floor(playerAttack()*handDamageCoefficient(card.coeff));
   }
   function projectedAttackForCard(card) {
     var sign=card.faction==="angel"?1:-1;
@@ -868,7 +871,7 @@
       if(!projectedForm&&projectedBalance===-50){projectedForm="demon";projectedBoosted=false;}
     }
     var projectedAttack=baseAttack()*multiplier;
-    if(projectedForm==="demon")projectedAttack*=projectedBoosted?1.4:1.2;
+    if(projectedForm==="demon")projectedAttack*=projectedBoosted?2:1.5;
     return Math.max(Math.floor(baseAttack()*.2),Math.floor(projectedAttack));
   }
   function percentLabel(value) {
@@ -885,19 +888,19 @@
     return 1.80/4;
   }
   function cardDescription(card) {
-    var attack=projectedAttackForCard(card),damage=Math.floor(attack*card.coeff),label=damageLabel(damage,card.coeff);
+    var attack=projectedAttackForCard(card),effectiveCoefficient=handDamageCoefficient(card.coeff),damage=Math.floor(attack*effectiveCoefficient),label=damageLabel(damage,effectiveCoefficient);
     if(card.mode==="purify"){
-      var coefficient3=standardPerCellCoefficient(3),coefficient4=standardPerCellCoefficient(4);
+      var coefficient3=handDamageCoefficient(standardPerCellCoefficient(3)),coefficient4=handDamageCoefficient(standardPerCellCoefficient(4));
       var label3=damageLabel(Math.floor(attack*coefficient3),coefficient3),label4=damageLabel(Math.floor(attack*coefficient4),coefficient4);
       if(card.range==="frontrow")return "将第一排全部合法事件转化为"+meta[card.element].label+"；四格共鸣时，每格造成"+label4+"的伤害。";
       return "将任意1个目标转化为"+meta[card.element].label+"；三格共鸣时每格造成"+label3+"的伤害，四格共鸣时每格造成"+label4+"的伤害。";
     }
-    if(card.range==="execute")return "造成"+label+"的伤害；目标生命不高于50%时，改为造成"+damageLabel(Math.floor(damage*1.5),1.5)+"的伤害。";
-    if(card.range==="devour")return "造成"+label+"的伤害；击杀后转移80%溢出伤害，最多转移"+damageLabel(Math.floor(attack*.5),.5)+"的伤害。";
+    if(card.range==="execute")return "造成"+label+"的伤害；目标生命不高于50%时，改为造成"+damageLabel(Math.floor(damage*1.5),effectiveCoefficient*1.5)+"的伤害。";
+    if(card.range==="devour")return "造成"+label+"的伤害；击杀后转移80%溢出伤害，最多转移"+damageLabel(Math.floor(attack*handDamageCoefficient(.5)),handDamageCoefficient(.5))+"的伤害。";
     if(card.range==="cross")return "对目标及其上下左右每格造成"+label+"的伤害。";
-    if(card.range==="row")return "横排每格造成"+label+"的伤害；直接击杀后，相邻目标额外受到"+damageLabel(Math.floor(attack*.1),.1)+"的伤害。";
-    if(card.range==="column")return "竖列每格造成"+label+"的伤害；向上转移50%溢出，最多额外造成"+damageLabel(Math.floor(attack*.4),.4)+"的伤害。";
-    if(card.range==="all")return "全屏每格造成"+label+"的伤害；12格理论总倍率为250%。";
+    if(card.range==="row")return "横排每格造成"+label+"的伤害；直接击杀后，相邻目标额外受到"+damageLabel(Math.floor(attack*handDamageCoefficient(.1)),handDamageCoefficient(.1))+"的伤害。";
+    if(card.range==="column")return "竖列每格造成"+label+"的伤害；向上转移50%溢出，最多额外造成"+damageLabel(Math.floor(attack*handDamageCoefficient(.4)),handDamageCoefficient(.4))+"的伤害。";
+    if(card.range==="all")return "全屏每格造成"+label+"的伤害；12格理论总倍率为"+percentLabel(effectiveCoefficient*12)+"。";
     return "对任意1个目标造成"+label+"的伤害。";
   }
   function emphasizeDamage(text) {
@@ -907,7 +910,7 @@
   }
   function scoreMultiplier() {
     var chapter=1+(state.chapter-1)*.04;
-    var angel=state.form==="angel"?(state.boosted?1.2:1.1):1;
+    var angel=state.form==="angel"?(state.boosted?1.4:1.2):1;
     return chapter*angel;
   }
   function cardProbability(card) {
@@ -933,8 +936,8 @@
     return "<span class=\"range-wrap\" role=\"img\" aria-label=\"攻击范围："+visual.caption+"\"><span class=\"range-icon\">"+cells+"</span><span class=\"range-caption\">"+visual.caption+"</span></span>";
   }
   function formBonusText() {
-    if(state.form==="angel")return "个人积分 +"+(state.boosted?"20%":"10%");
-    if(state.form==="demon")return "全部攻击 +"+(state.boosted?"40%":"20%");
+    if(state.form==="angel")return "个人积分 +"+(state.boosted?"40%":"20%");
+    if(state.form==="demon")return "全部攻击 +"+(state.boosted?"100%":"50%");
     return "无形态加成";
   }
   function renderStatus() {
@@ -967,9 +970,9 @@
     $("convertCount").textContent="转化牌 "+state.conversion;
     $("projectionCount").textContent="机会 "+state.projection+" · 贡献 "+state.socialContribution;
   }
-  function purificationResonanceSize(card,index) {
-    if(!card||card.mode!=="purify")return 0;
-    var changed=card.range==="frontrow"?[8,9,10,11]:[index];
+  function simulatedPurificationGroup(card,targetIndex) {
+    if(!card||card.mode!=="purify")return [];
+    var changed=card.range==="frontrow"?[8,9,10,11]:[targetIndex];
     var simulated=state.board.map(function(event){return event.element;});
     changed.forEach(function(i){simulated[i]=card.element;});
     var lines=[],row,col,start,element,run;
@@ -983,15 +986,24 @@
     }
     var touched=[];
     lines.forEach(function(line){if(line.some(function(i){return changed.indexOf(i)>=0;}))touched=touched.concat(line);});
-    return uniqueIndices(touched).length;
+    return uniqueIndices(touched);
+  }
+  function purificationPreviewCoefficient(card,eventIndex) {
+    var candidates=card.range==="frontrow"?[8]:state.board.map(function(_,index){return index;});
+    var coefficient=0;
+    candidates.forEach(function(targetIndex){
+      if(!isValidTarget(card,targetIndex))return;
+      var group=simulatedPurificationGroup(card,targetIndex);
+      if(group.indexOf(eventIndex)>=0)coefficient=Math.max(coefficient,standardPerCellCoefficient(group.length));
+    });
+    return coefficient?handDamageCoefficient(coefficient):0;
   }
   function damagePreview(card,event,index) {
     if(!card||!event)return null;
-    var coefficient=card.coeff;
+    var coefficient=handDamageCoefficient(card.coeff);
     if(card.mode==="purify"){
-      var resonanceSize=purificationResonanceSize(card,index);
-      if(!resonanceSize)return null;
-      coefficient=standardPerCellCoefficient(resonanceSize);
+      coefficient=purificationPreviewCoefficient(card,index);
+      if(!coefficient)return null;
     }
     var damage=Math.floor(projectedAttackForCard(card)*coefficient);
     if(card.mode==="destroy"&&card.range==="execute"&&event.hp<=event.maxHp*.5)damage=Math.floor(damage*1.5);
@@ -1001,7 +1013,7 @@
     var pct=Math.max(0,event.hp/event.maxHp*100);
     var card=state.selected===null?null:state.hand[state.selected];
     var targetable=!compact&&card&&isValidTarget(card,index);
-    var preview=targetable?damagePreview(card,event,index):null;
+    var preview=card&&(targetable||card.mode==="purify")?damagePreview(card,event,index):null;
     var lethal=preview&&preview.damage>=event.hp;
     var damagePct=preview?Math.min(pct,preview.damage/event.maxHp*100):0;
     var damageLeft=Math.max(0,pct-damagePct);
@@ -1248,7 +1260,7 @@
   async function resolveDemonFalls(attackSnapshot,moved) {
     var coefficients=[.20,.15,.10,.05,.05];
     for(var round=1;round<=5;round++){
-      var damage=Math.floor(attackSnapshot*coefficients[round-1]);
+      var damage=Math.floor(attackSnapshot*handDamageCoefficient(coefficients[round-1]));
       // 每次下落完成后重新扫描全盘。共鸣可能由新落位棋子与未移动棋子共同构成，
       // 仅用 moved 过滤会漏掉连线另一端的合法目标。
       var result=applyResonance(null,"落位共鸣第"+round+"轮",damage);
@@ -1306,7 +1318,7 @@
     state.form=form;state.balance=form==="angel"?50:-50;state.boosted=false;state.projection+=1;
     state.angelMark=null;state.abyssMark=null;
     state.projectionBoard=form==="angel"?[makeEvent("wind","normal",true),makeEvent("fire","normal",true),makeEvent("wind","normal",true),makeEvent("electric","normal",true)]:[makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true)];
-    addLog("形态激活："+(form==="angel"?"天使，个人积分立即 +10%。":"恶魔，全部攻击力立即 +20%。"),"good");toast(form==="angel"?"天使形态激活":"恶魔形态激活");
+    addLog("形态激活："+(form==="angel"?"天使，个人积分立即 +20%。":"恶魔，全部攻击力立即 +50%。"),"good");toast(form==="angel"?"天使形态激活":"恶魔形态激活");
   }
   function updateBalance(card,count) {
     if(state.form===card.faction){addLog((card.faction==="angel"?"天使":"恶魔")+"形态中使用同阵营牌：形态进度保持 "+state.balance+"。","");return;}
@@ -1350,7 +1362,7 @@
         await animateCells(changed,"fx-transmute",340);
         var resonanceAttack=playerAttack();
         var resonance=applyResonance(changed,"净化共鸣",function(groupSize){
-          return Math.floor(resonanceAttack*standardPerCellCoefficient(groupSize));
+          return Math.floor(resonanceAttack*handDamageCoefficient(standardPerCellCoefficient(groupSize)));
         });
         if(resonance.groups)await animateCells(resonance.affected,"fx-resonate",420);
         if(resonance.dead){
@@ -1360,17 +1372,17 @@
         }
         addLog("使用「"+card.name+"」，改变 "+changed.length+" 个事件属性。");
       }else{
-        var targets=directTargets(index,card.range),hitTargets=targets.slice(),attackSnapshot=playerAttack(),damage=Math.floor(attackSnapshot*card.coeff),dead=false,records=[];
+        var targets=directTargets(index,card.range),hitTargets=targets.slice(),attackSnapshot=playerAttack(),damage=Math.floor(attackSnapshot*handDamageCoefficient(card.coeff)),dead=false,records=[];
         targets.forEach(function(i){var e=state.board[i],d=damage;if(card.range==="execute"&&e.hp<=e.maxHp*.5)d=Math.floor(d*1.5);var before=e.hp;e.hp-=d;if(d>0)claimConversion(e);records.push({index:i,before:before,damage:d,overflow:Math.max(0,d-before)});if(e.hp<=0)dead=true;});
         if(card.range==="devour"&&records[0].overflow>0){
           var candidates=state.board.map(function(e,i){return {e:e,i:i};}).filter(function(x){return x.i!==index&&x.e.hp>0;}).sort(function(a,b){return a.e.hp-b.e.hp;});
-          if(candidates.length){var transfer=Math.floor(Math.min(records[0].overflow*.8,attackSnapshot*.5)),next=candidates[0];next.e.hp-=transfer;if(transfer>0)claimConversion(next.e);hitTargets.push(next.i);if(next.e.hp<=0)dead=true;addLog("吞噬溢出：转移 "+transfer+" 点伤害。","good");}
+          if(candidates.length){var transfer=Math.floor(Math.min(records[0].overflow*.8,attackSnapshot*handDamageCoefficient(.5))),next=candidates[0];next.e.hp-=transfer;if(transfer>0)claimConversion(next.e);hitTargets.push(next.i);if(next.e.hp<=0)dead=true;addLog("吞噬溢出：转移 "+transfer+" 点伤害。","good");}
         }
         if(card.range==="row"){
-          var exploded=new Set();records.filter(function(r){return state.board[r.index].hp<=0;}).forEach(function(r){var col=r.index%4;[r.index-1,r.index+1].forEach(function(n){if(n>=0&&n<12&&Math.floor(n/4)===Math.floor(r.index/4)&&state.board[n].hp>0&&!exploded.has(n)){var d=Math.floor(attackSnapshot*.1);state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);exploded.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});});
+          var exploded=new Set();records.filter(function(r){return state.board[r.index].hp<=0;}).forEach(function(r){var col=r.index%4;[r.index-1,r.index+1].forEach(function(n){if(n>=0&&n<12&&Math.floor(n/4)===Math.floor(r.index/4)&&state.board[n].hp>0&&!exploded.has(n)){var d=Math.floor(attackSnapshot*handDamageCoefficient(.1));state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);exploded.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});});
         }
         if(card.range==="column"){
-          var overflowed=new Set();records.slice().reverse().forEach(function(r){var n=r.index-4;if(r.overflow>0&&n>=0&&state.board[n].hp>0&&!overflowed.has(n)){var d=Math.floor(Math.min(r.overflow*.5,attackSnapshot*.4));state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);overflowed.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});
+          var overflowed=new Set();records.slice().reverse().forEach(function(r){var n=r.index-4;if(r.overflow>0&&n>=0&&state.board[n].hp>0&&!overflowed.has(n)){var d=Math.floor(Math.min(r.overflow*.5,attackSnapshot*handDamageCoefficient(.4)));state.board[n].hp-=d;if(d>0)claimConversion(state.board[n]);overflowed.add(n);hitTargets.push(n);if(state.board[n].hp<=0)dead=true;}});
         }
         renderBoard();
         await animateCells(hitTargets,"fx-hit",300);

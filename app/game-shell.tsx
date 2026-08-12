@@ -192,8 +192,9 @@ export function GameShell() {
       previousProjection.current = 0;
       acceptGameState(null, false); setProjectionOpen(false); setAdminResetConfirm(false);
       sendToGame("merlin:new", null);
-      await loadSocial(username);
-      flash("排行榜已重置，所有玩家将从第1章重新开始");
+      sessionStorage.removeItem("merlin-account");
+      setLeaders([]); setPlayers([]); setTarget(""); setUsername(""); setUsernameInput("");
+      flash("排行榜及全部账号数据已清空，请重新输入账号开始游戏");
     } catch (error) { flash(error instanceof Error ? error.message : "排行榜重置失败"); }
     finally { setAdminResetBusy(false); }
   };
@@ -274,7 +275,7 @@ export function GameShell() {
     {adminResetConfirm && <div className="confirm-gate" role="dialog" aria-modal="true" aria-labelledby="admin-reset-title">
       <div className="confirm-card admin-confirm-card">
         <div className="confirm-icon">!</div><h2 id="admin-reset-title">重置所有玩家？</h2>
-        <p>这会清除排行榜积分、所有玩家棋盘与章节进度，并取消全部跨玩家投影。所有账号都会从第1章重新开始。</p>
+        <p>这会删除排行榜中的全部玩家、积分、棋盘、章节进度和跨玩家投影。重置后排行榜为空，所有人都需要重新输入账号开始游戏。</p>
         <div className="confirm-actions"><button onClick={() => setAdminResetConfirm(false)} disabled={adminResetBusy}>取消</button><button className="danger" onClick={resetLeaderboard} disabled={adminResetBusy}>{adminResetBusy ? "正在全局重置…" : "确认重置排行榜"}</button></div>
       </div>
     </div>}

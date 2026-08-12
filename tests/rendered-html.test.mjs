@@ -58,6 +58,15 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /targetFaction=old\.faction==="angel"\?"demon":"angel"/);
   assert.match(game, /drawCard\(null,targetFaction\)/);
   assert.match(game, /普通70%／稀有30%/);
+  assert.match(game, /HAND_DAMAGE_MULTIPLIER=1\.3/);
+  assert.match(game, /simulatedPurificationGroup/);
+  assert.match(game, /purificationPreviewCoefficient/);
+  assert.match(game, /state\.boosted\?2:1\.5/);
+  assert.match(game, /state\.boosted\?1\.4:1\.2/);
+  const adminReset = await readFile(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url), "utf8");
+  assert.match(adminReset, /db\.delete\(projections\)/);
+  assert.match(adminReset, /db\.delete\(accounts\)/);
+  assert.doesNotMatch(adminReset, /db\.update\(accounts\)/);
   assert.doesNotMatch(game, /用1张，按概率摸1张/);
 });
 
