@@ -62,6 +62,13 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /drawCard\(null,targetFaction\)/);
   assert.match(game, /普通70%／稀有30%/);
   assert.match(game, /HAND_DAMAGE_MULTIPLIER=1\.3/);
+  assert.match(game, /\{tier:"中级",weight:3,hpRate:\.60/);
+  assert.match(game, /\{tier:"高级",weight:2,hpRate:\.80/);
+  assert.match(game, /attack:\{hpRate:\.30/);
+  assert.match(game, /trapped:\{hpRate:1\.00/);
+  assert.match(game, /convert:\{hpRate:1\.20/);
+  assert.match(game, /EVENT_HEALTH_VERSION=2/);
+  assert.match(game, /state\.board=state\.board\.map\(migrateLegacyEventHealth\)/);
   assert.match(game, /目标生命高于50%时/);
   assert.match(game, /card\.range==="execute"&&event\.hp>event\.maxHp\*\.5/);
   assert.match(game, /card\.range==="execute"&&e\.hp>e\.maxHp\*\.5/);

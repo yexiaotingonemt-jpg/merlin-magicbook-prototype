@@ -677,7 +677,7 @@
           <li>生命归零后从当前章节重新开始，不退回上一章；章节与活动内永久成长保留。</li>
           <li>事件稀有度与刷新权重：普通事件（大量）50%、生命回复（一般）15%、被困俘虏（稀有）10%、攻击成长（一般）10%、转化牌（超稀有）10%、生命上限（稀有）5%。</li>
           <li>所有补位事件均按上述权重独立随机；权重总计100%，同类事件可以连续出现。</li>
-          <li>事件生命按照预期攻击动态生成：普通初／中／高为45%／90%／135%，治疗20%，攻击与生命成长40%，俘虏160%，转化牌200%。</li>
+          <li>事件生命按照预期攻击动态生成：普通初／中／高为45%／60%／80%，治疗20%，攻击与生命成长30%，俘虏100%，转化牌120%。</li>
           <li>普通初／中／高级内部权重为6∶3∶2；所有生命、伤害、成长和积分统一向下取整。</li>
           <li>治疗事件回复生命上限25%；攻击成长固定+1；生命上限成长+2并回复2。</li>
         </ul>
@@ -730,15 +730,15 @@
   ];
   var normalTiers = [
     {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:1},
-    {tier:"中级",weight:3,hpRate:.90,scoreRate:1.2,danger:"中",interval:1},
-    {tier:"高级",weight:2,hpRate:1.35,scoreRate:1.5,danger:"高",interval:2}
+    {tier:"中级",weight:3,hpRate:.60,scoreRate:1.2,danger:"中",interval:1},
+    {tier:"高级",weight:2,hpRate:.80,scoreRate:1.5,danger:"高",interval:2}
   ];
   var eventRules = {
     healing:{hpRate:.20,scoreRate:.50,danger:"初",interval:1},
-    attack:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
-    vitality:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
-    trapped:{hpRate:1.60,scoreRate:1.80,danger:"高",interval:2},
-    convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:2}
+    attack:{hpRate:.30,scoreRate:0,danger:"初",interval:1},
+    vitality:{hpRate:.30,scoreRate:0,danger:"初",interval:1},
+    trapped:{hpRate:1.00,scoreRate:1.80,danger:"高",interval:2},
+    convert:{hpRate:1.20,scoreRate:0,danger:"高",interval:2}
   };
   var cards = [
     {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
@@ -760,6 +760,7 @@
   var state;
   var uid=1;
   var HAND_DAMAGE_MULTIPLIER=1.3;
+  var EVENT_HEALTH_VERSION=2;
   function weightedChoice(list) {
     var total=list.reduce(function(a,b){return a+b.weight;},0), roll=Math.random()*total;
     for(var i=0;i<list.length;i++){ roll-=list[i].weight; if(roll<=0)return list[i]; }
@@ -783,6 +784,30 @@
     return {id:uid++,element:el,kind:k.kind,kindLabel:k.kind==="normal"?"魔力乱流·"+tier.tier:k.label,rarity:k.rarity,rarityClass:k.rarityClass,
       danger:rule.danger,hp:hp,maxHp:hp,score:score,interval:rule.interval,countdown:rule.interval+1,frontEnteredTurn:0,locked:false,claimed:false};
   }
+  function legacyEventHealthProfile(event) {
+    var referenceMax=Math.max(1,Number(event.originalMaxHp)||Number(event.maxHp)||1);
+    if(event.kind==="normal"){
+      if(Number(event.score)===Math.floor(referenceMax*1.5))return {scale:.80/1.35,scoreRate:1.5,round:true};
+      if(Number(event.score)===Math.floor(referenceMax*1.2))return {scale:.60/.90,scoreRate:1.2,round:true};
+      return {scale:1,scoreRate:1,round:false};
+    }
+    if(event.kind==="healing")return {scale:1,scoreRate:.5,round:false};
+    if(event.kind==="attack"||event.kind==="vitality")return {scale:.30/.40,scoreRate:0,round:false};
+    if(event.kind==="trapped")return {scale:1/1.60,scoreRate:1.8,round:false};
+    if(event.kind==="convert")return {scale:1.20/2,scoreRate:0,round:false};
+    return {scale:1,scoreRate:Number(event.score)||0,round:false};
+  }
+  function migrateLegacyEventHealth(event) {
+    var profile=legacyEventHealthProfile(event),oldMax=Math.max(1,Number(event.maxHp)||1),oldHp=Number(event.hp);
+    if(!Number.isFinite(oldHp))oldHp=oldMax;
+    var resize=function(value){var result=value*profile.scale;return Math.max(1,profile.round?Math.round(result):Math.floor(result));};
+    var newMax=resize(oldMax),newHp=oldHp<=0?0:Math.max(1,Math.floor(oldHp/oldMax*newMax));
+    event.maxHp=newMax;event.hp=Math.min(newMax,newHp);
+    if(event.originalMaxHp!==undefined)event.originalMaxHp=resize(Math.max(1,Number(event.originalMaxHp)||1));
+    var scoreBase=event.originalMaxHp===undefined?newMax:event.originalMaxHp;
+    event.score=Math.floor(scoreBase*profile.scoreRate);
+    return event;
+  }
   function normalizeEventTiming(event) {
     var desired=event.danger==="高"?2:1,previous=Math.max(1,Number(event.interval)||desired);
     var countdown=Number(event.countdown);if(!Number.isFinite(countdown))countdown=previous+1;
@@ -803,7 +828,7 @@
   function freshState(keep) {
     var base=keep||{};
     var next={
-      score:base.score||0,stamina:base.stamina===undefined?150:base.stamina,
+      score:base.score||0,stamina:base.stamina===undefined?150:base.stamina,eventHealthVersion:EVENT_HEALTH_VERSION,
       baseHealth:300,maxHealth:base.maxHealth||300,health:base.maxHealth||300,chapter:base.chapter||1,rescued:0,
       permanentAttack:base.permanentAttack||0,
       balance:0,form:null,boosted:false,streak:0,turn:0,projection:0,
@@ -1471,6 +1496,7 @@
         state=freshState();addLog("新账号已创建：从第1章开始冒险。","good");render();return;
       }
       var incoming=message.state;
+      var needsEventHealthMigration=Number(incoming.eventHealthVersion)!==EVENT_HEALTH_VERSION;
       var oldProjectionIds=new Set((state.board||[]).map(function(e){return e.remoteProjection&&e.remoteProjection.id;}).filter(Boolean));
       state=Object.assign(freshState(),incoming);
       if(Number(incoming.baseHealth)!==300){
@@ -1483,6 +1509,11 @@
       state.board=(incoming.board||state.board).map(function(e){return normalizeEventTiming(Object.assign({},e));});
       state.hand=(incoming.hand||state.hand).map(function(card){return Object.assign({},card);});
       state.preview=(incoming.preview||state.preview).map(function(e){return normalizeEventTiming(Object.assign({},e));});
+      state.projectionBoard=(incoming.projectionBoard||state.projectionBoard).map(function(e){return Object.assign({},e);});
+      if(needsEventHealthMigration){
+        state.board=state.board.map(migrateLegacyEventHealth);state.preview=state.preview.map(migrateLegacyEventHealth);state.projectionBoard=state.projectionBoard.map(migrateLegacyEventHealth);
+        state.eventHealthVersion=EVENT_HEALTH_VERSION;
+      }
       state.logs=Array.isArray(incoming.logs)?incoming.logs:[];
       var received=state.board.filter(function(e){return e.remoteProjection&&!oldProjectionIds.has(e.remoteProjection.id);});
       received.forEach(function(e){
