@@ -54,6 +54,10 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /if\(e\.countdown===0\)/);
   assert.match(game, /notifyParentModal/);
   assert.match(game, /modal:"help"/);
+  assert.match(game, /function drawCard\(excludeName,forcedFaction\)/);
+  assert.match(game, /targetFaction=old\.faction==="angel"\?"demon":"angel"/);
+  assert.match(game, /drawCard\(null,targetFaction\)/);
+  assert.match(game, /普通70%／稀有30%/);
   assert.doesNotMatch(game, /用1张，按概率摸1张/);
 });
 

@@ -636,7 +636,7 @@
           <li>抽取先判定普通70%／稀有30%，再判定天使50%／恶魔50%，最后在对应子池内等权随机。</li>
           <li>天使卡以改变风、雷、火、电属性并制造共鸣为主；恶魔卡以直接伤害、处决、吞噬及范围摧毁为主。</li>
           <li>施法目标分为第一排、任意目标和无需指定；伤害按小、中、大档标识。</li>
-          <li>转化牌不占手牌，可将1张手牌随机变成另一张牌，转化结果沿用正常抽取规则。</li>
+          <li>转化牌不占手牌，可将1张目标手牌转化为另一阵营的随机牌；稀有度仍按普通70%／稀有30%，对应阵营卡池内等权重随机。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -786,9 +786,9 @@
     event.interval=desired;return event;
   }
   function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
-  function drawCard(excludeName) {
+  function drawCard(excludeName,forcedFaction) {
     var rarity=Math.random()<.7?"normal":"rare";
-    var faction=Math.random()<.5?"angel":"demon";
+    var faction=forcedFaction||(Math.random()<.5?"angel":"demon");
     var pool=cards.filter(function(c){return c.rarity===rarity&&c.faction===faction&&c.name!==excludeName;});
     if(!pool.length) pool=cards.filter(function(c){return c.rarity===rarity&&c.faction===faction;});
     return cloneCard(pool[Math.floor(Math.random()*pool.length)]);
@@ -1394,8 +1394,9 @@
   }
   function transformCard(index) {
     if(state.conversion<=0)return;
-    var old=state.hand[index];state.hand[index]=drawCard(old.name);state.conversion-=1;state.convertMode=false;state.selected=null;
-    addLog("转化牌：将「"+old.name+"」随机转化为「"+state.hand[index].name+"」。","good");
+    var old=state.hand[index],targetFaction=old.faction==="angel"?"demon":"angel";
+    state.hand[index]=drawCard(null,targetFaction);state.conversion-=1;state.convertMode=false;state.selected=null;
+    addLog("转化牌：将「"+old.name+"」转化为另一阵营的「"+state.hand[index].name+"」。","good");
     $("instruction").textContent="转化完成；转化牌不占手牌，也不消耗体力。";render();
   }
   function useProjection(index) {
@@ -1438,7 +1439,7 @@
   $("helpClose").addEventListener("click",closeHelp);
   $("helpModal").addEventListener("click",function(event){if(event.target===$("helpModal"))closeHelp();});
   document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!$("helpModal").hidden)closeHelp();});
-  $("convert").addEventListener("click",function(){if(state.conversion<=0)return;state.convertMode=!state.convertMode;state.selected=null;$("instruction").textContent=state.convertMode?"请选择要随机转化的1张手牌。":"已取消转化。";renderBoard();renderHand();});
+  $("convert").addEventListener("click",function(){if(state.conversion<=0)return;state.convertMode=!state.convertMode;state.selected=null;$("instruction").textContent=state.convertMode?"请选择1张手牌，将其转化为另一阵营的随机牌。":"已取消转化。";renderBoard();renderHand();});
   $("logToggle").addEventListener("click",function(){
     var drawer=$("handLogDrawer"),willOpen=drawer.hidden;
     drawer.hidden=!willOpen;this.setAttribute("aria-expanded",willOpen?"true":"false");
