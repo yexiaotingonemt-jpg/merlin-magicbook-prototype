@@ -1418,14 +1418,20 @@
     if(wasAbyss&&mark!==null)state.projectionBoard[mark]=makeEvent(null,"normal",true);
     state.angelMark=null;state.abyssMark=null;state.projectionTurns=0;render();
   }
+  function notifyParentModal(open) {
+    if(window.parent===window)return;
+    try{window.parent.postMessage({type:"merlin:modal",modal:"help",open:open},"*");}catch(error){}
+  }
   function openHelp() {
     $("helpModal").hidden=false;
     document.body.classList.add("help-open");
+    notifyParentModal(true);
     $("helpClose").focus();
   }
   function closeHelp() {
     $("helpModal").hidden=true;
     document.body.classList.remove("help-open");
+    notifyParentModal(false);
     $("helpButton").focus();
   }
   $("helpButton").addEventListener("click",openHelp);

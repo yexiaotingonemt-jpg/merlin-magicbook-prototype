@@ -44,6 +44,7 @@ export function GameShell() {
   const [resetBusy, setResetBusy] = useState(false);
   const [adminResetConfirm, setAdminResetConfirm] = useState(false);
   const [adminResetBusy, setAdminResetBusy] = useState(false);
+  const [gameModalOpen, setGameModalOpen] = useState(false);
   const iframeReady = useRef(false);
   const pendingGameLoad = useRef<{ type: string; state: GameState | null } | null>(null);
   const previousProjection = useRef(0);
@@ -112,6 +113,7 @@ export function GameShell() {
         }, 260);
       }
       if (event.data.type === "merlin:notice") flash(String(event.data.message ?? "收到跨玩家技能"));
+      if (event.data.type === "merlin:modal" && event.data.modal === "help") setGameModalOpen(Boolean(event.data.open));
     };
     window.addEventListener("message", onMessage); return () => window.removeEventListener("message", onMessage);
   }, [username, gameState, sendToGame, flash, acceptGameState]);
@@ -206,7 +208,7 @@ export function GameShell() {
     { label: "第一排", events: selectedPlayer?.board?.slice(8, 12) ?? [] },
   ];
 
-  return <main className="multiplayer-shell">
+  return <main className={`multiplayer-shell${gameModalOpen ? " game-modal-open" : ""}`}>
     <iframe ref={iframeRef} className="game-frame" src="/game.html" title="梅林的魔法书游戏" />
 
     {!username && <div className="login-gate">

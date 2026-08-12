@@ -43,6 +43,8 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(shell, /重置排行榜/);
   assert.match(shell, /对方完整棋盘（含预览行）/);
   assert.match(shell, /pendingGameLoad/);
+  assert.match(shell, /merlin:modal/);
+  assert.match(shell, /game-modal-open/);
   const game = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
   assert.match(game, /id="logToggle"/);
   assert.match(game, /恶魔 50/);
@@ -50,6 +52,8 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /healing-orb/);
   assert.match(game, /准备攻击/);
   assert.match(game, /if\(e\.countdown===0\)/);
+  assert.match(game, /notifyParentModal/);
+  assert.match(game, /modal:"help"/);
   assert.doesNotMatch(game, /用1张，按概率摸1张/);
 });
 
