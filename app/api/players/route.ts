@@ -9,6 +9,13 @@ export async function GET(request: Request) {
   const rows = await getDb().select().from(accounts).where(ne(accounts.username, username)).orderBy(desc(accounts.activeAt)).limit(20);
   return Response.json({ players: rows.map((row) => {
     const state = parseState(row.stateJson);
-    return { username: row.username, score: row.score, chapter: row.chapter, activeAt: row.activeAt, firstRow: state?.board?.slice(8, 12) ?? [] };
+    return {
+      username: row.username,
+      score: row.score,
+      chapter: row.chapter,
+      activeAt: row.activeAt,
+      board: state?.board ?? [],
+      preview: Array.isArray(state?.preview) ? state.preview : [],
+    };
   }) });
 }

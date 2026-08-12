@@ -29,6 +29,7 @@ test("ships the game and every multiplayer API route", async () => {
   const routes = ["account", "leaderboard", "players", "projection", "reset", "state"];
   await Promise.all([
     access(new URL("../public/game.html", import.meta.url)),
+    access(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url)),
     ...routes.map((route) => access(new URL(`../app/api/${route}/route.ts`, import.meta.url))),
   ]);
   const shell = await readFile(new URL("../app/game-shell.tsx", import.meta.url), "utf8");
@@ -39,9 +40,14 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(shell, /setProjectionOpen\(true\)/);
   assert.doesNotMatch(shell, /setTab\("projection"\)/);
   assert.match(shell, /积分性价比/);
+  assert.match(shell, /重置排行榜/);
+  assert.match(shell, /对方完整棋盘（含预览行）/);
   assert.match(shell, /pendingGameLoad/);
   const game = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
   assert.match(game, /id="logToggle"/);
+  assert.match(game, /恶魔 50/);
+  assert.match(game, /comboPenaltyRate/);
+  assert.match(game, /healing-orb/);
   assert.doesNotMatch(game, /用1张，按概率摸1张/);
 });
 

@@ -7,8 +7,8 @@ type GameState = {
   score?: number; stamina?: number; chapter?: number; form?: "angel" | "demon" | null; projection?: number;
   boosted?: boolean; socialContribution?: number; board?: GameEvent[]; [key: string]: unknown;
 };
-type Leader = { rank: number; username: string; score: number; chapter: number; activeAt: string };
-type Player = { username: string; score: number; chapter: number; activeAt: string; firstRow: GameEvent[] };
+type Leader = { rank: number; username: string; score: number; chapter: number; spentStamina: number; scoreEfficiency: number | null; activeAt: string };
+type Player = { username: string; score: number; chapter: number; activeAt: string; board: GameEvent[]; preview: GameEvent[] };
 type AccountResponse = { username: string; state: GameState | null; updatedAt: string; created?: boolean };
 
 const elementMeta: Record<string, { label: string; icon: string }> = {
@@ -36,12 +36,14 @@ export function GameShell() {
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [target, setTarget] = useState("");
-  const [slot, setSlot] = useState(0);
+  const [slot, setSlot] = useState(12);
   const [element, setElement] = useState("wind");
   const [sending, setSending] = useState(false);
   const [projectionOpen, setProjectionOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const [adminResetConfirm, setAdminResetConfirm] = useState(false);
+  const [adminResetBusy, setAdminResetBusy] = useState(false);
   const iframeReady = useRef(false);
   const pendingGameLoad = useRef<{ type: string; state: GameState | null } | null>(null);
   const previousProjection = useRef(0);
@@ -119,9 +121,15 @@ export function GameShell() {
     const poll = window.setInterval(async () => {
       try {
         const data = await api<AccountResponse>(`/api/account?username=${encodeURIComponent(username)}`);
-        if (data.updatedAt > serverVersion.current && data.state) {
-          serverVersion.current = data.updatedAt; acceptGameState(data.state); sendToGame("merlin:load-remote", data.state);
-          flash("收到其他玩家的投影，棋盘已同步");
+        if (data.updatedAt > serverVersion.current) {
+          serverVersion.current = data.updatedAt;
+          if (data.state) {
+            acceptGameState(data.state); sendToGame("merlin:load-remote", data.state);
+            flash("收到其他玩家的投影，棋盘已同步");
+          } else {
+            previousProjection.current = 0; acceptGameState(null, false); sendToGame("merlin:new", null);
+            flash("管理员已重置排行榜，你已从第1章重新开始");
+          }
         }
         await loadSocial(username);
       } catch { /* 网络恢复后自动继续轮询 */ }
@@ -170,12 +178,33 @@ export function GameShell() {
     finally { setResetBusy(false); }
   };
 
+  const resetLeaderboard = async () => {
+    if (username !== "ting" || adminResetBusy) return;
+    setAdminResetBusy(true);
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    try {
+      const result = await api<{ updatedAt: string }>("/api/admin/reset-leaderboard", {
+        method: "POST", body: JSON.stringify({ username }),
+      });
+      serverVersion.current = result.updatedAt;
+      previousProjection.current = 0;
+      acceptGameState(null, false); setProjectionOpen(false); setAdminResetConfirm(false);
+      sendToGame("merlin:new", null);
+      await loadSocial(username);
+      flash("排行榜已重置，所有玩家将从第1章重新开始");
+    } catch (error) { flash(error instanceof Error ? error.message : "排行榜重置失败"); }
+    finally { setAdminResetBusy(false); }
+  };
+
   const selectedPlayer = players.find((player) => player.username === target);
   const canProject = Boolean(gameState?.form && Number(gameState.projection ?? 0) > 0 && selectedPlayer);
-  const currentChapter = Math.max(1, Number(gameState?.chapter ?? 1));
-  const spentStamina = Math.max(0, 150 - Number(gameState?.stamina ?? 150));
-  const totalScore = Math.max(0, Math.floor(Number(gameState?.score ?? 0)));
-  const scoreEfficiency = spentStamina > 0 ? (totalScore / spentStamina).toFixed(1) : "—";
+  const isAdmin = username === "ting";
+  const remoteRows = [
+    { label: "预览行", events: selectedPlayer?.preview?.slice(0, 4) ?? [] },
+    { label: "第三排", events: selectedPlayer?.board?.slice(0, 4) ?? [] },
+    { label: "第二排", events: selectedPlayer?.board?.slice(4, 8) ?? [] },
+    { label: "第一排", events: selectedPlayer?.board?.slice(8, 12) ?? [] },
+  ];
 
   return <main className="multiplayer-shell">
     <iframe ref={iframeRef} className="game-frame" src="/game.html" title="梅林的魔法书游戏" />
@@ -194,16 +223,11 @@ export function GameShell() {
 
     {username && <aside className="social-dock" aria-label="多人功能">
       <div className="dock-header"><span className="online-dot" />账号 <strong>{username}</strong><button className="reset-entry" onClick={() => setResetConfirm(true)}>重新开始</button></div>
-      <div className="rank-heading"><div><strong>排行榜</strong><span>本次活动表现</span></div>{Number(gameState?.projection ?? 0) > 0 && <button className="projection-entry" onClick={() => setProjectionOpen(true)}>投影 ×{Number(gameState?.projection ?? 0)}</button>}</div>
-      <div className="rank-dashboard" aria-label="个人排行数据">
-        <div><span>当前章节</span><strong>第{currentChapter}章</strong></div>
-        <div><span>消耗体力</span><strong>{spentStamina}</strong></div>
-        <div><span>总积分</span><strong>{totalScore.toLocaleString("zh-CN")}</strong></div>
-        <div><span>积分性价比</span><strong>{scoreEfficiency}<small>{spentStamina > 0 ? " 分/体力" : ""}</small></strong></div>
-      </div>
+      <div className="rank-heading"><div><strong>排行榜</strong><span>按活动总积分排序</span></div><div className="rank-actions">{isAdmin && <button className="admin-reset-entry" onClick={() => setAdminResetConfirm(true)}>重置排行榜</button>}{Number(gameState?.projection ?? 0) > 0 && <button className="projection-entry" onClick={() => setProjectionOpen(true)}>投影 ×{Number(gameState?.projection ?? 0)}</button>}</div></div>
+      <div className="rank-table-head" aria-label="排行榜字段"><span>#</span><span>玩家</span><span>当前章节</span><span>消耗体力</span><span>总积分</span><span>积分性价比</span></div>
       <div className="rank-list">
         {leaders.map((item) => <div className={`rank-row rank-${item.rank}`} key={item.username}>
-          <b>{item.rank}</b><span>{item.username}</span><em>第{item.chapter}章</em><strong>{item.score.toLocaleString("zh-CN")}</strong>
+          <b>{item.rank}</b><span>{item.username}</span><em>第{item.chapter}章</em><em>{item.spentStamina}</em><strong>{item.score.toLocaleString("zh-CN")}</strong><strong>{item.scoreEfficiency === null ? "—" : item.scoreEfficiency.toFixed(1)}</strong>
         </div>)}
         {!leaders.length && <p className="empty-copy">暂无排行记录</p>}
       </div>
@@ -214,22 +238,25 @@ export function GameShell() {
         <div className="projection-emblem" aria-hidden="true">{gameState?.form === "demon" ? "♠" : "✦"}</div>
         <p className="projection-kicker">投影机会已激活</p>
         <h2 id="projection-title">{gameState?.form === "angel" ? "天使协助" : "恶魔干扰"}</h2>
-        <div className="projection-summary"><span>{gameState?.form === "angel" ? "选择一位玩家，为其第一排施加公开圣印" : "选择一位玩家，暗中强化其第一排事件"}</span><strong>剩余 {Number(gameState?.projection ?? 0)}</strong></div>
+        <div className="projection-summary"><span>{gameState?.form === "angel" ? "查看完整4排棋盘，选择一个事件施加公开圣印" : "查看完整4排棋盘，选择一个事件暗中强化"}</span><strong>剩余 {Number(gameState?.projection ?? 0)}</strong></div>
         <div className="projection-tool">
         <label htmlFor="projection-player">目标玩家</label>
-        <select id="projection-player" value={target} onChange={(e) => { setTarget(e.target.value); setSlot(0); }}>
+        <select id="projection-player" value={target} onChange={(e) => { setTarget(e.target.value); setSlot(12); }}>
           {players.map((player) => <option key={player.username} value={player.username}>{player.username} · 第{player.chapter}章 · {player.score}分</option>)}
         </select>
         {gameState?.form === "angel" && <><div className="field-label">净化属性</div><div className="element-choices">
           {Object.entries(elementMeta).map(([key, value]) => <button className={element === key ? "active" : ""} onClick={() => setElement(key)} key={key}>{value.icon}{value.label}</button>)}
         </div></>}
-        <div className="field-label">对方第一排</div>
-        <div className="remote-row">
-          {(selectedPlayer?.firstRow ?? []).map((event, index) => <button className={slot === index ? "active" : ""} onClick={() => setSlot(index)} key={event.id}>
-            <span>{elementMeta[event.element]?.icon ?? "✦"}</span><b>{elementMeta[event.element]?.label ?? "?"}</b><small>生命{event.hp}</small>
-          </button>)}
+        <div className="field-label">对方完整棋盘（含预览行）</div>
+        <div className="remote-board">
+          {remoteRows.map((row, rowIndex) => <div className="remote-board-row" key={row.label}>
+            <span className="remote-row-label">{row.label}</span>
+            <div className="remote-row">{row.events.map((event, index) => { const targetSlot = rowIndex * 4 + index; return <button className={slot === targetSlot ? "active" : ""} onClick={() => setSlot(targetSlot)} key={event.id}>
+              <span>{elementMeta[event.element]?.icon ?? "✦"}</span><b>{elementMeta[event.element]?.label ?? "?"}</b><small>生命{event.hp}</small>
+            </button>; })}</div>
+          </div>)}
         </div>
-        <p className="projection-rule">{gameState?.form === "angel" ? "目标公开；目标通过净化共鸣消除则任务成功。" : gameState?.form === "demon" ? "目标对敌方隐藏；强化事件被恶魔卡直接击杀则任务成功。" : "光暗进度达到±100后才能跨玩家投影。"}</p>
+        <p className="projection-rule">{gameState?.form === "angel" ? "目标公开；目标通过净化共鸣消除则任务成功。" : gameState?.form === "demon" ? "目标对敌方隐藏；强化事件被恶魔卡直接击杀则任务成功。" : "光暗进度达到±50后才能跨玩家投影。"}</p>
         <button className="project-button" disabled={!canProject || sending} onClick={sendProjection}>{sending ? "正在投影…" : "发动投影"}</button>
         {!selectedPlayer && <p className="projection-empty">当前没有其他活跃玩家，投影机会将保留。</p>}
         </div>
@@ -240,6 +267,13 @@ export function GameShell() {
         <div className="confirm-icon">↻</div><h2 id="reset-title">重新开始游戏？</h2>
         <p>当前棋盘、手牌、章节、积分和投影记录都会清空，账号将保留。排行榜积分会立即变为0。</p>
         <div className="confirm-actions"><button onClick={() => setResetConfirm(false)} disabled={resetBusy}>取消</button><button className="danger" onClick={resetGame} disabled={resetBusy}>{resetBusy ? "正在重置…" : "确认重新开始"}</button></div>
+      </div>
+    </div>}
+    {adminResetConfirm && <div className="confirm-gate" role="dialog" aria-modal="true" aria-labelledby="admin-reset-title">
+      <div className="confirm-card admin-confirm-card">
+        <div className="confirm-icon">!</div><h2 id="admin-reset-title">重置所有玩家？</h2>
+        <p>这会清除排行榜积分、所有玩家棋盘与章节进度，并取消全部跨玩家投影。所有账号都会从第1章重新开始。</p>
+        <div className="confirm-actions"><button onClick={() => setAdminResetConfirm(false)} disabled={adminResetBusy}>取消</button><button className="danger" onClick={resetLeaderboard} disabled={adminResetBusy}>{adminResetBusy ? "正在全局重置…" : "确认重置排行榜"}</button></div>
       </div>
     </div>}
     {notice && <div className="multiplayer-toast">{notice}</div>}

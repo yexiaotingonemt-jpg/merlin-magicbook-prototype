@@ -265,6 +265,7 @@
     @keyframes enemyImpactFlash { 0% { opacity:0; } 20% { opacity:1; } 100% { opacity:0; } }
     @media (prefers-reduced-motion:reduce) {
       .event.targetable,.event.lethal-preview,.lethal-mark,.hp-damage-preview,.event.fx-transmute,.event.fx-hit,.event.fx-resonate,.event.fx-eliminate,.event.fx-drop,.event.fx-land,.board-fx-cue,.hand-panel.fx-enemy-impact,.hand-panel.fx-enemy-impact::after { animation-duration:.01ms; }
+      .healing-orb { display:none; }
     }
     .event.front { outline:1px solid rgba(255,211,96,.72); outline-offset:2px; box-shadow:inset 0 -4px rgba(255,194,63,.26),0 7px 18px rgba(0,0,0,.32); }
     .element-wind,
@@ -475,6 +476,12 @@
       transition:.2s;
     }
     .toast.show { opacity:1; transform:translate(-50%,0); }
+    .healing-orb {
+      position:fixed; z-index:95; width:13px; height:13px; pointer-events:none; border-radius:50%;
+      background:radial-gradient(circle,#f4fff3 0 18%,#8fffc5 36%,#42d99a 64%,transparent 72%);
+      box-shadow:0 0 10px #9fffd0,0 0 22px rgba(91,239,171,.75); transform:translate(-50%,-50%);
+    }
+    .healing-orb::after { content:"+"; position:absolute; inset:-7px; display:grid; place-items:center; color:#d7ffe8; font-size:14px; font-weight:900; text-shadow:0 0 6px #58eaa3; }
     @media (max-width:800px) {
       .app { width:min(100%,580px); display:flex; flex-direction:column; gap:0; }
       .desktop-column { display:contents; }
@@ -561,7 +568,7 @@
 
     <section class="panel alignment-panel">
       <div class="stat wide">
-        <div class="meter-head"><span>恶魔 100</span><span class="form-center"><b id="formText">中立形态</b><span class="balance-value" id="balanceValue">进度 0</span></span><span>100 天使</span></div>
+        <div class="meter-head"><span>恶魔 50</span><span class="form-center"><b id="formText">中立形态</b><span class="balance-value" id="balanceValue">进度 0</span></span><span>50 天使</span></div>
         <div class="balance" id="balance"><span class="balance-progress" id="balanceProgress"></span><span class="balance-marker" id="balanceMarker"></span></div>
         <div class="row small"><span id="darkText">黑暗值 0</span><span id="formBonus">无形态加成</span><span id="lightText">光明值 0</span></div>
       </div>
@@ -641,11 +648,11 @@
       <section class="help-section">
         <h3>5. 光暗拔河与连续使用</h3>
         <ul>
-          <li>光暗进度范围为-100～+100；天使卡推动正值，恶魔卡推动负值。</li>
+          <li>光暗进度范围为-50～+50；天使卡推动正值，恶魔卡推动负值，达到任意一端即激活对应形态。</li>
           <li>Combo 1～5依次推进5、6、8、10、13点，Combo 6以后每张推进15点；异色卡终结原Combo。</li>
           <li>未变身时，同色牌推进对应形态；变身后，同色牌维持进度，异色牌把进度拉回0并使形态消失。</li>
-          <li>连续使用天使卡会回复生命，但收益逐次衰减，最终按生命上限百分比反噬。</li>
-          <li>连续使用恶魔卡会提高全部攻击力，但收益逐次衰减，最终按百分比削减攻击力，最低不低于基础值的20%。</li>
+          <li>使用天使卡会令当前卡攻击力降低5%；连续使用时每张额外增加1%，单张最多降低10%。</li>
+          <li>使用恶魔卡会扣除生命上限5%的生命；连续使用时每张额外增加1%，单张最多扣除10%，生命不会低于0。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -717,16 +724,16 @@
     {kind:"vitality",label:"生命圣契",rarity:"稀有",rarityClass:"rare",weight:5}
   ];
   var normalTiers = [
-    {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:1},
-    {tier:"中级",weight:3,hpRate:.90,scoreRate:1.2,danger:"中",interval:1},
-    {tier:"高级",weight:2,hpRate:1.35,scoreRate:1.5,danger:"高",interval:2}
+    {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:2},
+    {tier:"中级",weight:3,hpRate:.90,scoreRate:1.2,danger:"中",interval:2},
+    {tier:"高级",weight:2,hpRate:1.35,scoreRate:1.5,danger:"高",interval:3}
   ];
   var eventRules = {
-    healing:{hpRate:.20,scoreRate:.50,danger:"初",interval:1},
-    attack:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
-    vitality:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
-    trapped:{hpRate:1.60,scoreRate:1.80,danger:"高",interval:2},
-    convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:2}
+    healing:{hpRate:.20,scoreRate:.50,danger:"初",interval:2},
+    attack:{hpRate:.40,scoreRate:0,danger:"初",interval:2},
+    vitality:{hpRate:.40,scoreRate:0,danger:"初",interval:2},
+    trapped:{hpRate:1.60,scoreRate:1.80,danger:"高",interval:3},
+    convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:3}
   };
   var cards = [
     {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
@@ -769,6 +776,11 @@
     return {id:uid++,element:el,kind:k.kind,kindLabel:k.kind==="normal"?"魔力乱流·"+tier.tier:k.label,rarity:k.rarity,rarityClass:k.rarityClass,
       danger:rule.danger,hp:hp,maxHp:hp,score:score,interval:rule.interval,countdown:rule.interval+1,frontEnteredTurn:0,locked:false,claimed:false};
   }
+  function normalizeEventTiming(event) {
+    var desired=event.danger==="高"?3:2,previous=Math.max(1,Number(event.interval)||desired);
+    event.countdown=Math.max(1,(Number(event.countdown)||previous+1)+(desired-previous));
+    event.interval=desired;return event;
+  }
   function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
   function drawCard(excludeName) {
     var rarity=Math.random()<.7?"normal":"rare";
@@ -806,14 +818,33 @@
     $("toast").textContent=text; $("toast").classList.add("show");
     clearTimeout(toast.timer); toast.timer=setTimeout(function(){$("toast").classList.remove("show");},1800);
   }
-  function comboStep(count) { return Math.max(-20,15-5*count)/100; }
-  function demonComboMultiplier() {
-    if(state.streak>=0)return 1;
-    var total=0;for(var i=1;i<=Math.abs(state.streak);i++)total+=comboStep(i);
-    return Math.max(.2,1+total);
+  function animateHealingToHealth(eventId,amount) {
+    if(amount<=0||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    var source=document.querySelector('[data-event-id="'+eventId+'"]'),target=$("healthFill");
+    if(!source||!target)return;
+    var from=source.getBoundingClientRect(),to=target.getBoundingClientRect();
+    for(var i=0;i<5;i++)(function(particle){
+      var orb=document.createElement("span");orb.className="healing-orb";document.body.appendChild(orb);
+      var sx=from.left+from.width*(.3+particle*.1),sy=from.top+from.height*.42;
+      var tx=to.left+Math.min(to.width,Math.max(8,to.width*state.health/state.maxHealth)),ty=to.top+to.height/2;
+      orb.style.left=sx+"px";orb.style.top=sy+"px";
+      var drift=(particle-2)*12;
+      var animation=orb.animate([
+        {transform:"translate(-50%,-50%) scale(.55)",opacity:0},
+        {transform:"translate("+(drift*.35-6.5)+"px,-18px) scale(1)",opacity:1,offset:.22},
+        {transform:"translate("+(tx-sx+drift)+"px,"+(ty-sy-10)+"px) scale(.72)",opacity:.92,offset:.8},
+        {transform:"translate("+(tx-sx)+"px,"+(ty-sy)+"px) scale(.25)",opacity:0}
+      ],{duration:720+particle*55,delay:particle*45,easing:"cubic-bezier(.22,.72,.2,1)",fill:"forwards"});
+      animation.onfinish=function(){orb.remove();};
+    })(i);
+    target.animate([{filter:"brightness(1)"},{filter:"brightness(1.9)",boxShadow:"0 0 18px #8fffc5"},{filter:"brightness(1)"}],{duration:760,delay:420});
+  }
+  function comboPenaltyRate(count) { return Math.min(.10,.04+Math.max(1,count)*.01); }
+  function angelAttackMultiplier() {
+    return state.streak>0?1-comboPenaltyRate(Math.abs(state.streak)):1;
   }
   function playerAttack() {
-    var value=baseAttack()*demonComboMultiplier();
+    var value=baseAttack()*angelAttackMultiplier();
     if(state.form==="demon") value*=state.boosted?1.4:1.2;
     return Math.max(Math.floor(baseAttack()*.2),Math.floor(value));
   }
@@ -824,17 +855,13 @@
     var sign=card.faction==="angel"?1:-1;
     var same=state.streak!==0&&Math.sign(state.streak)===sign;
     var nextStreak=sign*(same?Math.abs(state.streak)+1:1),count=Math.abs(nextStreak);
-    var multiplier=1;
-    if(nextStreak<0){
-      var total=0;for(var i=1;i<=count;i++)total+=comboStep(i);
-      multiplier=Math.max(.2,1+total);
-    }
+    var multiplier=nextStreak>0?1-comboPenaltyRate(count):1;
     var projectedForm=state.form,projectedBoosted=state.boosted,projectedBalance=state.balance;
     if(projectedForm!==card.faction){
-      projectedBalance=Math.max(-100,Math.min(100,projectedBalance+comboProgress(count)*sign));
+      projectedBalance=Math.max(-50,Math.min(50,projectedBalance+comboProgress(count)*sign));
       if((projectedForm==="angel"&&projectedBalance<=0)||(projectedForm==="demon"&&projectedBalance>=0)){projectedForm=null;projectedBoosted=false;}
-      if(!projectedForm&&projectedBalance===100){projectedForm="angel";projectedBoosted=false;}
-      if(!projectedForm&&projectedBalance===-100){projectedForm="demon";projectedBoosted=false;}
+      if(!projectedForm&&projectedBalance===50){projectedForm="angel";projectedBoosted=false;}
+      if(!projectedForm&&projectedBalance===-50){projectedForm="demon";projectedBoosted=false;}
     }
     var projectedAttack=baseAttack()*multiplier;
     if(projectedForm==="demon")projectedAttack*=projectedBoosted?1.4:1.2;
@@ -920,7 +947,7 @@
     $("attackFill").style.width=Math.min(100,playerAttack()/Math.max(1,baseAttack()*1.5)*100)+"%";
     var nextCombo=Math.abs(state.streak)+1;
     $("rhythmText").textContent="Combo："+(state.streak>0?"天使 "+state.streak:state.streak<0?"恶魔 "+Math.abs(state.streak):"0")+" · 同色下张 "+comboProgress(nextCombo)+"进度";
-    var balancePosition=(state.balance+100)/2;
+    var balancePosition=state.balance+50;
     var balanceLeft=state.balance<0?balancePosition:0;
     var balanceWidth=state.balance<0?100-balancePosition:balancePosition;
     $("balanceMarker").style.left="calc("+balancePosition+"% - 3px)";
@@ -1073,7 +1100,7 @@
   function renderProjection() {
     var box=$("projection");
     if(!state.form){
-      box.innerHTML="<p class=\"projection-empty\">光暗进度达到±100后激活形态并获得一次投影机会。天使目标公开，深渊眷属目标隐藏；任务成功获得50点投影贡献。</p>";
+      box.innerHTML="<p class=\"projection-empty\">光暗进度达到±50后激活形态并获得一次投影机会。天使目标公开，深渊眷属目标隐藏；任务成功获得50点投影贡献。</p>";
       return;
     }
     var ally=state.form==="angel";
@@ -1186,9 +1213,10 @@
     if(e.kind==="convert")claimConversion(e);
     if(e.kind==="healing"){
       var heal=Math.min(state.maxHealth-state.health,Math.floor(state.maxHealth*.25));state.health+=heal;
+      animateHealingToHealth(e.id,heal);
       addLog(heal>0?"生命回复事件：恢复 "+heal+" 点生命。":"生命已满，生命回复事件未产生效果。",heal>0?"good":"bad");
     }
-    if(e.kind==="vitality"){state.maxHealth+=2;state.health=Math.min(state.maxHealth,state.health+2);addLog("生命上限事件：生命上限提高2，并恢复2生命。","good");}
+    if(e.kind==="vitality"){state.maxHealth+=2;state.health=Math.min(state.maxHealth,state.health+2);animateHealingToHealth(e.id,2);addLog("生命上限事件：生命上限提高2，并恢复2生命。","good");}
     if(e.kind==="trapped"){
       state.rescued+=1;addLog("成功拯救俘虏（"+state.rescued+"/"+prisonerRequirement(state.chapter)+"）。","good");
       var virtualChapter=state.chapter+state.pendingChapterUps,required=prisonerRequirement(virtualChapter);
@@ -1261,18 +1289,17 @@
   function beginCombo(card) {
     var sign=card.faction==="angel"?1:-1,same=state.streak!==0&&Math.sign(state.streak)===sign;
     state.streak=sign*(same?Math.abs(state.streak)+1:1);
-    var count=Math.abs(state.streak),step=comboStep(count);
+    var count=Math.abs(state.streak),penalty=comboPenaltyRate(count);
     updateBalance(card,count);
-    if(card.faction==="angel"){
-      var amount=Math.floor(state.maxHealth*Math.abs(step));
-      if(step>0){state.health=Math.min(state.maxHealth,state.health+amount);addLog("天使Combo "+count+"：当前卡生效前恢复 "+amount+" 生命。","good");}
-      else if(step<0){state.health=Math.max(0,state.health-amount);addLog("天使Combo "+count+"：当前卡生效前反噬 "+amount+" 生命。","bad");}
-      else addLog("天使Combo "+count+"：本次生命效果为0。","");
-    }else addLog("恶魔Combo "+count+"：当前卡攻击调整为基准的 "+Math.floor(demonComboMultiplier()*100)+"%。",step>=0?"good":"bad");
+    if(card.faction==="demon"){
+      var amount=Math.floor(state.maxHealth*penalty);
+      state.health=Math.max(0,state.health-amount);
+      addLog("恶魔Combo "+count+"：当前卡生效前扣除 "+amount+" 生命（"+Math.round(penalty*100)+"%）。","bad");
+    }else addLog("天使Combo "+count+"：当前卡攻击力降低 "+Math.round(penalty*100)+"%。","bad");
     return state.health>0;
   }
   function activateForm(form) {
-    state.form=form;state.balance=form==="angel"?100:-100;state.boosted=false;state.projection+=1;
+    state.form=form;state.balance=form==="angel"?50:-50;state.boosted=false;state.projection+=1;
     state.angelMark=null;state.abyssMark=null;
     state.projectionBoard=form==="angel"?[makeEvent("wind","normal",true),makeEvent("fire","normal",true),makeEvent("wind","normal",true),makeEvent("electric","normal",true)]:[makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true),makeEvent(null,"normal",true)];
     addLog("形态激活："+(form==="angel"?"天使，个人积分立即 +10%。":"恶魔，全部攻击力立即 +20%。"),"good");toast(form==="angel"?"天使形态激活":"恶魔形态激活");
@@ -1281,14 +1308,14 @@
     if(state.form===card.faction){addLog((card.faction==="angel"?"天使":"恶魔")+"形态中使用同阵营牌：形态进度保持 "+state.balance+"。","");return;}
     var oldForm=state.form,delta=comboProgress(count)*(card.faction==="angel"?1:-1);
     var before=state.balance;
-    state.balance=Math.max(-100,Math.min(100,state.balance+delta));
+    state.balance=Math.max(-50,Math.min(50,state.balance+delta));
     var actual=state.balance-before;
     addLog((card.faction==="angel"?"光明":"黑暗")+"进度 "+(actual>=0?"+":"")+actual+"："+before+" → "+state.balance+"。",actual===0?"":"good");
     if((oldForm==="angel"&&state.balance<=0)||(oldForm==="demon"&&state.balance>=0)){
       state.form=null;state.boosted=false;addLog("异色卡令形态消失；拔河进度保留为 "+state.balance+"。","bad");
     }
-    if(!state.form&&state.balance===100)activateForm("angel");
-    if(!state.form&&state.balance===-100)activateForm("demon");
+    if(!state.form&&state.balance===50)activateForm("angel");
+    if(!state.form&&state.balance===-50)activateForm("demon");
   }
   async function advanceTurn() {
     state.turn+=1;
@@ -1423,9 +1450,11 @@
       var incoming=message.state;
       var oldProjectionIds=new Set((state.board||[]).map(function(e){return e.remoteProjection&&e.remoteProjection.id;}).filter(Boolean));
       state=Object.assign(freshState(),incoming);
-      state.board=(incoming.board||state.board).map(function(e){return Object.assign({},e);});
+      state.balance=Math.max(-50,Math.min(50,Number(state.balance)||0));
+      if(state.form==="angel")state.balance=50;if(state.form==="demon")state.balance=-50;
+      state.board=(incoming.board||state.board).map(function(e){return normalizeEventTiming(Object.assign({},e));});
       state.hand=(incoming.hand||state.hand).map(function(card){return Object.assign({},card);});
-      state.preview=(incoming.preview||state.preview).map(function(e){return Object.assign({},e);});
+      state.preview=(incoming.preview||state.preview).map(function(e){return normalizeEventTiming(Object.assign({},e));});
       state.logs=Array.isArray(incoming.logs)?incoming.logs:[];
       var received=state.board.filter(function(e){return e.remoteProjection&&!oldProjectionIds.has(e.remoteProjection.id);});
       received.forEach(function(e){

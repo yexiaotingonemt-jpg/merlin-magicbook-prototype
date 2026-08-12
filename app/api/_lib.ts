@@ -68,7 +68,8 @@ export async function accountPayload(account: typeof accounts.$inferSelect) {
 export async function resolveMissingProjections(accountId: number, state: GameState, actionFaction: string | null) {
   const db = getDb();
   const active = await db.select().from(projections).where(and(eq(projections.targetId, accountId), eq(projections.status, "active")));
-  const eventIds = new Set((state.board ?? []).map((event) => event.id));
+  const preview = Array.isArray(state.preview) ? state.preview as GameEvent[] : [];
+  const eventIds = new Set([...(state.board ?? []), ...preview].map((event) => event.id));
   for (const task of active) {
     if (eventIds.has(task.targetEventId)) continue;
     const success = task.faction === "angel" ? actionFaction === "angel" : actionFaction === "demon";
