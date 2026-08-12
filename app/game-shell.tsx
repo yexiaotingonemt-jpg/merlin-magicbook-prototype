@@ -40,6 +40,8 @@ export function GameShell() {
   const [slot, setSlot] = useState(0);
   const [element, setElement] = useState("wind");
   const [sending, setSending] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
   const iframeReady = useRef(false);
 
   const flash = useCallback((text: string) => {
@@ -123,6 +125,23 @@ export function GameShell() {
     finally { setSending(false); }
   };
 
+  const resetGame = async () => {
+    if (!username || resetBusy) return;
+    setResetBusy(true);
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    try {
+      const result = await api<{ updatedAt: string }>("/api/reset", {
+        method: "POST", body: JSON.stringify({ username }),
+      });
+      serverVersion.current = result.updatedAt;
+      setGameState(null); setResetConfirm(false); setTab("rank");
+      sendToGame("merlin:new", null);
+      await loadSocial(username);
+      flash("游戏已重新开始，排行榜积分已清零");
+    } catch (error) { flash(error instanceof Error ? error.message : "重置失败"); }
+    finally { setResetBusy(false); }
+  };
+
   const selectedPlayer = players.find((player) => player.username === target);
   const canProject = Boolean(gameState?.form && Number(gameState.projection ?? 0) > 0 && selectedPlayer);
 
@@ -142,7 +161,7 @@ export function GameShell() {
     </div>}
 
     {username && <aside className="social-dock" aria-label="多人功能">
-      <div className="dock-header"><span className="online-dot" />账号 <strong>{username}</strong></div>
+      <div className="dock-header"><span className="online-dot" />账号 <strong>{username}</strong><button className="reset-entry" onClick={() => setResetConfirm(true)}>重新开始</button></div>
       <div className="dock-tabs">
         <button className={tab === "rank" ? "active" : ""} onClick={() => setTab("rank")}>排行榜</button>
         <button className={tab === "projection" ? "active" : ""} onClick={() => setTab("projection")}>跨玩家投影</button>
@@ -171,6 +190,13 @@ export function GameShell() {
         <button className="project-button" disabled={!canProject || sending} onClick={sendProjection}>{sending ? "正在投影…" : "发动投影"}</button>
       </div>}
     </aside>}
+    {resetConfirm && <div className="confirm-gate" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+      <div className="confirm-card">
+        <div className="confirm-icon">↻</div><h2 id="reset-title">重新开始游戏？</h2>
+        <p>当前棋盘、手牌、章节、积分和投影记录都会清空，账号将保留。排行榜积分会立即变为0。</p>
+        <div className="confirm-actions"><button onClick={() => setResetConfirm(false)} disabled={resetBusy}>取消</button><button className="danger" onClick={resetGame} disabled={resetBusy}>{resetBusy ? "正在重置…" : "确认重新开始"}</button></div>
+      </div>
+    </div>}
     {notice && <div className="multiplayer-toast">{notice}</div>}
   </main>;
 }
