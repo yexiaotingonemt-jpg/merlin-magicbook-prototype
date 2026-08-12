@@ -90,8 +90,10 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /candidateDamage\+=Math\.floor\(attack\*handDamageCoefficient\(standardPerCellCoefficient/);
   assert.match(game, /damageByIndex\[i\]=\(damageByIndex\[i\]\|\|0\)\+lineDamage/);
   assert.match(game, /function resolveFallResonance\(attackSnapshot,moved\)/);
+  assert.match(game, /连锁次数不设上限/);
   assert.match(game, /applyResonance\(moved\.indices/);
   assert.match(game, /while\(moved&&moved\.indices&&moved\.indices\.length\)/);
+  assert.doesNotMatch(game, /round\s*[<]=?\s*5/);
   assert.match(game, /await resolveFallResonance\(resonanceAttack,purifyMoved\)/);
   assert.match(game, /await resolveFallResonance\(attackSnapshot,moved\)/);
   assert.doesNotMatch(game, /resolveDemonFalls/);

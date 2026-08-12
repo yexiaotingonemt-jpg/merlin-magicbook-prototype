@@ -647,7 +647,7 @@
           <li>横纵共鸣可以共用一个格子；同一格同时属于横向与纵向共鸣时，本轮受到2次共鸣伤害。</li>
           <li>净化造成属性变化后会预览并结算完整共鸣线，包括其他受到伤害的事件和横纵交叉的双次伤害。</li>
           <li>事件消除并触发下落后，仅遍历本轮发生位移的事件格，记录其横纵轴产生的全部共鸣线；所有位移格遍历结束后再同时结算。</li>
-          <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定。连锁伤害依次为20%、15%、10%，第4轮及以后均为5%。</li>
+          <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定。连锁次数不设上限；伤害依次为20%、15%、10%，第4轮及以后均为5%。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -1278,6 +1278,7 @@
   }
   async function resolveFallResonance(attackSnapshot,moved) {
     var coefficients=[.20,.15,.10,.05],round=1;
+    // 不设置连锁轮数上限；第4轮后只固定伤害倍率，继续结算直到棋盘稳定。
     while(moved&&moved.indices&&moved.indices.length){
       var coefficient=coefficients[Math.min(round-1,coefficients.length-1)];
       var damage=Math.floor(attackSnapshot*handDamageCoefficient(coefficient));
