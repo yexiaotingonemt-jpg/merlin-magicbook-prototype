@@ -68,6 +68,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /trapped:\{hpRate:1\.00/);
   assert.match(game, /convert:\{hpRate:1\.20/);
   assert.match(game, /EVENT_HEALTH_VERSION=2/);
+  assert.match(game, /state\.permanentAttack\+=3/);
+  assert.match(game, /攻击成长固定\+3/);
+  assert.doesNotMatch(game, /state\.permanentAttack\+=1/);
   assert.match(game, /state\.board=state\.board\.map\(migrateLegacyEventHealth\)/);
   assert.doesNotMatch(game, /name:"处决"/);
   assert.doesNotMatch(game, /name:"吞噬"/);

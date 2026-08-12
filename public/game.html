@@ -681,7 +681,7 @@
           <li>所有补位事件均按上述权重独立随机；权重总计100%，同类事件可以连续出现。</li>
           <li>事件生命按照预期攻击动态生成：普通初／中／高为45%／60%／80%，治疗20%，攻击与生命成长30%，俘虏100%，转化牌120%。</li>
           <li>普通初／中／高级内部权重为6∶3∶2；所有生命、伤害、成长和积分统一向下取整。</li>
-          <li>治疗事件回复生命上限25%；攻击成长固定+1；生命上限成长+2并回复2。</li>
+          <li>治疗事件回复生命上限25%；攻击成长固定+3；生命上限成长+2并回复2。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -1241,7 +1241,7 @@
   }
   function rewardEvent(e) {
     if(e.score>0){var gained=Math.floor(e.score*scoreMultiplier());state.score+=gained;addLog(e.kindLabel+"：获得 "+gained+" 积分。","good");}
-    if(e.kind==="attack"){state.permanentAttack+=1;addLog("攻击成长：本次活动全部攻击力固定提高1。","good");}
+    if(e.kind==="attack"){state.permanentAttack+=3;addLog("攻击成长：本次活动全部攻击力固定提高3。","good");}
     if(e.kind==="convert")claimConversion(e);
     if(e.kind==="healing"){
       var heal=Math.min(state.maxHealth-state.health,Math.floor(state.maxHealth*.25));state.health+=heal;
