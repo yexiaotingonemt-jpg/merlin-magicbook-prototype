@@ -21,7 +21,9 @@ await writeFile(
     {
       version: 1,
       include: ["/*"],
-      exclude: ["/_next/static/*", "/merlin-assets/*", "/game.html", "/*.svg"],
+      // Cloudflare Pages redirects `/game.html` to the clean `/game` URL.
+      // Both paths must bypass the Vinext worker so the standalone game stays static.
+      exclude: ["/_next/static/*", "/merlin-assets/*", "/game", "/game.html", "/*.svg"],
     },
     null,
     2,
