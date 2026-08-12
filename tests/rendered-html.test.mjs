@@ -75,6 +75,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.doesNotMatch(game, /name:"处决"/);
   assert.doesNotMatch(game, /name:"吞噬"/);
   assert.match(game, /name:"深渊坍塌",faction:"demon",rarity:"normal"/);
+  assert.match(game, /name:"深渊灭界"[\s\S]{0,180}coeff:5\/12/);
+  assert.match(game, /总倍率500%/);
+  assert.doesNotMatch(game, /name:"深渊灭界"[\s\S]{0,180}coeff:2\.5\/12/);
   assert.doesNotMatch(game, /card\.range==="execute"/);
   assert.doesNotMatch(game, /card\.range==="devour"/);
   assert.doesNotMatch(game, /exploded=new Set/);
