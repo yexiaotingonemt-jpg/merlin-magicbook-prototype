@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "merlin-magicbook-yexiaoting",
+  "pages_build_output_dir": "./dist/client",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "merlin-magicbook-multiplayer",
+      "database_id": "2d236d06-84a4-4810-a4d1-1c5ee2df6fcd"
+    }
+  ]
+}

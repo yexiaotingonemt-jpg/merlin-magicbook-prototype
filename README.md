@@ -1,10 +1,7 @@
-# 梅林的魔法书 3.0
+# 梅林的魔法书 3.0 · 多人版
 
-手机版可交互玩法原型，包含 4×3 棋盘、光暗变身、元素共鸣、跨玩家投影与固定三张手牌等机制。
+包含账号续玩、云端存档、排行榜、跨玩家投影和重新开始功能的可交互玩法原型。
 
-打开 GitHub Pages 地址即可体验，无需安装或构建。
+在线试玩：<https://merlin-magicbook-yexiaoting.pages.dev/>
 
-## 发布信息
-
-- Cloudflare Pages：https://merlin-magicbook-yexiaoting.pages.dev/
-- GitHub Pages：https://yexiaotingonemt-jpg.github.io/merlin-magicbook-prototype/
+`main` 分支更新后，GitHub Actions 会自动构建并部署到 Cloudflare Pages；多人数据存储在 Cloudflare D1。
