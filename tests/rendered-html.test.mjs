@@ -78,8 +78,9 @@ test("ships the game and every multiplayer API route", async () => {
   assert.doesNotMatch(game, /overflowed=new Set/);
   assert.match(game, /var poolSize=cards\.filter/);
   assert.match(game, /migrated\.name==="处决"\|\|migrated\.name==="吞噬"/);
-  assert.match(game, /将任意1个目标转化为"\+meta\[card\.element\]\.label\+"；共鸣时每格造成"\+label\+"的伤害/);
-  assert.match(game, /将第一排全部目标转化为"\+meta\[card\.element\]\.label\+"；共鸣时每格造成"\+label\+"的伤害/);
+  assert.match(game, /将任意1个目标转化为"\+meta\[card\.element\]\.label\+"。"/);
+  assert.match(game, /将第一排全部目标转化为"\+meta\[card\.element\]\.label\+"。"/);
+  assert.doesNotMatch(game, /card\.mode==="purify"[\s\S]{0,300}共鸣时每格造成/);
   assert.doesNotMatch(game, /三格共鸣时每格造成/);
   assert.doesNotMatch(game, /四格共鸣时，每格造成/);
   assert.match(game, /baseHealth:300,maxHealth:base\.maxHealth\|\|300,health:base\.maxHealth\|\|300/);
@@ -87,7 +88,8 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /state\.maxHealth=previousMax\+200/);
   assert.match(game, /simulatedPurificationLines/);
   assert.match(game, /purificationPreviewDamage/);
-  assert.match(game, /candidateDamage\+=Math\.floor\(attack\*handDamageCoefficient\(standardPerCellCoefficient/);
+  assert.match(game, /function resonanceDamage\(attack\) \{ return Math\.floor\(attack\*\.5\); \}/);
+  assert.match(game, /candidateDamage\+=resonanceDamage\(attack\)/);
   assert.match(game, /damageByIndex\[i\]=\(damageByIndex\[i\]\|\|0\)\+lineDamage/);
   assert.match(game, /function resolveFallResonance\(attackSnapshot,moved\)/);
   assert.match(game, /连锁次数不设上限/);
@@ -97,6 +99,10 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /await resolveFallResonance\(resonanceAttack,purifyMoved\)/);
   assert.match(game, /await resolveFallResonance\(attackSnapshot,moved\)/);
   assert.doesNotMatch(game, /resolveDemonFalls/);
+  assert.match(game, /applyResonance\(changed,"净化共鸣",resonanceDamage\(resonanceAttack\)\)/);
+  assert.match(game, /var damage=resonanceDamage\(attackSnapshot\)/);
+  assert.doesNotMatch(game, /var coefficients=\[\.20,\.15,\.10,\.05\]/);
+  assert.doesNotMatch(game, /standardPerCellCoefficient/);
   assert.doesNotMatch(game, /function mergeLines/);
   assert.match(game, /state\.boosted\?2:1\.5/);
   assert.match(game, /state\.boosted\?1\.4:1\.2/);

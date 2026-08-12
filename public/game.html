@@ -647,7 +647,8 @@
           <li>横纵共鸣可以共用一个格子；同一格同时属于横向与纵向共鸣时，本轮受到2次共鸣伤害。</li>
           <li>净化造成属性变化后会预览并结算完整共鸣线，包括其他受到伤害的事件和横纵交叉的双次伤害。</li>
           <li>事件消除并触发下落后，仅遍历本轮发生位移的事件格，记录其横纵轴产生的全部共鸣线；所有位移格遍历结束后再同时结算。</li>
-          <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定。连锁次数不设上限；伤害依次为20%、15%、10%，第4轮及以后均为5%。</li>
+          <li>每次共鸣命中均造成触发时攻击力50%的伤害，天使与恶魔来源使用同一标准，伤害不随连锁轮次削减。</li>
+          <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定，连锁次数不设上限。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -741,14 +742,14 @@
     convert:{hpRate:1.20,scoreRate:0,danger:"高",interval:2}
   };
   var cards = [
-    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；共鸣时每格造成48.3%攻击伤害。"},
-    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为雷；共鸣时每格造成48.3%攻击伤害。"},
-    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为火；共鸣时每格造成48.3%攻击伤害。"},
-    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为电；共鸣时每格造成48.3%攻击伤害。"},
-    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为风；共鸣时每格造成45%攻击伤害。"},
-    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为雷；共鸣时每格造成45%攻击伤害。"},
-    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为火；共鸣时每格造成45%攻击伤害。"},
-    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为电；共鸣时每格造成45%攻击伤害。"},
+    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",cost:1,desc:"将任意1个目标转化为风。"},
+    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",cost:1,desc:"将任意1个目标转化为雷。"},
+    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",cost:1,desc:"将任意1个目标转化为火。"},
+    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",cost:1,desc:"将任意1个目标转化为电。"},
+    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",cost:1,desc:"将第一排全部目标转化为风。"},
+    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",cost:1,desc:"将第一排全部目标转化为雷。"},
+    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",cost:1,desc:"将第一排全部目标转化为火。"},
+    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",cost:1,desc:"将第一排全部目标转化为电。"},
     {name:"摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"single",tier:"大",coeff:1,cost:1,desc:"对任意1个目标造成100%攻击的直接伤害。"},
     {name:"震荡摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"cross",tier:"小",coeff:.40,cost:1,desc:"对目标及上下左右每格造成40%攻击伤害，总倍率200%。"},
     {name:"深渊坍塌",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"column",tier:"大",coeff:1.45/3,cost:1,desc:"竖列每格造成48.3%攻击伤害。"},
@@ -906,18 +907,13 @@
   function damageLabel(value,coefficient) {
     return value+"（"+percentLabel(coefficient)+"）";
   }
-  function standardPerCellCoefficient(cellCount) {
-    if(cellCount<=1)return 1;
-    if(cellCount===2)return 1.20/2;
-    if(cellCount===3)return 1.45/3;
-    return 1.80/4;
-  }
+  function resonanceDamage(attack) { return Math.floor(attack*.5); }
   function cardDescription(card) {
-    var attack=projectedAttackForCard(card),effectiveCoefficient=handDamageCoefficient(card.coeff),damage=Math.floor(attack*effectiveCoefficient),label=damageLabel(damage,effectiveCoefficient);
     if(card.mode==="purify"){
-      if(card.range==="frontrow")return "将第一排全部目标转化为"+meta[card.element].label+"；共鸣时每格造成"+label+"的伤害。";
-      return "将任意1个目标转化为"+meta[card.element].label+"；共鸣时每格造成"+label+"的伤害。";
+      if(card.range==="frontrow")return "将第一排全部目标转化为"+meta[card.element].label+"。";
+      return "将任意1个目标转化为"+meta[card.element].label+"。";
     }
+    var attack=projectedAttackForCard(card),effectiveCoefficient=handDamageCoefficient(card.coeff),damage=Math.floor(attack*effectiveCoefficient),label=damageLabel(damage,effectiveCoefficient);
     if(card.range==="cross")return "对目标及其上下左右每格造成"+label+"的伤害。";
     if(card.range==="row")return "横排每格造成"+label+"的伤害。";
     if(card.range==="column")return "竖列每格造成"+label+"的伤害。";
@@ -1015,7 +1011,7 @@
       if(!isValidTarget(card,targetIndex))return;
       var lines=simulatedPurificationLines(card,targetIndex),candidateDamage=0;
       lines.forEach(function(line){
-        if(line.indexOf(eventIndex)>=0)candidateDamage+=Math.floor(attack*handDamageCoefficient(standardPerCellCoefficient(line.length)));
+        if(line.indexOf(eventIndex)>=0)candidateDamage+=resonanceDamage(attack);
       });
       damage=Math.max(damage,candidateDamage);
     });
@@ -1277,11 +1273,10 @@
     return {indices:moved,moves:moves};
   }
   async function resolveFallResonance(attackSnapshot,moved) {
-    var coefficients=[.20,.15,.10,.05],round=1;
-    // 不设置连锁轮数上限；第4轮后只固定伤害倍率，继续结算直到棋盘稳定。
+    var round=1;
+    // 不设置连锁轮数上限，所有轮次均按触发时攻击力的50%结算。
     while(moved&&moved.indices&&moved.indices.length){
-      var coefficient=coefficients[Math.min(round-1,coefficients.length-1)];
-      var damage=Math.floor(attackSnapshot*handDamageCoefficient(coefficient));
+      var damage=resonanceDamage(attackSnapshot);
       // 先收集所有位移格横纵轴上的共鸣线，再统一结算。同一条线只记录一次，
       // 横纵交叉格会在两条线上分别记伤，因此本轮承受双倍共鸣伤害。
       var result=applyResonance(moved.indices,"落位共鸣第"+round+"轮",damage);
@@ -1382,9 +1377,7 @@
         renderBoard();
         await animateCells(changed,"fx-transmute",340);
         var resonanceAttack=playerAttack();
-        var resonance=applyResonance(changed,"净化共鸣",function(groupSize){
-          return Math.floor(resonanceAttack*handDamageCoefficient(standardPerCellCoefficient(groupSize)));
-        });
+        var resonance=applyResonance(changed,"净化共鸣",resonanceDamage(resonanceAttack));
         if(resonance.groups)await animateCells(resonance.affected,"fx-resonate",420);
         if(resonance.dead){
           await animateCells(resonance.deadIndices,"fx-eliminate",420);
