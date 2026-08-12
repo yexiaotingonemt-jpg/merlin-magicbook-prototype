@@ -78,6 +78,10 @@ test("ships the game and every multiplayer API route", async () => {
   assert.doesNotMatch(game, /overflowed=new Set/);
   assert.match(game, /var poolSize=cards\.filter/);
   assert.match(game, /migrated\.name==="处决"\|\|migrated\.name==="吞噬"/);
+  assert.match(game, /将任意1个目标转化为"\+meta\[card\.element\]\.label\+"；共鸣时每格造成"\+label\+"的伤害/);
+  assert.match(game, /将第一排全部目标转化为"\+meta\[card\.element\]\.label\+"；共鸣时每格造成"\+label\+"的伤害/);
+  assert.doesNotMatch(game, /三格共鸣时每格造成/);
+  assert.doesNotMatch(game, /四格共鸣时，每格造成/);
   assert.match(game, /baseHealth:300,maxHealth:base\.maxHealth\|\|300,health:base\.maxHealth\|\|300/);
   assert.match(game, /Number\(incoming\.baseHealth\)!==300/);
   assert.match(game, /state\.maxHealth=previousMax\+200/);

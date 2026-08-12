@@ -741,14 +741,14 @@
     convert:{hpRate:1.20,scoreRate:0,danger:"高",interval:2}
   };
   var cards = [
-    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
-    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为雷；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
-    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为火；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
-    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为电；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
-    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为风；四格共鸣每格造成45%攻击伤害。"},
-    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为雷；四格共鸣每格造成45%攻击伤害。"},
-    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为火；四格共鸣每格造成45%攻击伤害。"},
-    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.45,cost:1,desc:"将第一排全部合法事件转化为电；四格共鸣每格造成45%攻击伤害。"},
+    {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；共鸣时每格造成48.3%攻击伤害。"},
+    {name:"净化·雷",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"thunder",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为雷；共鸣时每格造成48.3%攻击伤害。"},
+    {name:"净化·火",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"fire",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为火；共鸣时每格造成48.3%攻击伤害。"},
+    {name:"净化·电",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"electric",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为电；共鸣时每格造成48.3%攻击伤害。"},
+    {name:"横向净化·风",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"wind",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为风；共鸣时每格造成45%攻击伤害。"},
+    {name:"横向净化·雷",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"thunder",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为雷；共鸣时每格造成45%攻击伤害。"},
+    {name:"横向净化·火",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"fire",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为火；共鸣时每格造成45%攻击伤害。"},
+    {name:"横向净化·电",faction:"angel",rarity:"rare",mode:"purify",target:"front",range:"frontrow",element:"electric",tier:"大",coeff:.45,cost:1,desc:"将第一排全部目标转化为电；共鸣时每格造成45%攻击伤害。"},
     {name:"摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"single",tier:"大",coeff:1,cost:1,desc:"对任意1个目标造成100%攻击的直接伤害。"},
     {name:"震荡摧毁",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"cross",tier:"小",coeff:.40,cost:1,desc:"对目标及上下左右每格造成40%攻击伤害，总倍率200%。"},
     {name:"深渊坍塌",faction:"demon",rarity:"normal",mode:"destroy",target:"any",range:"column",tier:"大",coeff:1.45/3,cost:1,desc:"竖列每格造成48.3%攻击伤害。"},
@@ -915,10 +915,8 @@
   function cardDescription(card) {
     var attack=projectedAttackForCard(card),effectiveCoefficient=handDamageCoefficient(card.coeff),damage=Math.floor(attack*effectiveCoefficient),label=damageLabel(damage,effectiveCoefficient);
     if(card.mode==="purify"){
-      var coefficient3=handDamageCoefficient(standardPerCellCoefficient(3)),coefficient4=handDamageCoefficient(standardPerCellCoefficient(4));
-      var label3=damageLabel(Math.floor(attack*coefficient3),coefficient3),label4=damageLabel(Math.floor(attack*coefficient4),coefficient4);
-      if(card.range==="frontrow")return "将第一排全部合法事件转化为"+meta[card.element].label+"；四格共鸣时，每格造成"+label4+"的伤害。";
-      return "将任意1个目标转化为"+meta[card.element].label+"；三格共鸣时每格造成"+label3+"的伤害，四格共鸣时每格造成"+label4+"的伤害。";
+      if(card.range==="frontrow")return "将第一排全部目标转化为"+meta[card.element].label+"；共鸣时每格造成"+label+"的伤害。";
+      return "将任意1个目标转化为"+meta[card.element].label+"；共鸣时每格造成"+label+"的伤害。";
     }
     if(card.range==="cross")return "对目标及其上下左右每格造成"+label+"的伤害。";
     if(card.range==="row")return "横排每格造成"+label+"的伤害。";
