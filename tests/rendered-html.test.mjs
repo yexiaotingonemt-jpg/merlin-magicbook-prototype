@@ -103,6 +103,12 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /var damage=resonanceDamage\(attackSnapshot\)/);
   assert.doesNotMatch(game, /var coefficients=\[\.20,\.15,\.10,\.05\]/);
   assert.doesNotMatch(game, /standardPerCellCoefficient/);
+  assert.match(game, /resonanceResolving:false/);
+  assert.match(game, /if\(state\.resonanceResolving\)return false;\s*state\.turn\+=1/);
+  assert.match(game, /共鸣伤害、事件消除、下落补位及后续连锁全部完成前/);
+  const resonanceUnlock = game.indexOf("state.resonanceResolving=false;\n      state.hand[handIndex]");
+  const enemyTurn = game.indexOf("await advanceTurn();", resonanceUnlock);
+  assert.ok(resonanceUnlock >= 0 && enemyTurn > resonanceUnlock, "enemy turn must start after the resonance lock is released");
   assert.doesNotMatch(game, /function mergeLines/);
   assert.match(game, /state\.boosted\?2:1\.5/);
   assert.match(game, /state\.boosted\?1\.4:1\.2/);

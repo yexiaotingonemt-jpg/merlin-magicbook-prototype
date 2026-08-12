@@ -649,6 +649,7 @@
           <li>事件消除并触发下落后，仅遍历本轮发生位移的事件格，记录其横纵轴产生的全部共鸣线；所有位移格遍历结束后再同时结算。</li>
           <li>每次共鸣命中均造成触发时攻击力50%的伤害，天使与恶魔来源使用同一标准，伤害不随连锁轮次削减。</li>
           <li>共鸣若摧毁事件并产生新一轮下落，会继续以新的位移格重复判断直到棋盘稳定，连锁次数不设上限。</li>
+          <li>共鸣伤害、事件消除、下落补位及后续连锁全部完成前，敌方倒计时与攻击结算保持等待；只有棋盘稳定后才进入敌方行动。</li>
         </ul>
       </section>
       <section class="help-section">
@@ -831,7 +832,7 @@
       baseHealth:300,maxHealth:base.maxHealth||300,health:base.maxHealth||300,chapter:base.chapter||1,rescued:0,
       permanentAttack:base.permanentAttack||0,
       balance:0,form:null,boosted:false,streak:0,turn:0,projection:0,
-      conversion:base.conversion||0,socialContribution:base.socialContribution||0,selected:null,convertMode:false,resolving:false,pendingChapterUps:0,
+      conversion:base.conversion||0,socialContribution:base.socialContribution||0,selected:null,convertMode:false,resolving:false,resonanceResolving:false,pendingChapterUps:0,
       elementPool:chapterElements(base.chapter||1,base.elementPool),
       hand:[],board:[],preview:[],projectionBoard:[],
       projectionElement:"wind",projectionTarget:0,angelMark:null,abyssMark:null,projectionTurns:0,logs:[]
@@ -1350,6 +1351,7 @@
     if(!state.form&&state.balance===-50)activateForm("demon");
   }
   async function advanceTurn() {
+    if(state.resonanceResolving)return false;
     state.turn+=1;
     for(var i=8;i<12;i++){
       var e=state.board[i];if(e.frontEnteredTurn===state.turn)continue;
@@ -1371,6 +1373,7 @@
     try {
       state.stamina-=card.cost;
       if(!beginCombo(card)){await restartChapter(true);return;}
+      state.resonanceResolving=true;
       if(card.mode==="purify"){
         var changed=card.range==="frontrow"?[8,9,10,11]:[index];
         changed.forEach(function(i){state.board[i].element=card.element;});
@@ -1400,12 +1403,15 @@
           await resolveFallResonance(attackSnapshot,moved);
         }
       }
+      // 棋盘稳定后才解除共鸣阶段锁，敌方随后才能结算倒计时与攻击。
+      state.resonanceResolving=false;
       state.hand[handIndex]=drawCard();state.selected=null;state.convertMode=false;
       if(await completePendingChapter())return;
       $("instruction").textContent="已结算「"+card.name+"」并摸取1张牌。";
       await advanceTurn();
       publishMultiplayerState(card.faction);
     } finally {
+      state.resonanceResolving=false;
       state.resolving=false;root.classList.remove("resolving");render();
     }
   }
