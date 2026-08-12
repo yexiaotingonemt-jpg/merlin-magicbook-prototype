@@ -48,6 +48,8 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(game, /恶魔 50/);
   assert.match(game, /comboPenaltyRate/);
   assert.match(game, /healing-orb/);
+  assert.match(game, /准备攻击/);
+  assert.match(game, /if\(e\.countdown===0\)/);
   assert.doesNotMatch(game, /用1张，按概率摸1张/);
 });
 

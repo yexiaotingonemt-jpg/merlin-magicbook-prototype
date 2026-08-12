@@ -265,6 +265,7 @@
     @keyframes enemyImpactFlash { 0% { opacity:0; } 20% { opacity:1; } 100% { opacity:0; } }
     @media (prefers-reduced-motion:reduce) {
       .event.targetable,.event.lethal-preview,.lethal-mark,.hp-damage-preview,.event.fx-transmute,.event.fx-hit,.event.fx-resonate,.event.fx-eliminate,.event.fx-drop,.event.fx-land,.board-fx-cue,.hand-panel.fx-enemy-impact,.hand-panel.fx-enemy-impact::after { animation-duration:.01ms; }
+      .countdown.ready { animation:none; }
       .healing-orb { display:none; }
     }
     .event.front { outline:1px solid rgba(255,211,96,.72); outline-offset:2px; box-shadow:inset 0 -4px rgba(255,194,63,.26),0 7px 18px rgba(0,0,0,.32); }
@@ -312,6 +313,8 @@
     @keyframes damagePreview { 0%,100% { opacity:.7; } 50% { opacity:0; } }
     .event-bottom { position:relative; font-size:9px; color:#f3ecf8; }
     .countdown { position:relative; margin-top:8px; padding:4px 5px; border-radius:6px; font-size:9px; color:#ffe6a6; background:rgba(25,12,8,.34); border:1px solid rgba(255,220,137,.16); }
+    .countdown.ready { color:#ffd1c2; border-color:rgba(255,112,89,.58); background:linear-gradient(90deg,rgba(104,28,22,.62),rgba(48,14,12,.48)); box-shadow:0 0 12px rgba(255,75,51,.2); animation:readyAttackPulse 1.4s ease-in-out infinite; }
+    @keyframes readyAttackPulse { 50% { filter:brightness(1.35); box-shadow:0 0 17px rgba(255,91,61,.34); } }
     .hand { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
     .card {
       min-width:0; min-height:180px; border-radius:6px 18px 12px 6px; padding:13px 20px 14px; text-align:left;
@@ -621,8 +624,8 @@
           <li>棋盘为4列×3排；最下方是第一排，也是最靠近玩家的一排。</li>
           <li>从第1章开始，棋盘事件即可随机出现风、雷、火、电全部4种元素。</li>
           <li>上方预览区显示即将补入棋盘的事件。</li>
-          <li>第一排事件按自身倒计时从左到右攻击，单次伤害等于当前生命上限；没有减伤、护盾或免死。</li>
-          <li>初、中级事件每1回合攻击，高级事件每2回合攻击；首次攻击倒计时为基础间隔+1。</li>
+          <li>第一排事件按自身倒计时从左到右行动；倒计时降到0时显示“准备攻击”，下一次回合结算才发起攻击。</li>
+          <li>攻击后重新进入倒计时。初、中级事件的基础间隔为1回合，高级事件为2回合；首次倒计时为基础间隔+1。</li>
           <li>事件生命降至0才会消除；消除后同列事件下落并从预览区补位。</li>
         </ul>
       </section>
@@ -724,16 +727,16 @@
     {kind:"vitality",label:"生命圣契",rarity:"稀有",rarityClass:"rare",weight:5}
   ];
   var normalTiers = [
-    {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:2},
-    {tier:"中级",weight:3,hpRate:.90,scoreRate:1.2,danger:"中",interval:2},
-    {tier:"高级",weight:2,hpRate:1.35,scoreRate:1.5,danger:"高",interval:3}
+    {tier:"初级",weight:6,hpRate:.45,scoreRate:1,danger:"初",interval:1},
+    {tier:"中级",weight:3,hpRate:.90,scoreRate:1.2,danger:"中",interval:1},
+    {tier:"高级",weight:2,hpRate:1.35,scoreRate:1.5,danger:"高",interval:2}
   ];
   var eventRules = {
-    healing:{hpRate:.20,scoreRate:.50,danger:"初",interval:2},
-    attack:{hpRate:.40,scoreRate:0,danger:"初",interval:2},
-    vitality:{hpRate:.40,scoreRate:0,danger:"初",interval:2},
-    trapped:{hpRate:1.60,scoreRate:1.80,danger:"高",interval:3},
-    convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:3}
+    healing:{hpRate:.20,scoreRate:.50,danger:"初",interval:1},
+    attack:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
+    vitality:{hpRate:.40,scoreRate:0,danger:"初",interval:1},
+    trapped:{hpRate:1.60,scoreRate:1.80,danger:"高",interval:2},
+    convert:{hpRate:2.00,scoreRate:0,danger:"高",interval:2}
   };
   var cards = [
     {name:"净化·风",faction:"angel",rarity:"normal",mode:"purify",target:"any",range:"single",element:"wind",tier:"大",coeff:1.45/3,cost:1,desc:"将任意1个目标转化为风；三格共鸣每格造成48.3%攻击伤害，四格共鸣每格造成45%攻击伤害。"},
@@ -777,8 +780,9 @@
       danger:rule.danger,hp:hp,maxHp:hp,score:score,interval:rule.interval,countdown:rule.interval+1,frontEnteredTurn:0,locked:false,claimed:false};
   }
   function normalizeEventTiming(event) {
-    var desired=event.danger==="高"?3:2,previous=Math.max(1,Number(event.interval)||desired);
-    event.countdown=Math.max(1,(Number(event.countdown)||previous+1)+(desired-previous));
+    var desired=event.danger==="高"?2:1,previous=Math.max(1,Number(event.interval)||desired);
+    var countdown=Number(event.countdown);if(!Number.isFinite(countdown))countdown=previous+1;
+    event.countdown=Math.max(0,countdown+(desired-previous));
     event.interval=desired;return event;
   }
   function cloneCard(card) { return Object.assign({},card,{uid:"card-"+uid++}); }
@@ -1007,7 +1011,7 @@
       (event.remoteProjection&&event.remoteProjection.visible?"<span class=\"remote-angel-mark\">✦ "+event.remoteProjection.sender+"的圣印</span>":"")+
       "<div class=\"hp\"><span class=\"hp-current\" style=\"width:"+(preview?damageLeft:pct)+"%\"></span>"+(preview?"<span class=\"hp-damage-preview\" style=\"left:"+damageLeft+"%;width:"+damagePct+"%\" aria-label=\"预计造成"+preview.damage+"点伤害\"></span>":"")+"</div>"+
       "<div class=\"event-bottom\"><span>生命 "+Math.max(0,event.hp)+"</span><span>"+(event.score?event.score+"分":"无积分")+"</span></div>"+
-      (!compact&&index>=8?"<div class=\"countdown\">攻击 "+event.maxHp+" · 倒计时 "+event.countdown+"</div>":"")+"</button>";
+      (!compact&&index>=8?"<div class=\"countdown"+(event.countdown===0?" ready":"")+"\">攻击 "+event.maxHp+" · "+(event.countdown===0?"准备攻击":"倒计时 "+event.countdown)+"</div>":"")+"</button>";
   }
   function renderBoard() {
     $("preview").innerHTML=state.preview.map(function(e){return "<div class=\"preview-item\">"+icon(e.element)+"<br>"+meta[e.element].label+" · "+e.kindLabel+"</div>";}).join("");
@@ -1321,12 +1325,11 @@
     state.turn+=1;
     for(var i=8;i<12;i++){
       var e=state.board[i];if(e.frontEnteredTurn===state.turn)continue;
-      e.countdown-=1;
-      if(e.countdown<=0){
+      if(e.countdown===0){
         var defeated=false;
         await animateEnemyAttack(i,function(){state.health=Math.max(0,state.health-e.maxHp);e.countdown=e.interval;addLog("第"+(i-7)+"列事件攻击：造成 "+e.maxHp+" 伤害。","bad");renderStatus();renderLog();defeated=state.health<=0;});
         if(defeated){await restartChapter(true);return true;}
-      }
+      }else e.countdown=Math.max(0,e.countdown-1);
     }
     return false;
   }
