@@ -127,4 +127,7 @@ test("serves hydration assets and the standalone game directly on Cloudflare Pag
   assert.match(prepareScript, /"\/_next\/static\/\*"/);
   assert.match(prepareScript, /"\/game"/);
   assert.match(prepareScript, /"\/game\.html"/);
+  assert.match(prepareScript, /vinext-client-entry-manifest\.json/);
+  assert.match(prepareScript, /workerAssetsManifest\.includes\(clientEntry\)/);
+  assert.match(prepareScript, /Worker references a stale client entry/);
 });
