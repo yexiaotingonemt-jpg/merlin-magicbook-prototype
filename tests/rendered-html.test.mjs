@@ -38,6 +38,11 @@ test("ships the game and every multiplayer API route", async () => {
   assert.match(shell, /投影机会已激活/);
   assert.match(shell, /setProjectionOpen\(true\)/);
   assert.doesNotMatch(shell, /setTab\("projection"\)/);
+  assert.match(shell, /积分性价比/);
+  assert.match(shell, /pendingGameLoad/);
+  const game = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
+  assert.match(game, /id="logToggle"/);
+  assert.doesNotMatch(game, /用1张，按概率摸1张/);
 });
 
 test("serves hydration assets and the standalone game directly on Cloudflare Pages", async () => {

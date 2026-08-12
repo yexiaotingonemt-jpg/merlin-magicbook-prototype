@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 type GameEvent = { id: number; element: string; hp: number; maxHp: number; kindLabel?: string };
 type GameState = {
-  score?: number; chapter?: number; form?: "angel" | "demon" | null; projection?: number;
+  score?: number; stamina?: number; chapter?: number; form?: "angel" | "demon" | null; projection?: number;
   boosted?: boolean; socialContribution?: number; board?: GameEvent[]; [key: string]: unknown;
 };
 type Leader = { rank: number; username: string; score: number; chapter: number; activeAt: string };
@@ -43,6 +43,7 @@ export function GameShell() {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
   const iframeReady = useRef(false);
+  const pendingGameLoad = useRef<{ type: string; state: GameState | null } | null>(null);
   const previousProjection = useRef(0);
 
   const flash = useCallback((text: string) => {
@@ -76,7 +77,11 @@ export function GameShell() {
       const data = await api<AccountResponse>("/api/account", { method: "POST", body: JSON.stringify({ username: usernameInput }) });
       setUsername(data.username); acceptGameState(data.state); serverVersion.current = data.updatedAt;
       sessionStorage.setItem("merlin-account", data.username);
-      if (iframeReady.current) sendToGame(data.state ? "merlin:load" : "merlin:new", data.state);
+      pendingGameLoad.current = { type: data.state ? "merlin:load" : "merlin:new", state: data.state };
+      if (iframeReady.current) {
+        sendToGame(pendingGameLoad.current.type, pendingGameLoad.current.state);
+        pendingGameLoad.current = null;
+      }
       await loadSocial(data.username);
       flash(data.created ? `已创建账号「${data.username}」` : `欢迎回来，已恢复「${data.username}」的进度`);
     } catch (error) { setLoginError(error instanceof Error ? error.message : "无法进入游戏"); }
@@ -89,7 +94,10 @@ export function GameShell() {
       if (event.source !== iframeRef.current?.contentWindow || !event.data?.type) return;
       if (event.data.type === "merlin:ready") {
         iframeReady.current = true;
-        if (username) sendToGame(gameState ? "merlin:load" : "merlin:new", gameState);
+        if (pendingGameLoad.current) {
+          sendToGame(pendingGameLoad.current.type, pendingGameLoad.current.state);
+          pendingGameLoad.current = null;
+        } else if (username) sendToGame(gameState ? "merlin:load" : "merlin:new", gameState);
       }
       if (event.data.type === "merlin:state" && username) {
         const next = event.data.state as GameState; acceptGameState(next);
@@ -164,6 +172,10 @@ export function GameShell() {
 
   const selectedPlayer = players.find((player) => player.username === target);
   const canProject = Boolean(gameState?.form && Number(gameState.projection ?? 0) > 0 && selectedPlayer);
+  const currentChapter = Math.max(1, Number(gameState?.chapter ?? 1));
+  const spentStamina = Math.max(0, 150 - Number(gameState?.stamina ?? 150));
+  const totalScore = Math.max(0, Math.floor(Number(gameState?.score ?? 0)));
+  const scoreEfficiency = spentStamina > 0 ? (totalScore / spentStamina).toFixed(1) : "—";
 
   return <main className="multiplayer-shell">
     <iframe ref={iframeRef} className="game-frame" src="/game.html" title="梅林的魔法书游戏" />
@@ -182,7 +194,13 @@ export function GameShell() {
 
     {username && <aside className="social-dock" aria-label="多人功能">
       <div className="dock-header"><span className="online-dot" />账号 <strong>{username}</strong><button className="reset-entry" onClick={() => setResetConfirm(true)}>重新开始</button></div>
-      <div className="rank-heading"><strong>排行榜</strong>{Number(gameState?.projection ?? 0) > 0 && <button className="projection-entry" onClick={() => setProjectionOpen(true)}>投影 ×{Number(gameState?.projection ?? 0)}</button>}</div>
+      <div className="rank-heading"><div><strong>排行榜</strong><span>本次活动表现</span></div>{Number(gameState?.projection ?? 0) > 0 && <button className="projection-entry" onClick={() => setProjectionOpen(true)}>投影 ×{Number(gameState?.projection ?? 0)}</button>}</div>
+      <div className="rank-dashboard" aria-label="个人排行数据">
+        <div><span>当前章节</span><strong>第{currentChapter}章</strong></div>
+        <div><span>消耗体力</span><strong>{spentStamina}</strong></div>
+        <div><span>总积分</span><strong>{totalScore.toLocaleString("zh-CN")}</strong></div>
+        <div><span>积分性价比</span><strong>{scoreEfficiency}<small>{spentStamina > 0 ? " 分/体力" : ""}</small></strong></div>
+      </div>
       <div className="rank-list">
         {leaders.map((item) => <div className={`rank-row rank-${item.rank}`} key={item.username}>
           <b>{item.rank}</b><span>{item.username}</span><em>第{item.chapter}章</em><strong>{item.score.toLocaleString("zh-CN")}</strong>
