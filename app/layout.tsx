@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "梅林的魔法书 3.0 · 多人版",
-  description: "账号续玩、排行榜与跨玩家投影互动原型。",
+  title: "梅林的魔法书 · 法师塔",
+  description: "探索法师塔、编排元素与魔法书、在随机翻页中自动施法。",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

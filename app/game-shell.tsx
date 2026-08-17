@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
-type GameEvent = { id: number; element: string; hp: number; maxHp: number; kindLabel?: string };
+type GameEvent = { id: number | string; element: string; hp: number; maxHp: number; kindLabel?: string };
 type GameState = {
   score?: number; stamina?: number; chapter?: number; form?: "angel" | "demon" | null; projection?: number;
   boosted?: boolean; socialContribution?: number; board?: GameEvent[]; [key: string]: unknown;
@@ -214,8 +214,8 @@ export function GameShell() {
 
     {!username && <div className="login-gate">
       <form className="login-book" onSubmit={submitLogin}>
-        <div className="login-rune">✦</div><p className="eyebrow">MERLIN ARCHIVE</p>
-        <h1>开启魔法书</h1><p>输入账号开始游戏。已有账号将恢复上次进度，不存在的账号会自动创建。</p>
+        <div className="login-rune">✦</div><p className="eyebrow">MERLIN&apos;S GRIMOIRE</p>
+        <h1>进入法师塔</h1><p>输入账号开始探索。已有账号将恢复上次层数、魔法书与成长进度。</p>
         <label htmlFor="account">账号名称</label>
         <input id="account" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} minLength={2} maxLength={20} placeholder="请输入2—20个字符" />
         {loginError && <div className="login-error">{loginError}</div>}
