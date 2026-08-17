@@ -9,6 +9,6 @@
 - PVE 自动战斗、异步镜像 PVP、战斗重开、场外积分商店
 - 账号续玩、云端存档与排行榜
 
-在线试玩：<https://merlin-magicbook-yexiaoting.pages.dev/>
+在线试玩：<https://yexiaotingonemt-jpg.github.io/merlin-magicbook-prototype/>
 
-`main` 分支更新后，GitHub Actions 会自动构建并部署到 Cloudflare Pages；多人数据存储在 Cloudflare D1。
+`main` 分支更新后，GitHub Pages 会自动发布可独立游玩的版本。Cloudflare Pages 版本额外提供账号云存档与 D1 排行榜。
