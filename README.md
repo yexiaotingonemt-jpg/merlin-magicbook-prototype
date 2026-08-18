@@ -12,3 +12,5 @@
 在线试玩：<https://yexiaotingonemt-jpg.github.io/merlin-magicbook-prototype/>
 
 `main` 分支更新后，GitHub Pages 会自动发布可独立游玩的版本。Cloudflare Pages 版本额外提供账号云存档与 D1 排行榜。
+
+工程模块划分、依赖方向和常见迭代入口见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
