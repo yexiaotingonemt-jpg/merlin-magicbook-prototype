@@ -107,4 +107,29 @@ export const PASSIVES = [
   { id: "P-RESIST", name: "不屈意志", copy: "永久提高12点最大生命。", apply: () => { state.meta.maxHp += 12; state.hp += 12; } },
   { id: "P-POOL", name: "元素容器", copy: "永久提高1格战斗元素池上限。", apply: () => { state.meta.poolBonus = (state.meta.poolBonus || 0) + 1; } }
 ];
-export const STARTER_DECK = ["FI-01", "FI-02", "FI-03"];
+
+export const STARTER_CARD_POOLS = {
+  fire: ["FI-01", "FI-02", "FI-03"],
+  water: ["WA-01", "WA-02", "WA-03"],
+  wind: ["WI-01", "WI-02", "WI-03"],
+};
+
+function shuffledWith(items, randomValue) {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(randomValue() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+export function createStarterLoadout(randomValue = Math.random) {
+  const [doubleSchool, singleSchool] = shuffledWith(Object.keys(STARTER_CARD_POOLS), randomValue).slice(0, 2);
+  return {
+    deck: [
+      ...shuffledWith(STARTER_CARD_POOLS[doubleSchool], randomValue).slice(0, 2),
+      shuffledWith(STARTER_CARD_POOLS[singleSchool], randomValue)[0],
+    ],
+    startElements: [doubleSchool, singleSchool],
+  };
+}

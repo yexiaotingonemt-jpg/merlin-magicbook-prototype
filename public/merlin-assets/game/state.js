@@ -1,18 +1,19 @@
 import { clamp, ELEMENTS, SAVE_KEY, shuffle, VERSION } from "./core.js";
-import { STARTER_DECK } from "./cards.js";
+import { createStarterLoadout } from "./cards.js";
 import { EVENTS } from "./content.js";
 import { setState, state } from "./store.js";
 
-export const RUN_RULES_VERSION = 2;
+export const RUN_RULES_VERSION = 3;
 
 export function freshState(legacy = {}) {
-  const collection = Object.fromEntries([...STARTER_DECK, "WA-01", "WI-01", "EA-01", "LI-01", "DA-01"].map((id) => [id, 1]));
+  const starter = createStarterLoadout();
+  const collection = Object.fromEntries(starter.deck.map((id) => [id, 1]));
   const meta = legacy.meta || { attack: 0, defense: 0, maxHp: 0, startBonus: 0, passiveLevels: {} };
   return {
     gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, board: [], preview: [], chapter: 1, projection: 0,
     score: Number(legacy.score || 0), floor: 1, level: 1, exp: 0,
-    hp: 280 + (meta.maxHp || 0), startElements: ["fire", "fire"],
-    collection, deck: [...STARTER_DECK], organizeTokens: 0, fatigue: 100,
+    hp: 280 + (meta.maxHp || 0), startElements: starter.startElements,
+    collection, deck: starter.deck, organizeTokens: 0, fatigue: 100,
     meta, events: [], eventResult: null, battle: null
   };
 }
@@ -20,7 +21,7 @@ export function freshState(legacy = {}) {
 export function freshTowerRun(current = state) {
   const next = freshState({ score: current.score, meta: current.meta });
   next.collection = { ...current.collection };
-  STARTER_DECK.forEach((id) => { next.collection[id] = Math.max(1, Number(next.collection[id] || 0)); });
+  next.deck.forEach((id) => { next.collection[id] = Math.max(1, Number(next.collection[id] || 0)); });
   return next;
 }
 

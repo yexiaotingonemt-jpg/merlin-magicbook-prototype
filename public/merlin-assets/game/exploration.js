@@ -92,5 +92,6 @@ export function showElementEvent() {
 }
 export function newTowerRun() {
   setState(freshTowerRun());
-  generateEvents(); saveState(); closeModal(); showView("explore"); toast("已重新进入法师塔；魔法书重置为3页，起始元素重置为2火。");
+  const schools = state.startElements.map((element) => ELEMENTS[element].name).join("、");
+  generateEvents(); saveState(); closeModal(); showView("explore"); toast(`已重新进入法师塔；从${schools}基础牌中生成3页，起始元素各1个。`);
 }
