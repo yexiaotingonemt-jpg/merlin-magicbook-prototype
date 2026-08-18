@@ -82,7 +82,7 @@ const COMMONS = [
   C("CO-04", "高阶目录", "arcane", any(2), "最高消耗未翻牌权重×4", "从最高3张高消耗未翻牌中随机发动1张", "控页·高风险", { kind: "index" }),
   C("CO-08", "未竟书签", "arcane", any(0), "无残响", "获得护盾，记录首张残响牌并在元素足够时重试", "容错·残响重试", { kind: "bookmark" }),
   C("CO-09", "重演术", "arcane", any(2), "将近期完整施法牌排到下轮首页", "随机重读近期完整施法牌", "控页·重读", { kind: "replay" }),
-  C("CO-11", "魔力归源", "arcane", any(1), "强化下张主元素牌", "将主元素补充至初始配置数量，最多增加3个", "元素经济·条件补充", { kind: "refill" }),
+  C("CO-11", "魔力归源", "arcane", any(1), "强化下张主元素牌", "将主元素补充至初始配置数量，最多增加2个", "元素经济·条件补充", { kind: "refill" }),
   C("CO-12", "元素同调", "arcane", any(1), "改写下张未翻牌的固定元素", "本轮所有未翻牌的消耗与获取改写为主元素", "元素经济·同调", { kind: "attune" }),
   C("CO-14", "混沌冲击", "arcane", random(2), "140%伤害", "260%伤害，触发两个被消耗元素的余韵", "随机双耗·单段", { pct: 260, echoPct: 140, kind: "basic" }),
   C("CO-15", "双星魔弹", "arcane", random(2), "2段70%伤害", "2段130%伤害，分别继承两种元素", "随机双耗·双段", { pct: 130, echoPct: 70, hits: 2, kind: "basic" }),
@@ -107,4 +107,4 @@ export const PASSIVES = [
   { id: "P-RESIST", name: "不屈意志", copy: "永久提高12点最大生命。", apply: () => { state.meta.maxHp += 12; state.hp += 12; } },
   { id: "P-POOL", name: "元素容器", copy: "永久提高1格战斗元素池上限。", apply: () => { state.meta.poolBonus = (state.meta.poolBonus || 0) + 1; } }
 ];
-export const STARTER_DECK = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19"];
+export const STARTER_DECK = ["FI-01", "FI-02", "FI-03"];

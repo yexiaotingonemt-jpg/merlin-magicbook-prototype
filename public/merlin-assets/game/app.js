@@ -11,7 +11,7 @@ export function populateFilters() {
   $("schoolFilter").innerHTML = options; $("archiveSchoolFilter").innerHTML = options;
 }
 export function showHelp() {
-  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 探索</h3><p>每层三选一事件。生命值在同一轮法师塔内继承，休息室可回复。</p></article><article class="choice-button"><h3>2 · 组卡</h3><p>战斗魔法书没有页数上限。仓库可自由装订；移回仓库需要装订台事件提供的安全整理次数。</p></article><article class="choice-button"><h3>3 · 战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素。</p></article></div><p><b>方差规则：</b>每段效果独立投掷 40%–300% 偏态方差；高值少见，但会真实改变战斗结果。</p><p><b>原型暂定：</b>重新进入法师塔时，角色等级、经验、当前生命与层数重置；已学咒语、咒语等级、魔法书编排、积分与商店属性永久保留。</p>`);
+  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 探索</h3><p>每层三选一事件。生命值在同一轮法师塔内继承，休息室可回复。</p></article><article class="choice-button"><h3>2 · 组卡</h3><p>新法师以3张火系书页和2个火元素起步；战斗魔法书没有页数上限，后续书页可继续装订。</p></article><article class="choice-button"><h3>3 · 战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素。</p></article></div><p><b>方差规则：</b>每段效果独立投掷 40%–300% 偏态方差；高值少见，但会真实改变战斗结果。</p><p><b>原型暂定：</b>重新进入法师塔时，角色等级、经验、当前生命与层数重置；已学咒语、咒语等级、魔法书编排、积分与商店属性永久保留。</p>`);
 }
 export function bindEvents() {
   document.addEventListener("click", (event) => {

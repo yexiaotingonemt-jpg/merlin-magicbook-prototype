@@ -18,8 +18,8 @@ export function createEnemies(mode) {
   const count = boss ? 1 : state.floor >= 7 ? randomInt(2, 3) : state.floor >= 3 ? randomInt(1, 2) : 1;
   const names = boss ? ["星辉魔像", "深渊典藏官", "六相元素龙"] : ["灰烬小鬼", "结晶魔犬", "风之鸦", "苔石傀儡", "书页幽灵", "虚空信徒"];
   return Array.from({ length: count }, (_, i) => {
-    const hp = Math.round((boss ? 440 : 125 + count * 16) * (1 + state.floor * .13));
-    return { id: `enemy-${i}`, name: boss ? pick(names) : `${pick(names)}${count > 1 ? ` ${i + 1}` : ""}`, hp, maxHp: hp, atk: (boss ? 54 : 29) * (1 + state.floor * .075), def: 35 + state.floor * 5, burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, icon: boss ? "♛" : "♞" };
+    const hp = Math.round((boss ? 420 : 115 + count * 15) * (1 + state.floor * .12));
+    return { id: `enemy-${i}`, name: boss ? pick(names) : `${pick(names)}${count > 1 ? ` ${i + 1}` : ""}`, hp, maxHp: hp, atk: (boss ? 50 : 27) * (1 + state.floor * .07), def: 35 + state.floor * 5, burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, icon: boss ? "♛" : "♞" };
   });
 }
 export function startBattle(mode, restartSpec = null) {
@@ -164,7 +164,7 @@ export function applyCard(card, full, paid) {
   } else if (card.kind === "attune") { p.attuned = mainElement(); text = `本轮未翻书页的固定消耗改写为${ELEMENTS[p.attuned].name}`;
   } else if (card.kind === "refill") {
     const main = mainElement(), target = state.startElements.filter((e) => e === main).length;
-    const added = addElement(main, Math.min(3, Math.max(0, target - (countElements()[main] || 0)))); text = added ? `补充 ${added} ${ELEMENTS[main].name}` : `未补充元素，改为强化下张${ELEMENTS[main].name}系牌`;
+    const added = addElement(main, Math.min(2, Math.max(0, target - (countElements()[main] || 0)))); text = added ? `补充 ${added} ${ELEMENTS[main].name}` : `未补充元素，改为强化下张${ELEMENTS[main].name}系牌`;
     if (!added) p.damageBuff += .15;
   } else if (["index", "replay"].includes(card.kind)) {
     const legal = b.drawPile.map((id) => CARD_BY_ID.get(id)).filter((c) => c && paymentFor(c) && !["index", "replay"].includes(c.kind));

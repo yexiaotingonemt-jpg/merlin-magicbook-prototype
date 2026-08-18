@@ -3,13 +3,15 @@ import { STARTER_DECK } from "./cards.js";
 import { EVENTS } from "./content.js";
 import { setState, state } from "./store.js";
 
+const LEGACY_STARTER_DECK = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19"];
+
 export function freshState(legacy = {}) {
   const collection = Object.fromEntries([...STARTER_DECK, "WA-01", "WI-01", "EA-01", "LI-01", "DA-01"].map((id) => [id, 1]));
   const meta = legacy.meta || { attack: 0, defense: 0, maxHp: 0, startBonus: 0, passiveLevels: {} };
   return {
     gameVersion: VERSION, board: [], preview: [], chapter: 1, projection: 0,
     score: Number(legacy.score || 0), floor: 1, level: 1, exp: 0,
-    hp: 280 + (meta.maxHp || 0), startElements: ["fire", "fire", "fire"],
+    hp: 280 + (meta.maxHp || 0), startElements: ["fire", "fire"],
     collection, deck: [...STARTER_DECK], organizeTokens: 0, fatigue: 100,
     meta, events: [], eventResult: null, battle: null
   };
@@ -19,8 +21,9 @@ export function maxHp() { return 280 + (state.level - 1) * 18 + state.meta.maxHp
 export function attack() { return 100 + (state.level - 1) * 7 + state.meta.attack; }
 export function defense() { return 55 + (state.level - 1) * 4 + state.meta.defense; }
 export function expNeed(level = state.level) { return 80 + (level - 1) * 40; }
-export function slotCap() { return Math.min(8, 3 + (state.level >= 3) + (state.level >= 5) + (state.level >= 8) + (state.level >= 12) + (state.level >= 16) + (state.meta.startBonus || 0)); }
-export function poolCap() { return Math.min(16, slotCap() + 3 + (state.meta.poolBonus || 0)); }
+export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5, 8, 12, 16, 20];
+export function slotCap() { return Math.min(8, 2 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((level) => state.level >= level).length + (state.meta.startBonus || 0)); }
+export function poolCap() { return Math.min(16, slotCap() + 2 + (state.meta.poolBonus || 0)); }
 export function mainElement() {
   const counts = {};
   state.startElements.forEach((e) => { counts[e] = (counts[e] || 0) + 1; });
@@ -65,7 +68,13 @@ export function saveState() {
 }
 export function hydrate(data) {
   if (!data || data.gameVersion !== VERSION || !Array.isArray(data.deck)) return false;
-  setState({ ...freshState(data), ...data, board: Array.isArray(data.board) ? data.board : [] });
+  const usedLegacyBaseline = data.deck.length === LEGACY_STARTER_DECK.length
+    && data.deck.every((id, index) => id === LEGACY_STARTER_DECK[index])
+    && Array.isArray(data.startElements)
+    && data.startElements.length === 3
+    && data.startElements.every((element) => element === "fire");
+  const migrated = usedLegacyBaseline ? { ...data, deck: [...STARTER_DECK], startElements: ["fire", "fire"] } : data;
+  setState({ ...freshState(migrated), ...migrated, board: Array.isArray(migrated.board) ? migrated.board : [] });
   state.meta = { ...freshState().meta, ...(data.meta || {}) };
   if (!state.events?.length) generateEvents();
   state.hp = clamp(state.hp, 1, maxHp());

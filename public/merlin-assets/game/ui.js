@@ -105,7 +105,7 @@ export const SHOP = [
   { id: "attack", icon: "✦", name: "法攻手稿", copy: "永久提高5点基础法术攻击。", base: 90, apply: () => { state.meta.attack += 5; } },
   { id: "defense", icon: "◈", name: "护法铭文", copy: "永久提高4点基础法术防御。", base: 80, apply: () => { state.meta.defense += 4; } },
   { id: "maxHp", icon: "♥", name: "生命秘典", copy: "永久提高25点最大生命，并立即回复。", base: 100, apply: () => { state.meta.maxHp += 25; state.hp += 25; } },
-  { id: "startBonus", icon: "✥", name: "元素扩容", copy: "永久增加1个起始元素槽上限，总上限仍为8。", base: 260, apply: () => { state.meta.startBonus = Math.min(2, (state.meta.startBonus || 0) + 1); } }
+  { id: "startBonus", icon: "✥", name: "元素扩容", copy: "永久增加1个起始元素槽上限，总上限仍为8。", base: 390, apply: () => { state.meta.startBonus = Math.min(2, (state.meta.startBonus || 0) + 1); } }
 ];
 export function shopLevel(id) { return Number(state.meta.passiveLevels?.[id] || 0); }
 export function shopCost(item) { return Math.round(item.base * (1 + shopLevel(item.id) * .55)); }
