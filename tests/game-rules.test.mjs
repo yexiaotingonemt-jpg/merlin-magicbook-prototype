@@ -5,7 +5,7 @@ import { CARDS, CARD_BY_ID, PASSIVES, STARTER_DECK } from "../public/merlin-asse
 import { createEnemies } from "../public/merlin-assets/game/battle.js";
 import { EVENTS } from "../public/merlin-assets/game/content.js";
 import { variance } from "../public/merlin-assets/game/core.js";
-import { ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, hydrate, poolCap, slotCap } from "../public/merlin-assets/game/state.js";
+import { ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, hydrate, poolCap, RUN_RULES_VERSION, slotCap } from "../public/merlin-assets/game/state.js";
 import { setState, state } from "../public/merlin-assets/game/store.js";
 
 test("card catalog and starter deck remain internally consistent", () => {
@@ -32,8 +32,9 @@ test("new mages begin with three pages and two fire elements", () => {
   assert.deepEqual(state.startElements, ["fire", "fire"]);
 });
 
-test("untouched legacy starters migrate without deleting learned pages", () => {
+test("legacy starters migrate without deleting learned pages", () => {
   const legacy = freshState();
+  delete legacy.runRulesVersion;
   legacy.deck = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19"];
   legacy.startElements = ["fire", "fire", "fire"];
   legacy.collection["FI-04"] = 2;
@@ -41,6 +42,23 @@ test("untouched legacy starters migrate without deleting learned pages", () => {
   assert.deepEqual(state.deck, ["FI-01", "FI-02", "FI-03"]);
   assert.deepEqual(state.startElements, ["fire", "fire"]);
   assert.equal(state.collection["FI-04"], 2);
+});
+
+test("customized old saves migrate once from eleven bound pages to three", () => {
+  const legacy = freshState();
+  delete legacy.runRulesVersion;
+  legacy.deck = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19", "WA-01"];
+  legacy.startElements = ["fire", "fire", "water"];
+  legacy.collection["WA-01"] = 4;
+  assert.equal(hydrate(legacy), true);
+  assert.equal(state.runRulesVersion, RUN_RULES_VERSION);
+  assert.deepEqual(state.deck, ["FI-01", "FI-02", "FI-03"]);
+  assert.deepEqual(state.startElements, ["fire", "fire"]);
+  assert.equal(state.collection["WA-01"], 4);
+
+  state.deck.push("WA-01");
+  assert.equal(hydrate(JSON.parse(JSON.stringify(state))), true);
+  assert.deepEqual(state.deck, ["FI-01", "FI-02", "FI-03", "WA-01"]);
 });
 
 test("every tower run resets binding and elements but keeps the learned collection", () => {

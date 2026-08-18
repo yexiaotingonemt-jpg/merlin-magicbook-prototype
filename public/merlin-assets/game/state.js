@@ -3,13 +3,13 @@ import { STARTER_DECK } from "./cards.js";
 import { EVENTS } from "./content.js";
 import { setState, state } from "./store.js";
 
-const LEGACY_STARTER_DECK = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19"];
+export const RUN_RULES_VERSION = 2;
 
 export function freshState(legacy = {}) {
   const collection = Object.fromEntries([...STARTER_DECK, "WA-01", "WI-01", "EA-01", "LI-01", "DA-01"].map((id) => [id, 1]));
   const meta = legacy.meta || { attack: 0, defense: 0, maxHp: 0, startBonus: 0, passiveLevels: {} };
   return {
-    gameVersion: VERSION, board: [], preview: [], chapter: 1, projection: 0,
+    gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, board: [], preview: [], chapter: 1, projection: 0,
     score: Number(legacy.score || 0), floor: 1, level: 1, exp: 0,
     hp: 280 + (meta.maxHp || 0), startElements: ["fire", "fire"],
     collection, deck: [...STARTER_DECK], organizeTokens: 0, fatigue: 100,
@@ -75,12 +75,7 @@ export function saveState() {
 }
 export function hydrate(data) {
   if (!data || data.gameVersion !== VERSION || !Array.isArray(data.deck)) return false;
-  const usedLegacyBaseline = data.deck.length === LEGACY_STARTER_DECK.length
-    && data.deck.every((id, index) => id === LEGACY_STARTER_DECK[index])
-    && Array.isArray(data.startElements)
-    && data.startElements.length === 3
-    && data.startElements.every((element) => element === "fire");
-  const migrated = usedLegacyBaseline ? { ...data, deck: [...STARTER_DECK], startElements: ["fire", "fire"] } : data;
+  const migrated = Number(data.runRulesVersion || 0) < RUN_RULES_VERSION ? freshTowerRun(data) : data;
   setState({ ...freshState(migrated), ...migrated, board: Array.isArray(migrated.board) ? migrated.board : [] });
   state.meta = { ...freshState().meta, ...(data.meta || {}) };
   if (!state.events?.length) generateEvents();
