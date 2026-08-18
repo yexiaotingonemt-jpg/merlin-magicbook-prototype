@@ -66,3 +66,7 @@ npm test
 ```
 
 `tests/rendered-html.test.mjs` 会检查模块文件完整性、85 张战斗卡数量、关键规则所属模块以及 Cloudflare Pages 构建入口。
+
+## 设计文档同步
+
+代码变更如果会改变玩家实际体验到的规则、数值或流程，必须同步更新相关设计 MD；如果只是修复实现错误，使其恢复已有设计预期，则不修改设计 MD。完整判定标准见 [AGENTS.md](./AGENTS.md)。
