@@ -1,7 +1,7 @@
 import { $, ELEMENTS, SCHOOL_ORDER, pick, shuffle } from "./core.js";
-import { CARDS, CARD_BY_ID, PASSIVES, STARTER_DECK } from "./cards.js";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js";
 import { runtime, setState, state } from "./store.js";
-import { cardLevel, costLabel, freshState, gainExp, generateEvents, maxHp, saveState, slotCap } from "./state.js";
+import { cardLevel, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, slotCap } from "./state.js";
 import { closeModal, render, showModal, showView, toast } from "./ui.js";
 import { startBattle, stopBattle } from "./battle.js";
 
@@ -91,8 +91,6 @@ export function showElementEvent() {
   };
 }
 export function newTowerRun() {
-  const keep = { score: state.score, meta: state.meta };
-  const collection = state.collection, deck = state.deck, startElements = state.startElements;
-  setState(freshState(keep)); state.collection = collection; state.deck = deck.length ? deck : [...STARTER_DECK]; state.startElements = startElements.slice(0, slotCap());
-  generateEvents(); saveState(); closeModal(); showView("explore"); toast("已重新进入法师塔；塔内等级和生命已重置。");
+  setState(freshTowerRun());
+  generateEvents(); saveState(); closeModal(); showView("explore"); toast("已重新进入法师塔；魔法书重置为3页，起始元素重置为2火。");
 }

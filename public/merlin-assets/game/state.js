@@ -17,6 +17,13 @@ export function freshState(legacy = {}) {
   };
 }
 
+export function freshTowerRun(current = state) {
+  const next = freshState({ score: current.score, meta: current.meta });
+  next.collection = { ...current.collection };
+  STARTER_DECK.forEach((id) => { next.collection[id] = Math.max(1, Number(next.collection[id] || 0)); });
+  return next;
+}
+
 export function maxHp() { return 280 + (state.level - 1) * 18 + state.meta.maxHp; }
 export function attack() { return 100 + (state.level - 1) * 7 + state.meta.attack; }
 export function defense() { return 55 + (state.level - 1) * 4 + state.meta.defense; }
