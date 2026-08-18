@@ -51,7 +51,7 @@ test("new mages begin with three pages, two schools, and an empty warehouse", ()
   assert.deepEqual(Object.keys(current.collection).sort(), [...current.deck].sort());
 });
 
-test("legacy starters migrate without deleting learned pages", () => {
+test("legacy starters migrate to a clean three-page collection", () => {
   const legacy = freshState();
   delete legacy.runRulesVersion;
   legacy.deck = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19"];
@@ -59,7 +59,7 @@ test("legacy starters migrate without deleting learned pages", () => {
   legacy.collection["FI-04"] = 2;
   assert.equal(hydrate(legacy), true);
   assertStarterLoadout(state);
-  assert.equal(state.collection["FI-04"], 2);
+  assert.deepEqual(Object.keys(state.collection).sort(), [...state.deck].sort());
 });
 
 test("customized old saves migrate once from eleven bound pages to three", () => {
@@ -71,7 +71,7 @@ test("customized old saves migrate once from eleven bound pages to three", () =>
   assert.equal(hydrate(legacy), true);
   assert.equal(state.runRulesVersion, RUN_RULES_VERSION);
   assertStarterLoadout(state);
-  assert.equal(state.collection["WA-01"], 4);
+  assert.deepEqual(Object.keys(state.collection).sort(), [...state.deck].sort());
 
   const reboundDeck = [...state.deck, "CO-14"];
   state.collection["CO-14"] = 1;
@@ -80,7 +80,7 @@ test("customized old saves migrate once from eleven bound pages to three", () =>
   assert.deepEqual(state.deck, reboundDeck);
 });
 
-test("every tower run resets binding and elements but keeps the learned collection", () => {
+test("every tower run resets binding, elements, collection, and spell levels", () => {
   const previous = freshState();
   previous.score = 777;
   previous.level = 9;
@@ -95,8 +95,8 @@ test("every tower run resets binding and elements but keeps the learned collecti
   assert.equal(next.level, 1);
   assert.equal(next.exp, 0);
   assert.equal(next.score, 777);
-  assert.equal(next.collection["WA-02"], 4);
-  next.deck.forEach((id) => assert.ok(next.collection[id] >= 1));
+  assert.deepEqual(Object.keys(next.collection).sort(), [...next.deck].sort());
+  next.deck.forEach((id) => assert.equal(next.collection[id], 1));
 });
 
 test("level curve expands initial elements from two toward eight", () => {

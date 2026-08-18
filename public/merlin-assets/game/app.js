@@ -11,7 +11,7 @@ export function populateFilters() {
   $("schoolFilter").innerHTML = options; $("archiveSchoolFilter").innerHTML = options;
 }
 export function showHelp() {
-  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 探索</h3><p>每层三选一事件。生命值在同一轮法师塔内继承，休息室可回复。</p></article><article class="choice-button"><h3>2 · 组卡</h3><p>每次从火、水、风随机选2系：一系抽2张基础牌，另一系抽1张；起始元素各1个。</p></article><article class="choice-button"><h3>3 · 战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素。</p></article></div><p><b>方差规则：</b>每段效果独立投掷 40%–300% 偏态方差；高值少见，但会真实改变战斗结果。</p><p><b>原型暂定：</b>新角色初始仓库为0；重新进入法师塔时，角色等级、经验、当前生命、层数、魔法书编排与起始元素重置；已学咒语、咒语等级、积分与商店属性永久保留。</p>`);
+  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 探索</h3><p>每层三选一事件。生命值在同一轮法师塔内继承，休息室可回复。</p></article><article class="choice-button"><h3>2 · 组卡</h3><p>每次从火、水、风随机选2系：一系抽2张基础牌，另一系抽1张；起始元素各1个。</p></article><article class="choice-button"><h3>3 · 战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素。</p></article></div><p><b>方差规则：</b>每段效果独立投掷 40%–300% 偏态方差；高值少见，但会真实改变战斗结果。</p><p><b>原型暂定：</b>每次重新进入法师塔时，角色等级、经验、生命、层数、魔法书、咒语收藏与等级、起始元素全部重置；积分与场外商店属性永久保留。</p>`);
 }
 export function bindEvents() {
   document.addEventListener("click", (event) => {
@@ -34,7 +34,7 @@ export function bindEvents() {
     if (event.target.closest("[data-battle-new-run]")) { newTowerRun(); }
   });
   $("continueButton").addEventListener("click", continueExplore);
-  $("newRunButton").addEventListener("click", () => showModal('<h2>重新进入法师塔？</h2><p>层数、塔内等级、经验、生命、起始元素和装订方案会重置；已学咒语与等级、积分及商店成长保留。系统将从火、水、风随机选2系，并按2页＋1页生成新的初始魔法书。</p><button class="primary" id="confirmNewRun">确认重开</button>'));
+  $("newRunButton").addEventListener("click", () => showModal('<h2>重新进入法师塔？</h2><p>层数、塔内等级、经验、生命、起始元素、装订方案、咒语收藏和等级都会重置；积分及商店成长保留。系统将从火、水、风随机选2系，按2页＋1页生成新魔法书，仓库从0页开始。</p><button class="primary" id="confirmNewRun">确认重开</button>'));
   $("modalContent").addEventListener("click", (event) => { if (event.target.id === "confirmNewRun") newTowerRun(); });
   $("modalClose").addEventListener("click", closeModal); $("modal").addEventListener("click", (event) => { if (event.target === $("modal")) closeModal(); });
   $("helpButton").addEventListener("click", showHelp);

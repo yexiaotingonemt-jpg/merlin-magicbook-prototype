@@ -3,7 +3,7 @@ import { createStarterLoadout } from "./cards.js";
 import { EVENTS } from "./content.js";
 import { setState, state } from "./store.js";
 
-export const RUN_RULES_VERSION = 3;
+export const RUN_RULES_VERSION = 4;
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
@@ -19,10 +19,7 @@ export function freshState(legacy = {}) {
 }
 
 export function freshTowerRun(current = state) {
-  const next = freshState({ score: current.score, meta: current.meta });
-  next.collection = { ...current.collection };
-  next.deck.forEach((id) => { next.collection[id] = Math.max(1, Number(next.collection[id] || 0)); });
-  return next;
+  return freshState({ score: current.score, meta: current.meta });
 }
 
 export function maxHp() { return 280 + (state.level - 1) * 18 + state.meta.maxHp; }
