@@ -100,20 +100,33 @@ test("every tower run resets binding, elements, collection, and spell levels", (
   next.deck.forEach((id) => assert.equal(next.collection[id], 1));
 });
 
-test("level curve expands initial elements from two toward the hard cap of five", () => {
+test("level curve starts with two elements in three slots and expands toward five", () => {
   const state = setState(freshState());
-  assert.deepEqual(ELEMENT_SLOT_UNLOCK_LEVELS, [3, 5, 8]);
-  assert.equal(slotCap(), 2);
-  assert.equal(poolCap(), 4);
-  state.level = 3;
+  assert.deepEqual(ELEMENT_SLOT_UNLOCK_LEVELS, [3, 5]);
+  assert.equal(state.startElements.length, 2);
   assert.equal(slotCap(), 3);
   assert.equal(poolCap(), 5);
-  state.level = 8;
+  state.level = 3;
+  assert.equal(slotCap(), 4);
+  assert.equal(poolCap(), 6);
+  state.level = 5;
   assert.equal(slotCap(), 5);
   assert.equal(poolCap(), 7);
   state.level = 20;
   assert.equal(slotCap(), 5);
   assert.equal(poolCap(), 7);
+});
+
+test("each normal chapter keeps total weight 1000 and element events average four per tower", () => {
+  const normalChapters = [1, 2, 4, 5];
+  normalChapters.forEach((chapter) => {
+    assert.equal(Object.values(CHAPTER_RULES[chapter].weights).reduce((sum, weight) => sum + weight, 0), 1000);
+  });
+  assert.deepEqual(normalChapters.map((chapter) => CHAPTER_RULES[chapter].weights.element), [80, 70, 40, 20]);
+  const expectedElementEvents = normalChapters.reduce((sum, chapter) => (
+    sum + CHAPTER_RULES[chapter].count * CHAPTER_RULES[chapter].weights.element / 1000
+  ), 0);
+  assert.equal(expectedElementEvents, 4);
 });
 
 test("early PVE enemies use the two-element opening baseline", () => {

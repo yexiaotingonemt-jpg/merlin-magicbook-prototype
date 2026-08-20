@@ -29,6 +29,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   await Promise.all([
     access(new URL("../public/game.html", import.meta.url)),
     access(new URL("../public/merlin-assets/grimoire-game.css", import.meta.url)),
+    access(new URL("../public/merlin-assets/level-preview.css", import.meta.url)),
     ...modules.map((module) => access(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url))),
     access(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url)),
     ...routes.map((route) => access(new URL(`../app/api/${route}/route.ts`, import.meta.url))),
@@ -58,6 +59,13 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.state, /type: "merlin:state"/);
   assert.match(sources.app, /from "\.\/battle\.js"/);
   assert.match(sources.exploration, /from "\.\/battle\.js"/);
+});
+
+test("renders the next-level preview and its responsive styling", async () => {
+  const gameHtml = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
+  assert.match(gameHtml, /id="levelPreview"/);
+  assert.match(gameHtml, /查看下一级效果/);
+  assert.match(gameHtml, /level-preview\.css/);
 });
 
 test("serves hydration assets and the standalone game directly on Cloudflare Pages", async () => {

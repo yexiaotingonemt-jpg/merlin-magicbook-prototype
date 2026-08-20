@@ -2,7 +2,7 @@ import { $, ELEMENTS, esc } from "./core.js";
 import { CARDS, CARD_BY_ID } from "./cards.js";
 import { EVENTS } from "./content.js";
 import { runtime, state } from "./store.js";
-import { attack, cardLevel, costLabel, defense, expNeed, maxHp, schoolLabel, slotCap } from "./state.js";
+import { attack, cardLevel, costLabel, defense, expNeed, maxHp, poolCap, schoolLabel, slotCap } from "./state.js";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -47,7 +47,9 @@ export function renderExplore() {
     ["生命", `${Math.ceil(state.hp)} / ${maxHp()}`, state.hp / maxHp()], ["法攻", attack(), 1], ["法防", defense(), 1]
   ].map(([name, value, ratio]) => `<div class="stat-line"><span>${name}</span><div class="mini-bar"><i style="width:${Math.min(100, ratio * 100)}%"></i></div><strong>${value}</strong></div>`).join("");
   $("expBar").firstElementChild.style.width = `${state.exp / expNeed() * 100}%`;
-  $("expText").textContent = `经验 ${state.exp} / ${expNeed()}；升级提升生命、法攻、法防及元素容量。`;
+  $("expText").textContent = `经验 ${state.exp} / ${expNeed()}；还需 ${Math.max(0, expNeed() - state.exp)} 点升级。`;
+  const nextLevel = state.level + 1;
+  $("levelPreview").innerHTML = `<div><b>Lv.${nextLevel}</b><span>升级立即回复 40 生命</span></div><ul><li>生命上限 <b>+${maxHp(nextLevel) - maxHp()} → ${maxHp(nextLevel)}</b></li><li>法术攻击 <b>+${attack(nextLevel) - attack()} → ${attack(nextLevel)}</b></li><li>法术防御 <b>+${defense(nextLevel) - defense()} → ${defense(nextLevel)}</b></li><li>起始元素上限 <b>${slotCap()} → ${slotCap(nextLevel)}</b></li><li>战斗元素池 <b>${poolCap()} → ${poolCap(nextLevel)}</b></li></ul>`;
   $("elementSlotText").textContent = `${state.startElements.length} / ${slotCap()}`;
   $("startElements").innerHTML = [...state.startElements.map((e) => elementOrb(e)), ...Array.from({ length: Math.max(0, slotCap() - state.startElements.length) }, () => elementOrb(null, true))].join("");
   $("deckCount").textContent = `${state.deck.length} 页`;

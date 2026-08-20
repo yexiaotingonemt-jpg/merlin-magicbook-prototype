@@ -3,7 +3,7 @@ import { createStarterLoadout } from "./cards.js";
 import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js";
 import { setState, state } from "./store.js";
 
-export const RUN_RULES_VERSION = 5;
+export const RUN_RULES_VERSION = 6;
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
@@ -32,17 +32,17 @@ export function freshTowerRun(current = state) {
   return freshState({ score: current.score, meta: permanentMeta });
 }
 
-export function maxHp() { return Math.round((250 + (state.level - 1) * 20 + state.meta.maxHp) * (1 + state.meta.hpPct / 100)); }
-export function attack() { return Math.round((100 + (state.level - 1) * 8 + state.meta.attack) * (1 + state.meta.attackPct / 100)); }
-export function defense() { return Math.round((50 + (state.level - 1) * 4 + state.meta.defense) * (1 + state.meta.defensePct / 100)); }
+export function maxHp(level = state.level) { return Math.round((250 + (level - 1) * 20 + state.meta.maxHp) * (1 + state.meta.hpPct / 100)); }
+export function attack(level = state.level) { return Math.round((100 + (level - 1) * 8 + state.meta.attack) * (1 + state.meta.attackPct / 100)); }
+export function defense(level = state.level) { return Math.round((50 + (level - 1) * 4 + state.meta.defense) * (1 + state.meta.defensePct / 100)); }
 export function hit() { return 50 + state.meta.hit; }
 export function dodge() { return 80 + state.meta.dodge; }
 export function crit() { return 100 + state.meta.crit; }
 export function resist() { return 50 + state.meta.resist; }
 export function expNeed(level = state.level) { return 80 + (level - 1) * 40; }
-export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5, 8];
-export function slotCap() { return Math.min(5, 2 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((level) => state.level >= level).length); }
-export function poolCap() { return Math.min(16, slotCap() + 2 + (state.meta.poolBonus || 0)); }
+export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5];
+export function slotCap(level = state.level) { return Math.min(5, 3 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((unlockLevel) => level >= unlockLevel).length); }
+export function poolCap(level = state.level) { return Math.min(16, slotCap(level) + 2 + (state.meta.poolBonus || 0)); }
 export function mainElement() {
   const counts = {};
   state.startElements.forEach((e) => { counts[e] = (counts[e] || 0) + 1; });

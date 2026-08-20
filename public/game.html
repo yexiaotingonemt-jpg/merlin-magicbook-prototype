@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#100d18">
   <title>梅林的魔法书 · 法师塔</title>
   <link rel="stylesheet" href="./merlin-assets/grimoire-game.css">
+  <link rel="stylesheet" href="./merlin-assets/level-preview.css">
 </head>
 <body>
   <div id="game" class="game-shell">
@@ -49,11 +50,12 @@
               <div id="vitalStats"></div>
               <div id="expBar" class="progress"><i></i></div>
               <small id="expText"></small>
+              <details class="level-preview"><summary>查看下一级效果</summary><div id="levelPreview"></div></details>
             </section>
             <section class="status-card">
               <div class="status-title"><span>起始元素</span><b id="elementSlotText"></b></div>
               <div id="startElements" class="element-row"></div>
-              <small>通过元素事件增加或替换；Lv.8达到5个起始元素硬上限。</small>
+              <small>开局拥有2个；当前上限3个。通过元素事件增加或替换，Lv.5达到5个硬上限。</small>
             </section>
             <section class="status-card">
               <div class="status-title"><span>当前魔法书</span><b id="deckCount"></b></div>

@@ -11,11 +11,11 @@ export const EVENTS = {
 };
 
 export const CHAPTER_RULES = {
-  1: { count: 15, weights: { monster: 240, experience: 160, element: 160, library: 180, rest: 80, transmute: 50, upgrade: 60, organize: 30, player: 40 } },
-  2: { count: 20, weights: { monster: 300, experience: 120, element: 120, library: 160, rest: 90, transmute: 60, upgrade: 70, organize: 40, player: 40 } },
+  1: { count: 15, weights: { monster: 262, experience: 175, element: 80, library: 197, rest: 88, transmute: 55, upgrade: 66, organize: 33, player: 44 } },
+  2: { count: 20, weights: { monster: 318, experience: 127, element: 70, library: 169, rest: 95, transmute: 63, upgrade: 74, organize: 42, player: 42 } },
   3: { boss: "星辉魔像", final: false },
-  4: { count: 30, weights: { monster: 360, experience: 80, element: 80, library: 130, rest: 100, transmute: 70, upgrade: 80, organize: 50, player: 50 } },
-  5: { count: 10, weights: { monster: 450, experience: 0, element: 61, library: 0, rest: 184, transmute: 73, upgrade: 98, organize: 61, player: 73 } },
+  4: { count: 30, weights: { monster: 377, experience: 83, element: 40, library: 136, rest: 104, transmute: 73, upgrade: 83, organize: 52, player: 52 } },
+  5: { count: 10, weights: { monster: 450, experience: 0, element: 20, library: 0, rest: 200, transmute: 79, upgrade: 106, organize: 66, player: 79 } },
   6: { boss: "六相元素龙", final: true },
 };
 
