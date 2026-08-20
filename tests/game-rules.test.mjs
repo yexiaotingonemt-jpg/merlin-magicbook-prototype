@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=8";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=8";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=8";
-import { learnCard } from "../public/merlin-assets/game/exploration.js?v=8";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=8";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=8";
-import { advanceChapter, bindCard, COMBAT_DECK_CAP, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=8";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=8";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=9";
+import { adjustedSegmentPct, createEnemies, criticalChance, doHits, enemyBasicPage, evasionChance, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=9";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=9";
+import { learnCard } from "../public/merlin-assets/game/exploration.js?v=9";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=9";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=9";
+import { advanceChapter, bindCard, COMBAT_DECK_CAP, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=9";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=9";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -191,6 +191,17 @@ test("early PVE enemies use the two-element opening baseline", () => {
   assert.equal(boss[0].maxHp, 250);
   assert.equal(boss[0].atk, 100);
   assert.equal(boss[0].def, 50);
+});
+
+test("PVE event levels do not multiply percentage-point combat attributes", () => {
+  setState(freshState());
+  const enemies = [1, 2, 3].map((eventLevel) => createEnemies("pve", { eventLevel })[0]);
+  assert.deepEqual(enemies.map((enemy) => enemy.dodge), [80, 80, 80]);
+  assert.deepEqual(enemies.map((enemy) => enemy.hit), [50, 50, 50]);
+  assert.deepEqual(enemies.map((enemy) => enemy.crit), [100, 100, 100]);
+  assert.deepEqual(enemies.map((enemy) => enemy.resist), [50, 50, 50]);
+  assert.deepEqual(enemies.map((enemy) => evasionChance(enemy.dodge, 50)), [.3, .3, .3]);
+  assert.equal(criticalChance(100, 50), .5);
 });
 
 test("PVP mirror exposes its snapshot spellbook and starting elements", () => {

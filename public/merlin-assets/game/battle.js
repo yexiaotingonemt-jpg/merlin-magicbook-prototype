@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=8";
-import { CARD_BY_ID } from "./cards.js?v=8";
-import { runtime, state } from "./store.js?v=8";
-import { attack, cardLevel, costLabel, crit as critStat, defense, dodge, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=8";
-import { elementOrb, showView, toast } from "./ui.js?v=8";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=9";
+import { CARD_BY_ID } from "./cards.js?v=9";
+import { runtime, state } from "./store.js?v=9";
+import { attack, cardLevel, costLabel, crit as critStat, defense, dodge, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=9";
+import { elementOrb, showView, toast } from "./ui.js?v=9";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -129,7 +129,7 @@ export function createEnemies(mode, spec = {}) {
   const scale = boss ? 1 : eventScale;
   const hp = Math.round(maxHp() * (boss ? 1 : .6) * scale);
   return [{ id: "enemy-0", name: spec.name || pick(names), hp, maxHp: hp, shield: 0, atk: attack() * (boss ? 1 : .7) * scale, def: defense() * (boss ? 1 : .5) * scale,
-    hit: hit() * scale, dodge: dodge() * scale, crit: critStat() * scale, resist: resist() * scale, attackPct: 70,
+    hit: hit(), dodge: dodge(), crit: critStat(), resist: resist(), attackPct: 70,
     elements: [], book: [], burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: passiveSet(eventLevel, boss, spec.finalBoss),
     boss, shellReady: true, shellSpent: false, shellCooldown: 0, shellRefreshes: 0, hitSegments: 0, actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: boss ? "♛" : "♞" }];
 }
@@ -215,12 +215,18 @@ export function targetLowest() {
   const alive = state.battle.enemies.filter((e) => e.hp > 0); if (!alive.length) return null;
   const min = Math.min(...alive.map((e) => e.hp)); return pick(alive.filter((e) => e.hp === min));
 }
+export function evasionChance(defenderDodge, attackerHit) {
+  return clamp((defenderDodge - attackerHit) / 100, 0, .8);
+}
+export function criticalChance(attackerCrit, defenderResist, bonus = 0) {
+  return clamp((attackerCrit - defenderResist) / 100 + bonus, 0, .75);
+}
 export function hitEnemy(basePct, school, options = {}) {
   const b = state.battle, target = targetLowest(); if (!target) return { damage: 0, crit: false, killed: false };
   const effectiveDef = target.def * (1 - (options.pierce || 0)) * (1 - Math.min(.45, target.erosion * .02));
-  const hitChance = options.sureHit ? 1 : 1 - clamp((target.dodge - hit()) / 100, 0, .8);
+  const hitChance = options.sureHit ? 1 : 1 - evasionChance(target.dodge, hit());
   if (Math.random() > hitChance) { addLog(`${target.name}闪过了这一击。`); return { damage: 0, crit: false, killed: false }; }
-  const critChance = clamp((critStat() - target.resist) / 100 + (options.crit || 0) + Math.min(.25, b.player.heat * .05), 0, .75);
+  const critChance = criticalChance(critStat(), target.resist, (options.crit || 0) + Math.min(.25, b.player.heat * .05));
   const crit = Math.random() < critChance;
   const roll = variance();
   let multiplier = 1;
@@ -415,9 +421,9 @@ export function enemyAction() {
   }
   if (enemy.burn > 0) { const burnDamage = Math.round(attack() * .12 * .25 * enemy.burn * variance() * microVariance()); enemy.hp = Math.max(0, enemy.hp - burnDamage); addLog(`${enemy.name}的 ${enemy.burn} 层灼烧造成 ${burnDamage} 伤害。`, "good"); if (enemy.hp <= 0) { if (!targetLowest()) endBattle(true); else b.turn = "player"; return; } }
   const weakened = 1 - Math.min(.35, enemy.curse * .05 + enemy.erosion * .02);
-  const enemyHitChance = 1 - clamp((dodge() - enemy.hit) / 100, 0, .8);
+  const enemyHitChance = 1 - evasionChance(dodge(), enemy.hit);
   if (Math.random() > enemyHitChance) { addLog(`${enemy.name}的攻击被你闪避。`, "good"); b.turn = "player"; return; }
-  const enemyCrit = Math.random() < clamp((enemy.crit - resist()) / 100, 0, .75);
+  const enemyCrit = Math.random() < criticalChance(enemy.crit, resist());
   let damage = Math.max(1, Math.round(enemy.atk * enemy.attackPct / 100 * .25 * weakened * microVariance() * (enemy.atk / (enemy.atk + defense())) * (enemyCrit ? 2 : 1) * (enemy.breakBoost ? 1.15 : 1)));
   enemy.breakBoost = false;
   const shieldDamage = enemy.passives.includes("shieldBreaker") ? damage * 2 : damage;
@@ -456,8 +462,20 @@ export function endBattle(won) {
   saveState(); renderBattle();
 }
 
-function combatStatsHtml(hp, hpMax, shield, atk) {
-  return `<div class="battle-stat"><span>生命</span><div class="mini-bar"><i style="width:${clamp(hp / Math.max(1, hpMax) * 100, 0, 100)}%"></i></div><b>${Math.ceil(hp)}/${Math.ceil(hpMax)}</b></div><div class="battle-stat"><span>护盾</span><div class="mini-bar"><i style="width:${clamp(shield / Math.max(1, hpMax) * 100, 0, 100)}%;background:#68a5cc"></i></div><b>${Math.round(shield)}</b></div><div class="battle-stat"><span>法攻</span><div class="stat-rule"></div><b>${Math.round(atk)}</b></div>`;
+function percent(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function combatStatsHtml(actor, opponent, critBonus = 0) {
+  const attributes = [
+    ["法攻", actor.atk],
+    ["法防", actor.def],
+    ["命中", actor.hit, `实际 ${percent(1 - evasionChance(opponent.dodge, actor.hit))}`],
+    ["闪避", actor.dodge, `实际 ${percent(evasionChance(actor.dodge, opponent.hit))}`],
+    ["暴击", actor.crit, `实际 ${percent(criticalChance(actor.crit, opponent.resist, critBonus))}`],
+    ["抗暴", actor.resist, `受暴 ${percent(criticalChance(opponent.crit, actor.resist))}`],
+  ];
+  return `<div class="battle-vitals"><div class="battle-stat"><span>生命</span><div class="mini-bar"><i style="width:${clamp(actor.hp / Math.max(1, actor.maxHp) * 100, 0, 100)}%"></i></div><b>${Math.ceil(actor.hp)}/${Math.ceil(actor.maxHp)}</b></div><div class="battle-stat"><span>护盾</span><div class="mini-bar"><i style="width:${clamp(actor.shield / Math.max(1, actor.maxHp) * 100, 0, 100)}%;background:#68a5cc"></i></div><b>${Math.round(actor.shield)}</b></div></div><div class="combat-attribute-grid">${attributes.map(([label, value, actual]) => `<div class="combat-attribute"><span>${label}</span><b>${Math.round(value)}</b>${actual ? `<small>${actual}</small>` : ""}</div>`).join("")}</div>`;
 }
 
 function playerStatusItems(b) {
@@ -498,7 +516,10 @@ export function renderBattle() {
   $("battleMode").textContent = b.mode === "pve" ? "PVE · 玩家先手 · 怪物不预告" : `PVP 镜像 · 随机先手 · 疲劳 ${b.enemyFatigue}`;
   $("battleTitle").textContent = b.mode === "pve" ? `${state.floor % 10 === 0 ? "首领" : "元素"}试炼` : "镜像法师对决";
   $("battleSpeed").textContent = `速度 ×${battleSpeed}`; $("battlePause").textContent = paused ? "继续" : "暂停"; $("battleStep").hidden = !paused;
-  $("playerBattleStats").innerHTML = combatStatsHtml(b.playerHp, b.playerMaxHp, b.shield, attack());
+  const target = targetLowest();
+  const inspectedEnemy = target || b.enemies[0];
+  const playerStats = { hp: b.playerHp, maxHp: b.playerMaxHp, shield: b.shield, atk: attack(), def: defense(), hit: hit(), dodge: dodge(), crit: critStat(), resist: resist() };
+  $("playerBattleStats").innerHTML = inspectedEnemy ? combatStatsHtml(playerStats, inspectedEnemy, Math.min(.25, b.player.heat * .05)) : "";
   $("battleElements").innerHTML = [...b.elements.map((e) => elementOrb(e)), ...Array.from({ length: Math.max(0, b.poolCap - b.elements.length) }, () => elementOrb(null, true))].join("");
   $("battleStatuses").innerHTML = statusPanelHtml(playerStatusItems(b), "player", b.statusPanels?.player);
   $("turnRune").textContent = b.over ? "战斗结束" : b.turn === "player" ? "魔法书正在翻页" : "敌方行动";
@@ -508,11 +529,9 @@ export function renderBattle() {
   } else { $("currentCard").className = "current-card empty"; $("currentCard").innerHTML = '<span class="card-school">WAITING</span><h2>等待翻页</h2><p>我方每张书页在本轮只会出现一次；翻出后会在这里同时显示完整施法、残响、支付条件和目标规则。</p>'; }
   $("playerBookCount").textContent = `${state.deck.length}页`;
   $("cycleText").textContent = `第 ${b.cycle} 轮 · ${b.drawnInCycle} / ${state.deck.length}`; $("cycleBar").style.width = `${b.drawnInCycle / Math.max(1, state.deck.length) * 100}%`;
-  const target = targetLowest();
-  const inspectedEnemy = target || b.enemies[0];
   $("enemyGroupTitle").textContent = inspectedEnemy?.name || "塔中敌人";
   $("enemyPortrait").textContent = inspectedEnemy?.hp > 0 ? inspectedEnemy.icon : "☠";
-  $("enemyBattleStats").innerHTML = inspectedEnemy ? combatStatsHtml(inspectedEnemy.hp, inspectedEnemy.maxHp, inspectedEnemy.shield || 0, inspectedEnemy.atk) : "";
+  $("enemyBattleStats").innerHTML = inspectedEnemy ? combatStatsHtml({ ...inspectedEnemy, shield: inspectedEnemy.shield || 0 }, playerStats) : "";
   $("enemyBattleElements").innerHTML = inspectedEnemy?.elements?.length ? inspectedEnemy.elements.map((e) => elementOrb(e)).join("") : '<span class="no-element-copy">无元素</span>';
   $("enemyBattleStatuses").innerHTML = statusPanelHtml(enemyStatusItems(inspectedEnemy), "enemy", b.statusPanels?.enemy);
   $("enemyList").innerHTML = `<span class="combat-side-label">目标列表 · ${b.enemies.filter((e) => e.hp > 0).length}存活</span>${b.enemies.map((e) => `<article class="enemy-card ${target?.id === e.id ? "target" : ""}"><header><b>${e.hp > 0 ? e.icon : "☠"} ${esc(e.name)}</b><small>${Math.ceil(e.hp)}/${e.maxHp}</small></header><div class="mini-bar"><i style="width:${e.hp / e.maxHp * 100}%"></i></div></article>`).join("")}`;

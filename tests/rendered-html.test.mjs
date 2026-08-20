@@ -39,7 +39,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   const sources = Object.fromEntries(await Promise.all(modules.map(async (module) => [module, await readFile(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url), "utf8")])));
   const engine = Object.values(sources).join("\n");
   for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "battleRestart", "enemyBattleStats", "enemyBattleElements", "enemyBattleStatuses", "enemyCurrentCard", "playerBookCount", "enemyBookCount"]) assert.match(game, new RegExp(`id="${id}"`));
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=8"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=9"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -52,6 +52,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.battle, /export function enemyBasicPage\(enemy/);
   assert.match(sources.state, /export const COMBAT_DECK_CAP = 10/);
   assert.match(sources.exploration, /战斗魔法书已达\$\{COMBAT_DECK_CAP\}页上限/);
+  for (const label of ["法攻", "法防", "命中", "闪避", "暴击", "抗暴"]) assert.match(sources.battle, new RegExp(`\\["${label}"`));
+  assert.match(sources.battle, /实际 \$\{percent\(evasionChance/);
   assert.match(sources.core, /export function variance\(\)/);
   assert.match(sources.core, /\.4 \+ 2\.6 \* Math\.pow\(Math\.random\(\), 10 \/ 3\)/);
   assert.match(sources.battle, /b\.drawPile = shuffle\(state\.deck\)/);
@@ -62,8 +64,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=8"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=8"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=9"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=9"/);
 });
 
 test("renders the next-level preview and its responsive styling", async () => {

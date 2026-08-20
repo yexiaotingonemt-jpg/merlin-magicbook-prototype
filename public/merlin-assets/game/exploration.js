@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, pick, shuffle } from "./core.js?v=8";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=8";
-import { runtime, setState, state } from "./store.js?v=8";
-import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=8";
-import { closeModal, render, showModal, showView, toast } from "./ui.js?v=8";
-import { startBattle, stopBattle } from "./battle.js?v=8";
+import { $, ELEMENTS, SCHOOL_ORDER, pick, shuffle } from "./core.js?v=9";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=9";
+import { runtime, setState, state } from "./store.js?v=9";
+import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=9";
+import { closeModal, render, showModal, showView, toast } from "./ui.js?v=9";
+import { startBattle, stopBattle } from "./battle.js?v=9";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;

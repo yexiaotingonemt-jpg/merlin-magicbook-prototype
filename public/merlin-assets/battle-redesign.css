@@ -59,6 +59,39 @@
   text-align: right;
 }
 
+.combat-attribute-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.combat-attribute {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 9px;
+  border: 1px solid #342b3c;
+  border-radius: 7px;
+  background: #120f17;
+}
+
+.combat-attribute span {
+  color: #8f8297;
+  font-size: 8px;
+}
+
+.combat-attribute b {
+  color: #e8ddeb;
+  font-size: 10px;
+}
+
+.combat-attribute small {
+  grid-column: 1 / -1;
+  color: #b99b58;
+  font-size: 7px;
+}
+
 .stat-rule {
   height: 1px;
   background: #302737;
