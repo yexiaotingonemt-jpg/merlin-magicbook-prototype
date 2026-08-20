@@ -1,9 +1,10 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=7";
-import { createStarterLoadout } from "./cards.js?v=7";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=7";
-import { setState, state } from "./store.js?v=7";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=8";
+import { createStarterLoadout } from "./cards.js?v=8";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=8";
+import { setState, state } from "./store.js?v=8";
 
 export const RUN_RULES_VERSION = 6;
+export const COMBAT_DECK_CAP = 10;
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
@@ -49,6 +50,21 @@ export function mainElement() {
   return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "fire";
 }
 export function cardLevel(id) { return state.collection[id] || 0; }
+export function normalizeCombatDeck(deck = state.deck) {
+  const seen = new Set();
+  return deck.filter((id) => {
+    if (!state.collection[id] || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  }).slice(0, COMBAT_DECK_CAP);
+}
+export function bindCard(id) {
+  if (!state.collection[id]) return "unknown";
+  if (state.deck.includes(id)) return "already";
+  if (state.deck.length >= COMBAT_DECK_CAP) return "full";
+  state.deck.push(id);
+  return "bound";
+}
 export function levelScale(id) { return 1 + Math.max(0, cardLevel(id) - 1) * .1; }
 export function costLabel(card) {
   const c = card.cost;
@@ -121,6 +137,7 @@ export function hydrate(data) {
   const migrated = Number(data.runRulesVersion || 0) < RUN_RULES_VERSION ? freshTowerRun(data) : data;
   const normalized = freshState(migrated);
   setState({ ...normalized, ...migrated, gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, meta: normalized.meta, board: Array.isArray(migrated.board) ? migrated.board : [] });
+  state.deck = normalizeCombatDeck(state.deck);
   if (!state.events?.length && !state.eventResult && !state.runComplete) generateEvents();
   state.hp = clamp(state.hp, 1, maxHp());
   return true;

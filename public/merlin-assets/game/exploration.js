@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, pick, shuffle } from "./core.js?v=7";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=7";
-import { runtime, setState, state } from "./store.js?v=7";
-import { advanceChapter, cardLevel, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=7";
-import { closeModal, render, showModal, showView, toast } from "./ui.js?v=7";
-import { startBattle, stopBattle } from "./battle.js?v=7";
+import { $, ELEMENTS, SCHOOL_ORDER, pick, shuffle } from "./core.js?v=8";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=8";
+import { runtime, setState, state } from "./store.js?v=8";
+import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=8";
+import { closeModal, render, showModal, showView, toast } from "./ui.js?v=8";
+import { startBattle, stopBattle } from "./battle.js?v=8";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -43,8 +43,9 @@ export function learnCard(card, forceDeck = true) {
     return `${card.name}升至 Lv.${cardLevel(card.id)}`;
   }
   state.collection[card.id] = 1;
-  if (forceDeck) state.deck.push(card.id);
-  return `学会${card.name}，已装订到战斗魔法书`;
+  if (!forceDeck) return `学会${card.name}，已放入仓库`;
+  if (bindCard(card.id) === "bound") return `学会${card.name}，已装订到战斗魔法书`;
+  return `学会${card.name}；战斗魔法书已达${COMBAT_DECK_CAP}页上限，书页已自动放入仓库`;
 }
 export function resolveEvent(eventId) {
   const event = state.events.find((item) => item.id === eventId);
@@ -65,7 +66,7 @@ export function resolveEvent(eventId) {
   if (type === "library") {
     const pool = CARDS.filter((c) => cardLevel(c.id) < 6);
     if (!pool.length || Math.random() < .16) { choosePassiveModal(); return; }
-    chooseCardModal("残破书库 · 三选一", shuffle(pool).slice(0, 3), (card) => completeEvent("书页归位", learnCard(card, true)), "学习新咒语时会直接装订；同名书页会升级，Lv.3与Lv.6发生质变。"); return;
+    chooseCardModal("残破书库 · 三选一", shuffle(pool).slice(0, 3), (card) => completeEvent("书页归位", learnCard(card, true)), `学习新咒语时优先直接装订；战斗魔法书达到${COMBAT_DECK_CAP}页后自动放入仓库。同名书页会升级，Lv.3与Lv.6发生质变。`); return;
   }
   if (type === "upgrade") {
     const cards = state.deck.map((id) => CARD_BY_ID.get(id)).filter((c) => cardLevel(c.id) < 6);

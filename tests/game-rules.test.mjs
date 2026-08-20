@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=7";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=7";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=7";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=7";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=7";
-import { advanceChapter, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=7";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=7";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=8";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=8";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=8";
+import { learnCard } from "../public/merlin-assets/game/exploration.js?v=8";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=8";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=8";
+import { advanceChapter, bindCard, COMBAT_DECK_CAP, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=8";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=8";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -71,6 +72,31 @@ test("new mages begin with three pages, two schools, and an empty warehouse", ()
   const current = freshState();
   assertStarterLoadout(current);
   assert.deepEqual(Object.keys(current.collection).sort(), [...current.deck].sort());
+});
+
+test("combat grimoire stops at ten pages and new learned pages enter the warehouse", () => {
+  const current = setState(freshState());
+  const learnedIds = CARDS.slice(0, COMBAT_DECK_CAP + 1).map((card) => card.id);
+  current.collection = Object.fromEntries(learnedIds.slice(0, COMBAT_DECK_CAP).map((id) => [id, 1]));
+  current.deck = learnedIds.slice(0, COMBAT_DECK_CAP);
+  assert.equal(bindCard(learnedIds[COMBAT_DECK_CAP]), "unknown");
+  const overflowCard = CARD_BY_ID.get(learnedIds[COMBAT_DECK_CAP]);
+  const result = learnCard(overflowCard, true);
+  assert.equal(current.deck.length, COMBAT_DECK_CAP);
+  assert.equal(current.collection[overflowCard.id], 1);
+  assert.ok(!current.deck.includes(overflowCard.id));
+  assert.match(result, /10页上限.*自动放入仓库/);
+});
+
+test("loaded decks above the cap keep their first ten unique learned pages", () => {
+  const current = setState(freshState());
+  const ids = CARDS.slice(0, COMBAT_DECK_CAP + 2).map((card) => card.id);
+  current.collection = Object.fromEntries(ids.map((id) => [id, 1]));
+  assert.deepEqual(normalizeCombatDeck([...ids, ids[0]]), ids.slice(0, COMBAT_DECK_CAP));
+  current.deck = [...ids, ids[0]];
+  assert.equal(hydrate(current), true);
+  assert.deepEqual(state.deck, ids.slice(0, COMBAT_DECK_CAP));
+  assert.ok(state.collection[ids[COMBAT_DECK_CAP]]);
 });
 
 test("legacy starters migrate to a clean three-page collection", () => {

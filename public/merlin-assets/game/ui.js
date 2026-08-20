@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=7";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=7";
-import { EVENTS } from "./content.js?v=7";
-import { runtime, state } from "./store.js?v=7";
-import { attack, cardLevel, costLabel, defense, expNeed, maxHp, poolCap, schoolLabel, slotCap } from "./state.js?v=7";
+import { $, ELEMENTS, esc } from "./core.js?v=8";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=8";
+import { EVENTS } from "./content.js?v=8";
+import { runtime, state } from "./store.js?v=8";
+import { attack, cardLevel, COMBAT_DECK_CAP, costLabel, defense, expNeed, maxHp, poolCap, schoolLabel, slotCap } from "./state.js?v=8";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -83,7 +83,8 @@ export function cardMatches(card, search, school, costFilter) {
 export function spellRow(card, location) {
   const lv = cardLevel(card.id);
   const canRemove = state.organizeTokens > 0;
-  return `<article class="spell-row ${card.school}"><span class="spell-rune">${card.id}</span><div><h3>${card.name}</h3><small>${schoolLabel(card.school)} · 消耗 ${costLabel(card)}</small>${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${location === "deck" ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>移入仓库</button>` : `<button data-bind="${card.id}">装订</button>`}</article>`;
+  const deckFull = state.deck.length >= COMBAT_DECK_CAP;
+  return `<article class="spell-row ${card.school}"><span class="spell-rune">${card.id}</span><div><h3>${card.name}</h3><small>${schoolLabel(card.school)} · 消耗 ${costLabel(card)}</small>${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${location === "deck" ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>移入仓库</button>` : `<button data-bind="${card.id}" ${deckFull ? "disabled" : ""}>${deckFull ? "已满10页" : "装订"}</button>`}</article>`;
 }
 export function renderGrimoire() {
   const search = $("cardSearch").value || "";
@@ -92,7 +93,7 @@ export function renderGrimoire() {
   const deckCards = state.deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean).filter((c) => cardMatches(c, search, school, costF));
   const warehouseCards = Object.keys(state.collection).filter((id) => !state.deck.includes(id)).map((id) => CARD_BY_ID.get(id)).filter(Boolean).filter((c) => cardMatches(c, search, school, costF));
   $("organizeTokens").innerHTML = `安全整理 <b>${state.organizeTokens}</b> 次`;
-  $("combatDeckCount").textContent = `${state.deck.length} 页（无上限）`;
+  $("combatDeckCount").textContent = `${state.deck.length} / ${COMBAT_DECK_CAP} 页`;
   $("warehouseCount").textContent = `${Object.keys(state.collection).length - state.deck.length} 页`;
   $("combatDeckCards").innerHTML = deckCards.map((c) => spellRow(c, "deck")).join("") || '<p class="empty-copy">没有符合条件的战斗书页。</p>';
   $("warehouseCards").innerHTML = warehouseCards.map((c) => spellRow(c, "warehouse")).join("") || '<p class="empty-copy">仓库中没有符合条件的书页。</p>';
