@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=9";
-import { CARD_BY_ID } from "./cards.js?v=9";
-import { runtime, setState, state } from "./store.js?v=9";
-import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=9";
-import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=9";
-import { completeEvent, continueExplore, newTowerRun, resolveEvent } from "./exploration.js?v=9";
-import { cycleBattleSpeed, renderBattle, restartBattle, scheduleBattle, startBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=9";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=10";
+import { CARD_BY_ID } from "./cards.js?v=10";
+import { runtime, setState, state } from "./store.js?v=10";
+import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=10";
+import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=10";
+import { completeEvent, continueExplore, newTowerRun, resolveEvent } from "./exploration.js?v=10";
+import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=10";
 
 export function populateFilters() {
   const options = ['<option value="all">全部流派</option>', ...SCHOOL_ORDER.map((s) => `<option value="${s}">${ELEMENTS[s].name}系</option>`)].join("");
@@ -36,33 +36,35 @@ export function bindEvents() {
     }
     const statusSide = event.target.closest("[data-status-toggle]")?.dataset.statusToggle;
     if (statusSide) { toggleBattleStatusPanel(statusSide); return; }
-    if (event.target.closest("[data-battle-finish]")) { const mode = state.battle.mode; completeEvent(mode === "pvp" ? "镜像对决结束" : "元素试炼完成", mode === "pvp" ? "镜像战斗已经结算，疲劳与奖励记录已更新。" : "塔中敌人已被清除；本章内生命继续继承。"); return; }
-    if (event.target.closest("[data-battle-retry]")) { const spec = { ...state.battle.spec }; startBattle(state.battle.mode, spec); return; }
-    if (event.target.closest("[data-battle-new-run]")) { newTowerRun(); }
+    if (event.target.closest("[data-battle-finish]")) {
+      const { mode, won, reward } = state.battle;
+      const title = mode === "pvp" ? won ? "镜像对决胜利" : "镜像对决失败" : won ? "元素试炼完成" : "元素试炼失败";
+      const copy = won ? `奖励已领取：${reward.exp}经验与${reward.points}积分。${mode === "pve" ? "当前生命在本章继承。" : "镜像疲劳状态已更新。"}` : `本次事件已结束，不获得经验或积分。${mode === "pve" ? "生命降至1点并继续探索。" : "镜像疲劳状态已更新。"}`;
+      completeEvent(title, copy); return;
+    }
   });
   $("continueButton").addEventListener("click", continueExplore);
   $("newRunButton").addEventListener("click", () => showModal('<h2>重新进入法师塔？</h2><p>层数、塔内等级、经验、生命、起始元素、装订方案、咒语收藏和等级都会重置；积分及商店成长保留。系统将从火、水、风随机选2系，按2页＋1页生成新魔法书，仓库从0页开始。</p><button class="primary" id="confirmNewRun">确认重开</button>'));
   $("modalContent").addEventListener("click", (event) => { if (event.target.id === "confirmNewRun") newTowerRun(); });
-  $("modalClose").addEventListener("click", closeModal); $("modal").addEventListener("click", (event) => { if (event.target === $("modal")) closeModal(); });
+  $("modalClose").addEventListener("click", () => closeModal()); $("modal").addEventListener("click", (event) => { if (event.target === $("modal")) closeModal(); });
   $("helpButton").addEventListener("click", showHelp);
   ["cardSearch", "schoolFilter", "costFilter"].forEach((id) => $(id).addEventListener(id === "cardSearch" ? "input" : "change", renderGrimoire));
   ["archiveSearch", "archiveSchoolFilter"].forEach((id) => $(id).addEventListener(id === "archiveSearch" ? "input" : "change", renderArchive));
   $("battleSpeed").addEventListener("click", cycleBattleSpeed);
   $("battlePause").addEventListener("click", toggleBattlePause);
   $("battleStep").addEventListener("click", stepBattle);
-  $("battleRestart").addEventListener("click", restartBattle);
   window.addEventListener("message", (event) => {
     const message = event.data; if (!message || typeof message !== "object") return;
-    if (["merlin:load", "merlin:load-remote"].includes(message.type) && message.state) { if (!hydrate(message.state)) { setState(freshState(message.state)); generateEvents(); } runtime.currentView = state.battle && !state.battle.over ? "battle" : "explore"; render(); if (runtime.currentView === "battle") { renderBattle(); scheduleBattle(500); } }
+    if (["merlin:load", "merlin:load-remote"].includes(message.type) && message.state) { if (!hydrate(message.state)) { setState(freshState(message.state)); generateEvents(); } runtime.currentView = state.battle ? "battle" : "explore"; render(); if (runtime.currentView === "battle") { renderBattle(); if (!state.battle.over) scheduleBattle(500); } }
     if (message.type === "merlin:new") { setState(freshState()); generateEvents(); runtime.currentView = "explore"; render(); saveState(); }
   });
 }
 export function init() {
   populateFilters();
   if (!loadLocal()) { setState(freshState()); generateEvents(); }
-  if (state.battle && !state.battle.over) runtime.currentView = "battle";
+  if (state.battle) runtime.currentView = "battle";
   bindEvents(); showView(runtime.currentView); saveState();
-  if (runtime.currentView === "battle") { renderBattle(); scheduleBattle(500); }
+  if (runtime.currentView === "battle") { renderBattle(); if (!state.battle.over) scheduleBattle(500); }
   if (window.parent !== window) window.parent.postMessage({ type: "merlin:ready" }, "*");
 }
 init();

@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=9";
-import { CARD_BY_ID } from "./cards.js?v=9";
-import { runtime, state } from "./store.js?v=9";
-import { attack, cardLevel, costLabel, crit as critStat, defense, dodge, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=9";
-import { elementOrb, showView, toast } from "./ui.js?v=9";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=10";
+import { CARD_BY_ID } from "./cards.js?v=10";
+import { runtime, state } from "./store.js?v=10";
+import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=10";
+import { elementOrb, renderRunStats, showView, toast } from "./ui.js?v=10";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -129,7 +129,7 @@ export function createEnemies(mode, spec = {}) {
   const scale = boss ? 1 : eventScale;
   const hp = Math.round(maxHp() * (boss ? 1 : .6) * scale);
   return [{ id: "enemy-0", name: spec.name || pick(names), hp, maxHp: hp, shield: 0, atk: attack() * (boss ? 1 : .7) * scale, def: defense() * (boss ? 1 : .5) * scale,
-    hit: hit(), dodge: dodge(), crit: critStat(), resist: resist(), attackPct: 70,
+    hit: hit(), dodge: Math.max(0, dodge() - 20), crit: critStat(), resist: resist(), attackPct: 70,
     elements: [], book: [], burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: passiveSet(eventLevel, boss, spec.finalBoss),
     boss, shellReady: true, shellSpent: false, shellCooldown: 0, shellRefreshes: 0, hitSegments: 0, actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: boss ? "♛" : "♞" }];
 }
@@ -150,7 +150,7 @@ export function startBattle(mode, restartSpec = null) {
     enemyFatigue: mode === "pvp" ? state.fatigue : null
   };
   paused = false; battleSpeed = 1; addLog(mode === "pve" ? "你抢占先手，魔法书开始随机翻页。" : `${state.battle.turn === "player" ? "你" : "镜像法师"}获得随机先手。`, "good");
-  runtime.currentView = "battle"; showView("battle"); renderBattle(); scheduleBattle(650);
+  runtime.currentView = "battle"; saveState(); showView("battle"); renderBattle(); scheduleBattle(650);
 }
 export function addLog(message, tone = "") {
   const b = state.battle; if (!b) return;
@@ -214,12 +214,6 @@ export function drawCard() {
 export function targetLowest() {
   const alive = state.battle.enemies.filter((e) => e.hp > 0); if (!alive.length) return null;
   const min = Math.min(...alive.map((e) => e.hp)); return pick(alive.filter((e) => e.hp === min));
-}
-export function evasionChance(defenderDodge, attackerHit) {
-  return clamp((defenderDodge - attackerHit) / 100, 0, .8);
-}
-export function criticalChance(attackerCrit, defenderResist, bonus = 0) {
-  return clamp((attackerCrit - defenderResist) / 100 + bonus, 0, .75);
 }
 export function hitEnemy(basePct, school, options = {}) {
   const b = state.battle, target = targetLowest(); if (!target) return { damage: 0, crit: false, killed: false };
@@ -454,12 +448,11 @@ export function endBattle(won) {
     state.fatigue = b.enemyFatigue;
   }
   if (won) {
-    const exp = Math.round(36 + state.floor * 7 + (state.floor % 10 === 0 ? 80 : 0));
-    const points = Math.round(24 + state.floor * 5 + (b.mode === "pvp" ? 55 : 0));
+    const { exp, points } = battleRewards(b.mode);
     const levels = gainExp(exp); state.score += points; b.reward = { exp, points, levels };
     addLog(`战斗胜利！获得 ${exp} 经验和 ${points} 积分。`, "good");
   } else addLog("你的生命归零，本次战斗失败。", "bad");
-  saveState(); renderBattle();
+  saveState(); renderRunStats(); renderBattle();
 }
 
 function percent(value) {
@@ -543,7 +536,7 @@ export function renderBattle() {
   $("enemyBookNote").innerHTML = b.mode === "pvp" ? `<details><summary>查看敌方装订书页</summary><p>${enemyBook.map((id) => esc(CARD_BY_ID.get(id)?.name || id)).join("、") || "没有可识别书页"}</p><small>当前镜像战斗仍使用快照属性与基础术式结算；书页效果将在后续战斗规则中接入。</small></details>` : "该NPC没有战斗魔法书，每次行动使用无附加卡牌效果的普通攻击；怪物被动仍在右侧状态区独立生效。";
   $("battleLog").innerHTML = b.logs.map((log) => `<div class="log-entry ${log.tone}"><b>#${log.n}</b><span>${esc(log.message)}</span></div>`).join("");
   $("battleSummary").hidden = !b.over;
-  if (b.over) $("battleSummary").innerHTML = b.won ? `<h2>战斗胜利</h2><p>获得 ${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">收取奖励并继续</button>` : `<h2>挑战失败</h2><p>可以立即重新挑战；镜像玩家事件也可以结算失败并继续探索。</p><button data-battle-retry>重新开打</button>${b.mode === "pvp" ? '<button data-battle-finish="loss">接受结果并继续</button>' : ""}<button data-battle-new-run>重开法师塔</button>`;
+  if (b.over) $("battleSummary").innerHTML = b.won ? `<h2>战斗胜利</h2><p>奖励已直接到账：${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">确认结果并继续</button>` : `<h2>挑战失败</h2><p>本次事件已经结算，不能重新挑战；失败不会获得经验或积分。</p><button data-battle-finish="loss">确认结果并继续</button>`;
 }
 
 export function toggleBattleStatusPanel(side) {
@@ -572,8 +565,3 @@ export function toggleBattlePause() {
 }
 
 export function stepBattle() { battleTick(true); }
-
-export function restartBattle() {
-  if (!state.battle) return;
-  startBattle(state.battle.mode, { ...state.battle.spec });
-}

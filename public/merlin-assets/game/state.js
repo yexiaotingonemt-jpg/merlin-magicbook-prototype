@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=9";
-import { createStarterLoadout } from "./cards.js?v=9";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=9";
-import { setState, state } from "./store.js?v=9";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=10";
+import { createStarterLoadout } from "./cards.js?v=10";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=10";
+import { setState, state } from "./store.js?v=10";
 
 export const RUN_RULES_VERSION = 6;
 export const COMBAT_DECK_CAP = 10;
@@ -40,6 +40,11 @@ export function hit() { return 50 + state.meta.hit; }
 export function dodge() { return 80 + state.meta.dodge; }
 export function crit() { return 100 + state.meta.crit; }
 export function resist() { return 50 + state.meta.resist; }
+export function evasionChance(defenderDodge, attackerHit) { return clamp((defenderDodge - attackerHit) / 100, 0, .8); }
+export function criticalChance(attackerCrit, defenderResist, bonus = 0) { return clamp((attackerCrit - defenderResist) / 100 + bonus, 0, .75); }
+export function battleRewards(mode, floor = state.floor) {
+  return { exp: Math.round(36 + floor * 7 + (floor % 10 === 0 ? 80 : 0)), points: Math.round(24 + floor * 5 + (mode === "pvp" ? 55 : 0)) };
+}
 export function expNeed(level = state.level) { return 80 + (level - 1) * 40; }
 export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5];
 export function slotCap(level = state.level) { return Math.min(5, 3 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((unlockLevel) => level >= unlockLevel).length); }
@@ -125,9 +130,7 @@ export function advanceChapter() {
   state.chapter += 1; state.hp = maxHp(); state.eventResult = null; generateEvents(); return true;
 }
 
-export function serializeState() {
-  return JSON.parse(JSON.stringify({ ...state, battle: state.battle && !state.battle.over ? state.battle : null }));
-}
+export function serializeState() { return JSON.parse(JSON.stringify(state)); }
 export function saveState() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(serializeState())); } catch { /* storage can be unavailable */ }
   if (window.parent !== window) window.parent.postMessage({ type: "merlin:state", state: serializeState() }, "*");

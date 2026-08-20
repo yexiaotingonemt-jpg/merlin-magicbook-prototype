@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=9";
-import { adjustedSegmentPct, createEnemies, criticalChance, doHits, enemyBasicPage, evasionChance, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=9";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=9";
-import { learnCard } from "../public/merlin-assets/game/exploration.js?v=9";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=9";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=9";
-import { advanceChapter, bindCard, COMBAT_DECK_CAP, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=9";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=9";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=10";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=10";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=10";
+import { learnCard } from "../public/merlin-assets/game/exploration.js?v=10";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=10";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=10";
+import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=10";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=10";
+import { eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=10";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -196,12 +197,29 @@ test("early PVE enemies use the two-element opening baseline", () => {
 test("PVE event levels do not multiply percentage-point combat attributes", () => {
   setState(freshState());
   const enemies = [1, 2, 3].map((eventLevel) => createEnemies("pve", { eventLevel })[0]);
-  assert.deepEqual(enemies.map((enemy) => enemy.dodge), [80, 80, 80]);
+  assert.deepEqual(enemies.map((enemy) => enemy.dodge), [60, 60, 60]);
   assert.deepEqual(enemies.map((enemy) => enemy.hit), [50, 50, 50]);
   assert.deepEqual(enemies.map((enemy) => enemy.crit), [100, 100, 100]);
   assert.deepEqual(enemies.map((enemy) => enemy.resist), [50, 50, 50]);
-  assert.deepEqual(enemies.map((enemy) => evasionChance(enemy.dodge, 50)), [.3, .3, .3]);
+  assert.deepEqual(enemies.map((enemy) => evasionChance(enemy.dodge, 50)), [.1, .1, .1]);
   assert.equal(criticalChance(100, 50), .5);
+});
+
+test("event previews disclose exact rewards, risk, timer outcome, and reduced PVE evasion", () => {
+  setState(freshState());
+  const monster = eventDecisionFacts({ type: "monster", level: 2, countdown: 2 });
+  assert.match(monster.reward, /43经验 \+ 29积分/);
+  assert.match(monster.risk, /Lv\.2.*生命72%.*攻84%.*防60%/);
+  assert.match(monster.combat, /实际闪避10%.*失败无奖励/);
+  assert.equal(monster.timer, "2回合后升级");
+  assert.deepEqual(battleRewards("pvp", 1), { exp: 43, points: 84 });
+});
+
+test("completed battles remain persisted until their result is confirmed", () => {
+  const current = setState(freshState());
+  current.battle = { mode: "pve", over: true, won: true, reward: { exp: 43, points: 29 } };
+  assert.equal(serializeState().battle.over, true);
+  assert.equal(serializeState().battle.won, true);
 });
 
 test("PVP mirror exposes its snapshot spellbook and starting elements", () => {
