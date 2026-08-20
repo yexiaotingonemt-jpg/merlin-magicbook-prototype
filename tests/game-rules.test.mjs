@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js";
-import { adjustedSegmentPct, createEnemies, doHits, hitEnemy } from "../public/merlin-assets/game/battle.js";
-import { EVENTS } from "../public/merlin-assets/game/content.js";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js";
-import { advanceChapter, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js";
-import { setState, state } from "../public/merlin-assets/game/store.js";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=6";
+import { adjustedSegmentPct, createEnemies, doHits, hitEnemy } from "../public/merlin-assets/game/battle.js?v=6";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=6";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=6";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=6";
+import { advanceChapter, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=6";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=6";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
