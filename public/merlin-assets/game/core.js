@@ -1,5 +1,5 @@
-export const VERSION = 4;
-export const SAVE_KEY = "merlin-grimoire-v4";
+export const VERSION = 5;
+export const SAVE_KEY = "merlin-grimoire-v5";
 export const $ = (id) => document.getElementById(id);
 export const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 export const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -27,4 +27,5 @@ export const random = (amount) => cost("random", amount);
 export const all = (parts, min) => cost("all", min, parts);
 export function randomInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 export function variance() { return .4 + 2.6 * Math.pow(Math.random(), 10 / 3); }
+export function microVariance() { return .95 + Math.random() * .1; }
 export function esc(text) { return String(text).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])); }

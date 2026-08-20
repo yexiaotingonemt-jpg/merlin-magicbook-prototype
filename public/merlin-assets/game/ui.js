@@ -36,10 +36,12 @@ export function showView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 export function renderRunStats() {
-  $("runStats").innerHTML = `<div class="stat-chip"><span>层数</span><b>${state.floor}F</b></div><div class="stat-chip"><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><span>积分</span><b>${state.score}</b></div>`;
+  $("runStats").innerHTML = `<div class="stat-chip"><span>章节</span><b>${state.chapter}/6</b></div><div class="stat-chip"><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><span>积分</span><b>${state.score}</b></div>`;
 }
 export function renderExplore() {
-  $("floorTitle").textContent = `第 ${state.floor} 层${state.floor % 10 === 0 ? " · 首领层" : ""}`;
+  const bossChapter = [3, 6].includes(state.chapter);
+  $("floorTitle").textContent = `第 ${state.chapter} 章${bossChapter ? state.chapter === 6 ? " · 终极首领" : " · 首领" : ""}`;
+  $("routeHint").textContent = bossChapter ? "可先查看首领信息并调整魔法书" : `事件池剩余 ${state.eventPool.length} · 展示位 ${state.events.length}`;
   $("wizardLevel").textContent = `Lv.${state.level}`;
   $("vitalStats").innerHTML = [
     ["生命", `${Math.ceil(state.hp)} / ${maxHp()}`, state.hp / maxHp()], ["法攻", attack(), 1], ["法防", defense(), 1]
@@ -53,14 +55,16 @@ export function renderExplore() {
   $("deckProfile").innerHTML = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([s, n]) => `<span class="profile-chip ${s}">${schoolLabel(s)} ${n}</span>`).join("");
   $("eventChoices").hidden = Boolean(state.eventResult);
   $("eventResult").hidden = !state.eventResult;
-  $("continueButton").hidden = !state.eventResult;
+  $("continueButton").hidden = !state.eventResult || state.runComplete;
   if (state.eventResult) {
     $("eventResult").innerHTML = `<div style="font-size:38px">✦</div><h2>${esc(state.eventResult.title)}</h2><p>${esc(state.eventResult.copy)}</p>`;
   } else {
     $("eventChoices").innerHTML = state.events.map((event, index) => {
       const meta = EVENTS[event.type];
       const glow = ["#915c72", "#557f9d", "#74668f"][index];
-      return `<button class="event-card" data-event="${event.type}" style="--event-glow:${glow}"><small>ROOM ${state.floor}-${index + 1}</small><span class="event-icon">${meta.icon}</span><h3>${meta.name}</h3><p>${meta.copy}</p><b>进入房间 →</b></button>`;
+      const timer = event.countdown == null ? "∞" : event.countdown;
+      const level = ["monster", "player"].includes(event.type) ? ` · Lv.${event.level}` : "";
+      return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><small>展示位 ${index + 1} · 倒计时 ${timer}${level}</small><span class="event-icon">${meta.icon}</span><h3>${event.name || meta.name}</h3><p>${meta.copy}</p><b>${event.boss ? "查看信息并挑战" : "处理事件"} →</b></button>`;
     }).join("");
   }
 }
@@ -102,18 +106,17 @@ export function renderArchive() {
   }).join("");
 }
 export const SHOP = [
-  { id: "attack", icon: "✦", name: "法攻手稿", copy: "永久提高5点基础法术攻击。", base: 90, apply: () => { state.meta.attack += 5; } },
-  { id: "defense", icon: "◈", name: "护法铭文", copy: "永久提高4点基础法术防御。", base: 80, apply: () => { state.meta.defense += 4; } },
-  { id: "maxHp", icon: "♥", name: "生命秘典", copy: "永久提高25点最大生命，并立即回复。", base: 100, apply: () => { state.meta.maxHp += 25; state.hp += 25; } },
-  { id: "startBonus", icon: "✥", name: "元素扩容", copy: "永久增加1个起始元素槽上限，总上限仍为8。", base: 390, apply: () => { state.meta.startBonus = Math.min(2, (state.meta.startBonus || 0) + 1); } }
+  { id: "attack", icon: "✦", name: "法攻手稿", copy: "永久提高4点基础法术攻击。", base: 100, apply: () => { state.meta.attack += 4; } },
+  { id: "defense", icon: "◈", name: "护法铭文", copy: "永久提高2点基础法术防御。", base: 100, apply: () => { state.meta.defense += 2; } },
+  { id: "maxHp", icon: "♥", name: "生命秘典", copy: "永久提高10点最大生命，并立即回复10点。", base: 100, apply: () => { state.meta.maxHp += 10; state.hp += 10; } }
 ];
 export function shopLevel(id) { return Number(state.meta.passiveLevels?.[id] || 0); }
 export function shopCost(item) { return Math.round(item.base * (1 + shopLevel(item.id) * .55)); }
 export function renderShop() {
   $("shopScore").textContent = state.score;
   $("shopGrid").innerHTML = SHOP.map((item) => {
-    const level = shopLevel(item.id), price = shopCost(item), capped = item.id === "startBonus" && level >= 2;
-    return `<article class="shop-item"><span class="shop-icon">${item.icon}</span><h2>${item.name}</h2><p>${item.copy}</p><p>Lv.${level} · 下次价格 ${price}</p><button data-buy="${item.id}" ${(state.score < price || capped) ? "disabled" : ""}>${capped ? "已达上限" : `兑换 · ${price} 积分`}</button></article>`;
+    const level = shopLevel(item.id), price = shopCost(item);
+    return `<article class="shop-item"><span class="shop-icon">${item.icon}</span><h2>${item.name}</h2><p>${item.copy}</p><p>Lv.${level} · 下次价格 ${price}</p><button data-buy="${item.id}" ${state.score < price ? "disabled" : ""}>兑换 · ${price} 积分</button></article>`;
   }).join("");
 }
 export function render() {

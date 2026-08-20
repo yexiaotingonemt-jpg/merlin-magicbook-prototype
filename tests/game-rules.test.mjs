@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js";
-import { createEnemies } from "../public/merlin-assets/game/battle.js";
+import { createEnemies, hitEnemy } from "../public/merlin-assets/game/battle.js";
 import { EVENTS } from "../public/merlin-assets/game/content.js";
-import { variance } from "../public/merlin-assets/game/core.js";
-import { ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, hydrate, poolCap, RUN_RULES_VERSION, slotCap } from "../public/merlin-assets/game/state.js";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js";
+import { advanceChapter, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js";
 import { setState, state } from "../public/merlin-assets/game/store.js";
 
 function assertStarterLoadout(loadout) {
@@ -27,9 +28,9 @@ function assertStarterLoadout(loadout) {
 }
 
 test("card catalog and starter pools remain internally consistent", () => {
-  assert.equal(CARDS.length, 85);
-  assert.equal(CARD_BY_ID.size, 85);
-  assert.equal(new Set(CARDS.map((card) => card.id)).size, 85);
+  assert.equal(CARDS.length, 91);
+  assert.equal(CARD_BY_ID.size, 91);
+  assert.equal(new Set(CARDS.map((card) => card.id)).size, 91);
   assert.equal(PASSIVES.length, 8);
   assert.deepEqual(Object.keys(STARTER_CARD_POOLS), ["fire", "water", "wind"]);
   assert.ok(Object.values(STARTER_CARD_POOLS).flat().every((id) => CARD_BY_ID.has(id)));
@@ -99,35 +100,71 @@ test("every tower run resets binding, elements, collection, and spell levels", (
   next.deck.forEach((id) => assert.equal(next.collection[id], 1));
 });
 
-test("level curve expands initial elements from two toward eight", () => {
+test("level curve expands initial elements from two toward the hard cap of five", () => {
   const state = setState(freshState());
-  assert.deepEqual(ELEMENT_SLOT_UNLOCK_LEVELS, [3, 5, 8, 12, 16, 20]);
+  assert.deepEqual(ELEMENT_SLOT_UNLOCK_LEVELS, [3, 5, 8]);
   assert.equal(slotCap(), 2);
   assert.equal(poolCap(), 4);
   state.level = 3;
   assert.equal(slotCap(), 3);
   assert.equal(poolCap(), 5);
-  state.level = 16;
-  assert.equal(slotCap(), 7);
-  assert.equal(poolCap(), 9);
+  state.level = 8;
+  assert.equal(slotCap(), 5);
+  assert.equal(poolCap(), 7);
   state.level = 20;
-  assert.equal(slotCap(), 8);
-  assert.equal(poolCap(), 10);
+  assert.equal(slotCap(), 5);
+  assert.equal(poolCap(), 7);
 });
 
 test("early PVE enemies use the two-element opening baseline", () => {
   const current = setState(freshState());
   const floorOne = createEnemies("pve");
   assert.equal(floorOne.length, 1);
-  assert.equal(floorOne[0].maxHp, 146);
-  assert.equal(floorOne[0].atk, 28.89);
-  assert.equal(floorOne[0].def, 40);
-  current.floor = 10;
-  const boss = createEnemies("pve");
+  assert.equal(floorOne[0].maxHp, 150);
+  assert.equal(floorOne[0].atk, 70);
+  assert.equal(floorOne[0].def, 25);
+  current.chapter = 3;
+  const boss = createEnemies("pve", { boss: true, name: "星辉魔像" });
   assert.equal(boss.length, 1);
-  assert.equal(boss[0].maxHp, 924);
-  assert.ok(Math.abs(boss[0].atk - 85) < Number.EPSILON * 100);
-  assert.equal(boss[0].def, 85);
+  assert.equal(boss[0].maxHp, 250);
+  assert.equal(boss[0].atk, 100);
+  assert.equal(boss[0].def, 50);
+});
+
+test("chapter one creates a finite weighted pool and advances countdowns after an event", () => {
+  const current = setState(freshState());
+  generateEvents();
+  assert.equal(CHAPTER_RULES[1].count, 15);
+  assert.equal(current.events.length, 3);
+  assert.equal(current.eventPool.length, 12);
+  const selected = current.events[0];
+  const finiteBefore = current.events.slice(1).filter((event) => event.countdown != null).map((event) => [event.id, event.countdown]);
+  settleExplorationTurn(selected.id);
+  assert.equal(current.events.length, 3);
+  assert.equal(current.eventPool.length, 11);
+  finiteBefore.forEach(([id, countdown]) => {
+    const event = current.events.find((item) => item.id === id);
+    if (event && !["monster", "player"].includes(event.type)) assert.equal(event.countdown, countdown - 1);
+  });
+});
+
+test("all six chapters terminate and boss chapters contain exactly one fixed encounter", () => {
+  const current = setState(freshState());
+  generateEvents();
+  for (let chapter = 1; chapter <= 6; chapter += 1) {
+    assert.equal(current.chapter, chapter);
+    if ([3, 6].includes(chapter)) {
+      assert.equal(current.events.length, 1);
+      assert.equal(current.events[0].boss, true);
+    }
+    let safety = 100;
+    while (!current.chapterComplete && safety-- > 0) settleExplorationTurn(current.events[0].id);
+    assert.ok(safety > 0, `chapter ${chapter} should terminate`);
+    assert.equal(current.chapterComplete, true);
+    if (chapter < 6) assert.equal(advanceChapter(), true);
+  }
+  assert.equal(advanceChapter(), false);
+  assert.equal(current.runComplete, true);
 });
 
 test("combat variance always stays within the configured 40%-300% range", () => {
@@ -135,4 +172,25 @@ test("combat variance always stays within the configured 40%-300% range", () => 
   assert.ok(samples.every((value) => value >= 0.4 && value <= 3));
   assert.ok(samples.some((value) => value < 0.6));
   assert.ok(samples.some((value) => value > 1.5));
+});
+
+test("final damage and healing micro variance remains within 95%-105%", () => {
+  const samples = Array.from({ length: 2_000 }, microVariance);
+  assert.ok(samples.every((value) => value >= .95 && value <= 1.05));
+});
+
+test("a direct spell segment resolves to finite damage under the new combat formula", () => {
+  const current = setState(freshState());
+  current.battle = {
+    mode: "pve", action: 1, logs: [], enemyFatigue: null,
+    player: { heat: 0, light: 0, star: 0, damageBuff: 0 },
+    enemies: [{ id: "target", name: "测试魔像", hp: 150, maxHp: 150, def: 25, dodge: 80, resist: 50, erosion: 0, vulnerable: 0, passives: [], mirrorStacks: 0 }],
+  };
+  const originalRandom = Math.random;
+  Math.random = () => .5;
+  try {
+    const result = hitEnemy(100, "fire");
+    assert.ok(Number.isFinite(result.damage));
+    assert.ok(result.damage > 0);
+  } finally { Math.random = originalRandom; }
 });

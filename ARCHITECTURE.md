@@ -10,8 +10,8 @@ public/
    └─ game/
       ├─ app.js                     # 入口、DOM 事件和宿主通信
       ├─ battle.js                  # 战斗回合、抽牌、支付与效果结算
-      ├─ cards.js                   # 85 张战斗咒语和 8 张被动卡的数据
-      ├─ content.js                 # 探索事件的名称、图标和文案
+      ├─ cards.js                   # 91 张战斗咒语和 8 张被动卡的数据
+      ├─ content.js                 # 事件文案、章节权重、倒计时配置
       ├─ core.js                    # 元素定义、通用工具和方差函数
       ├─ exploration.js             # 事件处理、学卡、升级、转化与重开流程
       ├─ state.js                   # 角色数值、成长、序列化与存档迁移
@@ -65,7 +65,7 @@ npm run lint
 npm test
 ```
 
-`tests/rendered-html.test.mjs` 会检查模块文件完整性、85 张战斗卡数量、关键规则所属模块以及 Cloudflare Pages 构建入口。
+`tests/rendered-html.test.mjs` 会检查模块文件完整性、91 张战斗卡数量、新伤害公式、关键规则所属模块以及 Cloudflare Pages 构建入口。`tests/game-rules.test.mjs` 额外验证起始构筑、五元素上限、六章事件池和双层方差范围。
 
 ## 设计文档同步
 

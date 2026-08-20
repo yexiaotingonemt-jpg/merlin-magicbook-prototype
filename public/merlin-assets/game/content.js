@@ -9,3 +9,28 @@ export const EVENTS = {
   organize: { name: "装订台", icon: "☷", copy: "获得一次安全拆页机会，保留咒语等级。" },
   player: { name: "镜像法师", icon: "⚜", copy: "与玩家快照进行异步战斗，双方满血且随机先手。" }
 };
+
+export const CHAPTER_RULES = {
+  1: { count: 15, weights: { monster: 240, experience: 160, element: 160, library: 180, rest: 80, transmute: 50, upgrade: 60, organize: 30, player: 40 } },
+  2: { count: 20, weights: { monster: 300, experience: 120, element: 120, library: 160, rest: 90, transmute: 60, upgrade: 70, organize: 40, player: 40 } },
+  3: { boss: "星辉魔像", final: false },
+  4: { count: 30, weights: { monster: 360, experience: 80, element: 80, library: 130, rest: 100, transmute: 70, upgrade: 80, organize: 50, player: 50 } },
+  5: { count: 10, weights: { monster: 450, experience: 0, element: 61, library: 0, rest: 184, transmute: 73, upgrade: 98, organize: 61, player: 73 } },
+  6: { boss: "六相元素龙", final: true },
+};
+
+export const EVENT_COUNTDOWNS = {
+  experience: null, element: 4, library: 2, monster: 2, rest: null,
+  transmute: 3, upgrade: null, organize: 4, player: 2,
+};
+
+export function weightedEventType(weights, randomValue = Math.random) {
+  const entries = Object.entries(weights).filter(([, weight]) => weight > 0);
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = randomValue() * total;
+  for (const [type, weight] of entries) {
+    roll -= weight;
+    if (roll < 0) return type;
+  }
+  return entries.at(-1)?.[0] || "monster";
+}

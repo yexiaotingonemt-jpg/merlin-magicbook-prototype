@@ -11,12 +11,12 @@ export function populateFilters() {
   $("schoolFilter").innerHTML = options; $("archiveSchoolFilter").innerHTML = options;
 }
 export function showHelp() {
-  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 探索</h3><p>每层三选一事件。生命值在同一轮法师塔内继承，休息室可回复。</p></article><article class="choice-button"><h3>2 · 组卡</h3><p>每次从火、水、风随机选2系：一系抽2张基础牌，另一系抽1张；起始元素各1个。</p></article><article class="choice-button"><h3>3 · 战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素。</p></article></div><p><b>方差规则：</b>每段效果独立投掷 40%–300% 偏态方差；高值少见，但会真实改变战斗结果。</p><p><b>原型暂定：</b>每次重新进入法师塔时，角色等级、经验、生命、层数、魔法书、咒语收藏与等级、起始元素全部重置；积分与场外商店属性永久保留。</p>`);
+  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 六章探索</h3><p>普通章预先生成有限事件池，场上展示3个事件。每处理1个事件，其他有限事件倒计时减1；正面事件会自燃，怪物与镜像会升级。</p></article><article class="choice-button"><h3>2 · 组卡</h3><p>每次从火、水、风随机选2系：一系抽2张基础牌，另一系抽1张；起始元素各1个，Lv.8达到5元素上限。</p></article><article class="choice-button"><h3>3 · 自动战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素。</p></article></div><p><b>方差规则：</b>元素效果保留40%–300%偏态方差；最终伤害和治疗再独立乘95%–105%微方差。</p><p><b>继承规则：</b>章内生命继承，进入下一章前补满。重新进入法师塔时，塔内等级、经验、生命、魔法书、咒语收藏与起始元素重置；积分与场外商店属性永久保留。</p>`);
 }
 export function bindEvents() {
   document.addEventListener("click", (event) => {
     const view = event.target.closest("[data-view]")?.dataset.view; if (view) { showView(view); return; }
-    const eventType = event.target.closest("[data-event]")?.dataset.event; if (eventType) { resolveEvent(eventType); return; }
+    const eventId = event.target.closest("[data-event]")?.dataset.event; if (eventId) { resolveEvent(eventId); return; }
     const bind = event.target.closest("[data-bind]")?.dataset.bind;
     if (bind) { if (!state.deck.includes(bind)) state.deck.push(bind); saveState(); renderGrimoire(); toast(`已将《${CARD_BY_ID.get(bind).name}》装订到战斗魔法书。`); return; }
     const unbind = event.target.closest("[data-unbind]")?.dataset.unbind;
@@ -29,7 +29,7 @@ export function bindEvents() {
       const item = SHOP.find((x) => x.id === buy), price = shopCost(item); if (state.score < price) return;
       state.score -= price; item.apply(); state.meta.passiveLevels[buy] = shopLevel(buy) + 1; saveState(); render(); toast(`${item.name}提升至 Lv.${shopLevel(buy)}。`); return;
     }
-    if (event.target.closest("[data-battle-finish]")) { const mode = state.battle.mode; completeEvent(mode === "pvp" ? "镜像对决胜利" : "元素试炼完成", mode === "pvp" ? "你击败了镜像玩家，已获得经验与积分。" : "塔中敌人已被清除，生命值将继承到下一层。"); return; }
+    if (event.target.closest("[data-battle-finish]")) { const mode = state.battle.mode; completeEvent(mode === "pvp" ? "镜像对决结束" : "元素试炼完成", mode === "pvp" ? "镜像战斗已经结算，疲劳与奖励记录已更新。" : "塔中敌人已被清除；本章内生命继续继承。"); return; }
     if (event.target.closest("[data-battle-retry]")) { const spec = { ...state.battle.spec }; startBattle(state.battle.mode, spec); return; }
     if (event.target.closest("[data-battle-new-run]")) { newTowerRun(); }
   });

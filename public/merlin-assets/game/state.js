@@ -1,33 +1,47 @@
-import { clamp, ELEMENTS, SAVE_KEY, shuffle, VERSION } from "./core.js";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js";
 import { createStarterLoadout } from "./cards.js";
-import { EVENTS } from "./content.js";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js";
 import { setState, state } from "./store.js";
 
-export const RUN_RULES_VERSION = 4;
+export const RUN_RULES_VERSION = 5;
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
   const collection = Object.fromEntries(starter.deck.map((id) => [id, 1]));
-  const meta = legacy.meta || { attack: 0, defense: 0, maxHp: 0, startBonus: 0, passiveLevels: {} };
+  const meta = legacy.meta || {};
   return {
     gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, board: [], preview: [], chapter: 1, projection: 0,
     score: Number(legacy.score || 0), floor: 1, level: 1, exp: 0,
-    hp: 280 + (meta.maxHp || 0), startElements: starter.startElements,
+    hp: 250 + (meta.maxHp || 0), startElements: starter.startElements,
     collection, deck: starter.deck, organizeTokens: 0, fatigue: 100,
-    meta, events: [], eventResult: null, battle: null
+    meta: {
+      attack: Number(meta.attack || 0), defense: Number(meta.defense || 0), maxHp: Number(meta.maxHp || 0),
+      attackPct: Number(meta.attackPct || 0), defensePct: Number(meta.defensePct || 0), hpPct: Number(meta.hpPct || 0),
+      hit: Number(meta.hit || 0), dodge: Number(meta.dodge || 0), crit: Number(meta.crit || 0), resist: Number(meta.resist || 0),
+      expPct: Number(meta.expPct || 0), poolBonus: Number(meta.poolBonus || 0), passiveLevels: { ...(meta.passiveLevels || {}) },
+    },
+    events: [], eventPool: [], eventSerial: 0, activeEventId: null, eventResult: null, chapterComplete: false, runComplete: false, battle: null
   };
 }
 
 export function freshTowerRun(current = state) {
-  return freshState({ score: current.score, meta: current.meta });
+  const permanentMeta = {
+    attack: current.meta.attack, defense: current.meta.defense, maxHp: current.meta.maxHp,
+    poolBonus: current.meta.poolBonus, passiveLevels: Object.fromEntries(Object.entries(current.meta.passiveLevels || {}).filter(([id]) => ["attack", "defense", "maxHp"].includes(id))),
+  };
+  return freshState({ score: current.score, meta: permanentMeta });
 }
 
-export function maxHp() { return 280 + (state.level - 1) * 18 + state.meta.maxHp; }
-export function attack() { return 100 + (state.level - 1) * 7 + state.meta.attack; }
-export function defense() { return 55 + (state.level - 1) * 4 + state.meta.defense; }
+export function maxHp() { return Math.round((250 + (state.level - 1) * 20 + state.meta.maxHp) * (1 + state.meta.hpPct / 100)); }
+export function attack() { return Math.round((100 + (state.level - 1) * 8 + state.meta.attack) * (1 + state.meta.attackPct / 100)); }
+export function defense() { return Math.round((50 + (state.level - 1) * 4 + state.meta.defense) * (1 + state.meta.defensePct / 100)); }
+export function hit() { return 50 + state.meta.hit; }
+export function dodge() { return 80 + state.meta.dodge; }
+export function crit() { return 100 + state.meta.crit; }
+export function resist() { return 50 + state.meta.resist; }
 export function expNeed(level = state.level) { return 80 + (level - 1) * 40; }
-export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5, 8, 12, 16, 20];
-export function slotCap() { return Math.min(8, 2 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((level) => state.level >= level).length + (state.meta.startBonus || 0)); }
+export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5, 8];
+export function slotCap() { return Math.min(5, 2 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((level) => state.level >= level).length); }
 export function poolCap() { return Math.min(16, slotCap() + 2 + (state.meta.poolBonus || 0)); }
 export function mainElement() {
   const counts = {};
@@ -47,21 +61,52 @@ export function costLabel(card) {
 export function schoolLabel(school) { return `${ELEMENTS[school].icon} ${ELEMENTS[school].name}`; }
 
 export function gainExp(amount) {
-  state.exp += amount;
+  state.exp += Math.round(amount * (1 + state.meta.expPct / 100));
   let gained = 0;
   while (state.exp >= expNeed()) {
-    state.exp -= expNeed(); state.level += 1; gained += 1; state.hp = Math.min(maxHp(), state.hp + 38);
+    state.exp -= expNeed(); state.level += 1; gained += 1; state.hp = Math.min(maxHp(), state.hp + 40);
   }
   return gained;
 }
 
+function createEvent(type, extra = {}) {
+  state.eventSerial += 1;
+  return { id: `${state.chapter}-${state.eventSerial}-${type}`, type, countdown: EVENT_COUNTDOWNS[type], level: 1, ...extra };
+}
+
+export function fillEventSlots() {
+  while (state.events.length < 3 && state.eventPool.length) state.events.push(createEvent(state.eventPool.shift()));
+  state.board = state.events.map((event) => ({ id: event.id, kindLabel: EVENTS[event.type].name, hp: event.level, maxHp: 3, element: event.type === "monster" ? "fire" : "light" }));
+  state.chapterComplete = !state.events.length && !state.eventPool.length;
+}
+
 export function generateEvents() {
-  const types = Object.keys(EVENTS);
-  let chosen;
-  if (state.floor % 10 === 0) chosen = ["monster", ...shuffle(types.filter((x) => !["monster", "rest"].includes(x))).slice(0, 2)];
-  else chosen = shuffle(types).slice(0, 3);
-  state.events = chosen.map((type, index) => ({ id: `${state.floor}-${index}-${type}`, type }));
-  state.board = state.events.map((event) => ({ id: event.id, kindLabel: EVENTS[event.type].name, hp: 1, maxHp: 1, element: "light" }));
+  const rule = CHAPTER_RULES[state.chapter];
+  state.floor = state.chapter;
+  state.events = []; state.eventPool = []; state.eventSerial = 0; state.activeEventId = null; state.chapterComplete = false;
+  if (rule?.boss) state.events = [createEvent("monster", { countdown: null, boss: true, finalBoss: Boolean(rule.final), name: rule.boss })];
+  else if (rule) state.eventPool = Array.from({ length: rule.count }, () => weightedEventType(rule.weights));
+  fillEventSlots();
+}
+
+export function settleExplorationTurn(selectedId) {
+  state.events = state.events.filter((event) => event.id !== selectedId).flatMap((event) => {
+    if (event.countdown == null) return [event];
+    const countdown = event.countdown - 1;
+    if (countdown > 0) return [{ ...event, countdown }];
+    if (["monster", "player"].includes(event.type)) {
+      if (event.level >= 3) return [{ ...event, countdown: 2 }];
+      return [{ ...event, level: event.level + 1, countdown: 2 }];
+    }
+    return [];
+  });
+  fillEventSlots();
+  state.activeEventId = null;
+}
+
+export function advanceChapter() {
+  if (state.chapter >= 6) { state.runComplete = true; return false; }
+  state.chapter += 1; state.hp = maxHp(); state.eventResult = null; generateEvents(); return true;
 }
 
 export function serializeState() {
@@ -72,14 +117,14 @@ export function saveState() {
   if (window.parent !== window) window.parent.postMessage({ type: "merlin:state", state: serializeState() }, "*");
 }
 export function hydrate(data) {
-  if (!data || data.gameVersion !== VERSION || !Array.isArray(data.deck)) return false;
+  if (!data || ![4, VERSION].includes(Number(data.gameVersion)) || !Array.isArray(data.deck)) return false;
   const migrated = Number(data.runRulesVersion || 0) < RUN_RULES_VERSION ? freshTowerRun(data) : data;
-  setState({ ...freshState(migrated), ...migrated, board: Array.isArray(migrated.board) ? migrated.board : [] });
-  state.meta = { ...freshState().meta, ...(data.meta || {}) };
-  if (!state.events?.length) generateEvents();
+  const normalized = freshState(migrated);
+  setState({ ...normalized, ...migrated, gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, meta: normalized.meta, board: Array.isArray(migrated.board) ? migrated.board : [] });
+  if (!state.events?.length && !state.eventResult && !state.runComplete) generateEvents();
   state.hp = clamp(state.hp, 1, maxHp());
   return true;
 }
 export function loadLocal() {
-  try { return hydrate(JSON.parse(localStorage.getItem(SAVE_KEY))); } catch { return false; }
+  try { return hydrate(JSON.parse(localStorage.getItem(SAVE_KEY) || localStorage.getItem("merlin-grimoire-v4"))); } catch { return false; }
 }

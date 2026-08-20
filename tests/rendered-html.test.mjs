@@ -39,9 +39,9 @@ test("ships exploration, deck building, battle and persistence", async () => {
   for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "battleRestart"]) assert.match(game, new RegExp(`id="${id}"`));
   assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
-  assert.equal(cardIds.size, 85);
+  assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
-  assert.match(sources.exploration, /export function resolveEvent\(type\)/);
+  assert.match(sources.exploration, /export function resolveEvent\(eventId\)/);
   assert.match(sources.battle, /export function drawCard\(\)/);
   assert.match(sources.battle, /export function paymentFor\(card\)/);
   assert.match(sources.battle, /export function startBattle\(mode/);
@@ -51,7 +51,9 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.battle, /b\.drawPile = shuffle\(state\.deck\)/);
   assert.match(sources.battle, /元素不足发动残响，不消耗元素/);
   assert.match(sources.battle, /mode === "pve" \? "player"/);
-  assert.match(sources.battle, /b\.enemyFatigue = target\.hp <= 0 \? 0/);
+  assert.match(sources.battle, /state\.fatigue = b\.enemyFatigue/);
+  assert.match(sources.battle, /attack\(\) \/ \(attack\(\) \+ effectiveDef\)/);
+  assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
   assert.match(sources.app, /from "\.\/battle\.js"/);

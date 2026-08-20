@@ -1,11 +1,13 @@
 import { $, ELEMENTS, SCHOOL_ORDER, pick, shuffle } from "./core.js";
 import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js";
 import { runtime, setState, state } from "./store.js";
-import { cardLevel, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, slotCap } from "./state.js";
+import { advanceChapter, cardLevel, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js";
 import { closeModal, render, showModal, showView, toast } from "./ui.js";
 import { startBattle, stopBattle } from "./battle.js";
 
 export function completeEvent(title, copy) {
+  const selectedId = state.activeEventId;
+  if (selectedId) settleExplorationTurn(selectedId);
   state.eventResult = { title, copy };
   state.battle = null;
   stopBattle();
@@ -14,7 +16,10 @@ export function completeEvent(title, copy) {
   showView("explore");
 }
 export function continueExplore() {
-  state.floor += 1; state.chapter = state.floor; state.eventResult = null; generateEvents(); saveState(); render();
+  if (state.chapterComplete) {
+    if (!advanceChapter()) state.eventResult = { title: "法师塔探索完成", copy: "你击败了终极首领。本轮构筑、等级和塔内成长将在重新进入法师塔时重置，积分与场外商店成长保留。" };
+  } else state.eventResult = null;
+  saveState(); render();
 }
 export function chooseCardModal(title, cards, action, copy = "选择一张书页。") {
   showModal(`<h2>${title}</h2><p>${copy}</p><div class="choice-grid">${cards.map((card) => `<button class="choice-button ${card.school}" data-modal-card="${card.id}"><h3>${card.name}</h3><small>${card.id} · ${costLabel(card)}</small><p>${card.full}</p></button>`).join("")}</div>`);
@@ -41,7 +46,11 @@ export function learnCard(card, forceDeck = true) {
   if (forceDeck) state.deck.push(card.id);
   return `学会${card.name}，已装订到战斗魔法书`;
 }
-export function resolveEvent(type) {
+export function resolveEvent(eventId) {
+  const event = state.events.find((item) => item.id === eventId);
+  if (!event) return;
+  state.activeEventId = event.id;
+  const type = event.type;
   if (type === "monster") { startBattle("pve"); return; }
   if (type === "player") { startBattle("pvp"); return; }
   if (type === "experience") {

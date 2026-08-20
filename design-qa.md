@@ -1,4 +1,6 @@
-# Design QA
+# Design QA（历史视觉验收记录）
+
+> 本文只记录社交面板布局的一次历史验收，不是玩法或数值规则来源。当前规则以 `docs/DESIGN_BASELINE.md` 为准。
 
 ## Source reference
 

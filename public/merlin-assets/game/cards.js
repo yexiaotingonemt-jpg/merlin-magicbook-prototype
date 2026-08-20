@@ -59,6 +59,16 @@ export const CARDS = [
   C("DA-08", "深渊榨取", "dark", same("dark", 3), "150%伤害并降攻", "160%伤害，消耗蚀痕追加伤害并窃取属性", "影蚀·终结", { pct: 160, echoPct: 150, kind: "erosion-finisher" })
 ];
 
+const LARGE_GENERATORS = [
+  C("FI-09", "熔炉喷发", "fire", same("fire", 0), "无残响", "增加3火；只参与正常随机翻页", "大型生成·随机时点", { kind: "generator-large", generatorAmount: 3 }),
+  C("WA-09", "深潮涌泉", "water", same("water", 0), "无残响", "增加3水；只参与正常随机翻页", "大型生成·随机时点", { kind: "generator-large", generatorAmount: 3 }),
+  C("WI-11", "飓风裂隙", "wind", same("wind", 0), "无残响", "增加3风；只参与正常随机翻页", "大型生成·随机时点", { kind: "generator-large", generatorAmount: 3 }),
+  C("EA-09", "地脉隆起", "earth", same("earth", 0), "无残响", "增加3土；只参与正常随机翻页", "大型生成·随机时点", { kind: "generator-large", generatorAmount: 3 }),
+  C("LI-09", "晨星降临", "light", same("light", 0), "无残响", "增加3光；只参与正常随机翻页", "大型生成·随机时点", { kind: "generator-large", generatorAmount: 3 }),
+  C("DA-09", "暗潮裂口", "dark", same("dark", 0), "无残响", "增加3暗；只参与正常随机翻页", "大型生成·随机时点", { kind: "generator-large", generatorAmount: 3 }),
+];
+CARDS.push(...LARGE_GENERATORS);
+
 const HYBRIDS = [
   ["HY-01", "蒸汽爆裂", { fire: 1, water: 1 }, 160, "灼烧＋固定回复"], ["HY-02", "冰风暴", { water: 1, wind: 1 }, 38, "3–5段攻击，每段回复", [3, 5]],
   ["HY-03", "雷暴术", { water: 1, wind: 2 }, 48, "5–8段攻击，每段回复", [5, 8]], ["HY-04", "熔岩护甲", { fire: 1, earth: 1 }, 0, "护盾、反射并施加灼烧"],
@@ -98,14 +108,14 @@ const COMMONS = [
 CARDS.push(...COMMONS);
 export const CARD_BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 export const PASSIVES = [
-  { id: "P-ATK", name: "魔力增幅", copy: "永久提高2点法攻。", apply: () => { state.meta.attack += 2; } },
-  { id: "P-HP", name: "生命铭文", copy: "永久提高10点最大生命。", apply: () => { state.meta.maxHp += 10; state.hp += 10; } },
-  { id: "P-DEF", name: "奥术壁垒", copy: "永久提高2点法防。", apply: () => { state.meta.defense += 2; } },
-  { id: "P-HIT", name: "鹰眼符印", copy: "永久提高1点法攻与1点法防。", apply: () => { state.meta.attack += 1; state.meta.defense += 1; } },
-  { id: "P-DODGE", name: "幻影身法", copy: "永久提高7点生命与1点法防。", apply: () => { state.meta.maxHp += 7; state.meta.defense += 1; state.hp += 7; } },
-  { id: "P-CRIT", name: "星爆核心", copy: "永久提高3点法攻。", apply: () => { state.meta.attack += 3; } },
-  { id: "P-RESIST", name: "不屈意志", copy: "永久提高12点最大生命。", apply: () => { state.meta.maxHp += 12; state.hp += 12; } },
-  { id: "P-POOL", name: "元素容器", copy: "永久提高1格战斗元素池上限。", apply: () => { state.meta.poolBonus = (state.meta.poolBonus || 0) + 1; } }
+  { id: "PA-01", name: "奥术理解", copy: "本轮角色经验获取提高2%。", apply: () => { state.meta.expPct += 2; } },
+  { id: "PA-02", name: "生命铭文", copy: "本轮最大生命提高1%。", apply: () => { state.meta.hpPct += 1; state.hp += Math.max(1, Math.round(state.hp * .01)); } },
+  { id: "PA-03", name: "攻势铭文", copy: "本轮法术攻击提高1%。", apply: () => { state.meta.attackPct += 1; } },
+  { id: "PA-04", name: "守御铭文", copy: "本轮法术防御提高1%。", apply: () => { state.meta.defensePct += 1; } },
+  { id: "PA-05", name: "精准星图", copy: "本轮命中增加1点。", apply: () => { state.meta.hit += 1; } },
+  { id: "PA-06", name: "幻影步法", copy: "本轮闪避增加1点。", apply: () => { state.meta.dodge += 1; } },
+  { id: "PA-07", name: "灾星观测", copy: "本轮暴击增加1点。", apply: () => { state.meta.crit += 1; } },
+  { id: "PA-08", name: "镇定心智", copy: "本轮抗暴增加1点。", apply: () => { state.meta.resist += 1; } }
 ];
 
 export const STARTER_CARD_POOLS = {
