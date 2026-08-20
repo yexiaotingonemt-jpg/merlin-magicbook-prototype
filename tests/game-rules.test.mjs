@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js";
-import { createEnemies, hitEnemy } from "../public/merlin-assets/game/battle.js";
+import { adjustedSegmentPct, createEnemies, doHits, hitEnemy } from "../public/merlin-assets/game/battle.js";
 import { EVENTS } from "../public/merlin-assets/game/content.js";
 import { microVariance, variance } from "../public/merlin-assets/game/core.js";
 import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js";
@@ -192,5 +192,39 @@ test("a direct spell segment resolves to finite damage under the new combat form
     const result = hitEnemy(100, "fire");
     assert.ok(Number.isFinite(result.damage));
     assert.ok(result.damage > 0);
+  } finally { Math.random = originalRandom; }
+});
+
+test("retarget cards receive their configured compensation only in full single-target casts", () => {
+  const loneTarget = { hp: 50, maxHp: 100 };
+  assert.equal(adjustedSegmentPct(CARD_BY_ID.get("CO-16"), true, 65, true, 3, loneTarget), 94.25);
+  assert.equal(adjustedSegmentPct(CARD_BY_ID.get("CO-17"), true, 260, true, 0, loneTarget), 290);
+  assert.equal(adjustedSegmentPct(CARD_BY_ID.get("CO-20"), true, 440, true, 0, loneTarget), 528);
+  assert.equal(adjustedSegmentPct(CARD_BY_ID.get("CO-20"), true, 440, true, 0, { hp: 51, maxHp: 100 }), 440);
+  assert.equal(adjustedSegmentPct(CARD_BY_ID.get("CO-20"), false, 240, true, 0, loneTarget), 240);
+  assert.ok(Math.abs(adjustedSegmentPct(CARD_BY_ID.get("HY-12"), true, 440, true, 0, loneTarget) - 506) < Number.EPSILON * 506);
+  assert.equal(adjustedSegmentPct(CARD_BY_ID.get("CO-16"), true, 65, false, 3, loneTarget), 65);
+});
+
+test("multi-hit spells automatically retarget after killing the lowest-health enemy", () => {
+  const current = setState(freshState());
+  const enemy = (id, hp) => ({
+    id, name: id, hp, maxHp: hp, def: 25, dodge: 80, resist: 50, erosion: 0, vulnerable: 0,
+    burn: 0, curse: 0, thunder: 0, passives: [], mirrorStacks: 0, hitSegments: 0,
+  });
+  current.battle = {
+    mode: "pve", action: 1, logs: [], enemyFatigue: null,
+    player: { heat: 0, light: 0, star: 0, damageBuff: 0 },
+    enemies: [enemy("first", 1), enemy("second", 150)],
+  };
+  const originalRandom = Math.random;
+  Math.random = () => .5;
+  try {
+    const result = doHits(CARD_BY_ID.get("CO-21"), true, 2, 125);
+    assert.equal(result.startedTargets, 2);
+    assert.equal(result.kills, 1);
+    assert.equal(current.battle.enemies[0].hp, 0);
+    assert.ok(current.battle.enemies[1].hp < 150);
+    assert.equal(result.singleTargetBonus, false);
   } finally { Math.random = originalRandom; }
 });

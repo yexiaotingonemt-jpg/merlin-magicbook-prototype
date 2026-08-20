@@ -149,19 +149,54 @@ export function hitEnemy(basePct, school, options = {}) {
     if (target.hitSegments >= 3) { const restored = Math.round(target.maxHp * .06); target.hp = Math.min(target.maxHp, target.hp + restored); target.hitSegments = 0; addLog(`${target.name}触发噬风再生，恢复 ${restored} 生命。`, "bad"); }
   }
   if (target.vulnerable > 0) target.vulnerable -= 1;
-  return { damage, crit, killed: before > 0 && target.hp <= 0, target, roll };
+  return {
+    damage: Math.min(before, damage),
+    rolledDamage: damage,
+    overkill: Math.max(0, damage - before),
+    crit,
+    killed: before > 0 && target.hp <= 0,
+    target,
+    roll,
+  };
 }
+
+export function adjustedSegmentPct(card, full, basePct, loneAtCast, landedHits = 0, target = null) {
+  if (!full || !loneAtCast) return basePct;
+  let pct = Number.isFinite(card.lonePct) ? card.lonePct : basePct;
+  if (card.loneRamp) pct *= 1 + landedHits * card.loneRamp;
+  if (card.loneBonus && (!card.loneThreshold || (target && target.hp / target.maxHp <= card.loneThreshold))) pct *= 1 + card.loneBonus;
+  return pct;
+}
+
 export function doHits(card, full, hits, pct, options = {}) {
-  let total = 0, kills = 0, crits = 0;
+  const startedTargets = state.battle.enemies.filter((enemy) => enemy.hp > 0).length;
+  const loneAtCast = startedTargets === 1;
+  let total = 0, kills = 0, crits = 0, landedHits = 0, singleTargetBonus = false;
   for (let i = 0; i < hits && targetLowest(); i += 1) {
-    const result = hitEnemy(pct * levelScale(card.id), card.school, options);
+    const target = targetLowest();
+    const segmentPct = adjustedSegmentPct(card, full, pct, loneAtCast, landedHits, target);
+    if (segmentPct !== pct) singleTargetBonus = true;
+    const result = hitEnemy(segmentPct * levelScale(card.id), card.school, options);
     total += result.damage; kills += result.killed ? 1 : 0; crits += result.crit ? 1 : 0;
+    if (result.damage > 0) landedHits += 1;
+    if (full && result.killed && result.overkill > 0 && ["HY-12", "CO-20"].includes(card.id)) {
+      const nextTarget = targetLowest();
+      if (nextTarget) {
+        const transfer = Math.min(result.overkill, Math.round(result.rolledDamage * .5), nextTarget.hp);
+        if (transfer > 0) {
+          nextTarget.hp -= transfer;
+          total += transfer;
+          if (nextTarget.hp <= 0) kills += 1;
+          addLog(`溢出伤害转移至${nextTarget.name}，造成 ${transfer} 伤害。`, "good");
+        }
+      }
+    }
     if (result.target && full) {
       if (["burn", "meteor"].includes(card.kind) && card.burn) result.target.burn += card.burn + (cardLevel(card.id) >= 3 ? 1 : 0);
       if (card.kind === "thunder" && Math.random() < .4) result.target.thunder += 1;
     }
   }
-  return { total, kills, crits };
+  return { total, kills, crits, landedHits, startedTargets, loneAtCast, singleTargetBonus };
 }
 export function healPlayer(amount) {
   const b = state.battle;
@@ -217,7 +252,7 @@ export function applyCard(card, full, paid) {
       const result = doHits(card, full, totalHits, pct / totalHits);
       if (card.kind.includes("water") || ["HY-13", "HY-14", "HY-18"].includes(card.id)) healPlayer(attack() * .05 * totalHits * variance());
       if (["HY-15", "HY-18"].includes(card.id)) gainShield(defense() * Math.max(1, n) * .55 * variance());
-      text = `${totalHits}段共造成 ${result.total} 伤害`;
+      text = `${totalHits}段共造成 ${result.total} 伤害${result.singleTargetBonus ? "，触发单目标聚焦" : ""}`;
     }
   } else if (card.kind === "hybrid") {
     const result = card.pct ? doHits(card, full, Math.max(1, hits), full ? card.pct : card.echoPct || Math.max(35, card.pct * .55)) : { total: 0 };
@@ -259,8 +294,8 @@ export function applyCard(card, full, paid) {
     if (full && card.kind === "erosion") { const erosionTarget = targetLowest(); if (erosionTarget) erosionTarget.erosion += card.stacks || 1; }
     if (card.heal || ["water", "water-finisher", "tide", "tide-finisher"].includes(card.kind)) {
       const healed = healPlayer(attack() * (card.heal || 4) / 100 * Math.max(1, hits) * variance()); text = `${hits}段共造成 ${result.total} 伤害，回复 ${healed} 生命`;
-    } else text = `${hits}段共造成 ${result.total} 伤害${result.crits ? `，${result.crits}段暴击` : ""}`;
-    if (full && card.kind === "meteor" && result.kills) { addElement("fire", 1); const candidates = b.drawPile.filter((id) => { const c = CARD_BY_ID.get(id); return c?.school === "fire" && c.cost.amount >= 2 && c.pct; }); if (candidates.length) { const next = pick(candidates); b.drawPile.splice(b.drawPile.indexOf(next), 1); b.drawPile.unshift(next); text += `；击杀接续《${CARD_BY_ID.get(next).name}》`; } }
+    } else text = `${hits}段共造成 ${result.total} 伤害${result.crits ? `，${result.crits}段暴击` : ""}${result.singleTargetBonus ? "，触发单目标补偿" : ""}`;
+    if (full && card.kind === "meteor" && result.kills && targetLowest()) { addElement("fire", 1); const candidates = b.drawPile.filter((id) => { const c = CARD_BY_ID.get(id); return c?.school === "fire" && c.cost.amount >= 2 && c.pct; }); if (candidates.length) { const next = pick(candidates); b.drawPile.splice(b.drawPile.indexOf(next), 1); b.drawPile.unshift(next); text += `；击杀接续《${CARD_BY_ID.get(next).name}》`; } }
   }
   if (!full && p.bookmark && card.cost.amount > 0 && !["index", "bookmark"].includes(card.kind)) { p.bookmark = card.id; text += `；已被未竟书签记录`; }
   if (full && typeof p.bookmark === "string" && paymentFor(CARD_BY_ID.get(p.bookmark))) { const retry = CARD_BY_ID.get(p.bookmark); p.bookmark = null; b.drawPile.unshift(retry.id); text += `；书签将《${retry.name}》设为下一页`; }

@@ -5,7 +5,7 @@ export const CARDS = [
   C("FI-01", "余烬召来", "fire", same("fire", 0), "无残响", "缺火时增加2火，否则增加1火并强化下一张火系攻击", "元素呼应·生成", { kind: "generator" }),
   C("FI-02", "火球术", "fire", same("fire", 1), "45%伤害", "70%伤害，施加2层灼烧", "灼烧·铺垫", { pct: 70, echoPct: 45, kind: "burn", burn: 2 }),
   C("FI-03", "炎爆术", "fire", same("fire", 2), "120%伤害", "210%伤害，消耗1–3层灼烧追加伤害", "灼烧·消耗", { pct: 210, echoPct: 120, kind: "burn-finisher" }),
-  C("FI-04", "焚天陨星", "fire", same("fire", 3), "170%伤害", "300%伤害，清除灼烧并追加伤害；击杀时增加1火并控制下页", "灼烧终结·击杀接续", { pct: 300, echoPct: 170, kind: "meteor" }),
+  C("FI-04", "焚天陨星", "fire", same("fire", 3), "170%伤害", "300%伤害，清除灼烧并追加伤害；单目标半血以下时提高20%；多目标击杀时增加1火并控制下页", "灼烧终结·单体处决·击杀接续", { pct: 300, echoPct: 170, kind: "meteor", loneThreshold: .5, loneBonus: .2 }),
   C("FI-05", "焚界献祭", "fire", all({ fire: 1 }, 2), "140%伤害", "消耗全部火，按A(N)造成伤害并结算灼烧", "单系归流", { kind: "total", echoPct: 140 }),
   C("FI-06", "炽热火花", "fire", same("fire", 1), "45%伤害", "80%伤害并获得炽热", "熔核·建立", { pct: 80, echoPct: 45, kind: "heat", stacks: 1 }),
   C("FI-07", "熔核压缩", "fire", same("fire", 2), "110%伤害", "180%伤害并获得2层炽热", "熔核·积层", { pct: 180, echoPct: 110, kind: "heat", stacks: 2 }),
@@ -22,7 +22,7 @@ export const CARDS = [
 
   C("WI-01", "风息召来", "wind", same("wind", 0), "无残响", "缺风时增加2风，否则增加1风并使下张风系攻击增加1段", "元素呼应·生成", { kind: "generator" }),
   C("WI-02", "风刃连斩", "wind", same("wind", 1), "1–2段25%伤害", "2–4段30%伤害，暴击可获得风势", "风势·多段", { pct: 30, echoPct: 25, hits: [2, 4], kind: "wind" }),
-  C("WI-03", "千刃风暴", "wind", same("wind", 2), "3段35%伤害", "4–7段35%伤害，击杀后改选目标", "风势·多段", { pct: 35, echoPct: 35, hits: [4, 7], kind: "wind" }),
+  C("WI-03", "千刃风暴", "wind", same("wind", 2), "3段35%伤害", "4–7段35%伤害；单目标每次命中使后续段伤害提高10%，击杀后改选目标", "风势·多段·单体递增", { pct: 35, echoPct: 35, hits: [4, 7], kind: "wind", loneRamp: .1 }),
   C("WI-04", "风暴连奏", "wind", same("wind", 3), "4段40%伤害", "6–10段42%伤害，消耗风势追加段数", "风势·终结", { pct: 42, echoPct: 40, hits: [6, 10], kind: "wind-finisher" }),
   C("WI-05", "乱流书签", "wind", same("wind", 0), "无残响", "未翻风系攻击权重提高至3倍，并增加1段", "控页·加权", { kind: "wind-index" }),
   C("WI-06", "雷鸣追页", "wind", same("wind", 1), "50%伤害", "80%伤害，暴击时随机追读可完整施法的风系牌", "暴击·追页", { pct: 80, echoPct: 50, kind: "chase" }),
@@ -77,7 +77,7 @@ const HYBRIDS = [
   ["HY-09", "珊瑚壁垒", { water: 1, earth: 1 }, 0, "护盾、次数治疗与过量转盾"], ["HY-10", "辉焰风暴", { fire: 1, wind: 1, light: 1 }, 45, "4–7段、灼烧与后续增幅", [4, 7]],
   ["HY-11", "翠潮天幕", { water: 1, wind: 1, earth: 1 }, 40, "4–6段，每段治疗并获得护盾", [4, 6]], ["HY-12", "元素湮灭", null, 0, "消耗全部元素，多系提高总伤害"]
 ];
-HYBRIDS.forEach(([id, name, parts, pct, fullText, hits]) => CARDS.push(C(id, name, "hybrid", parts ? fixed(parts) : all(null, 3), "保底效果，不消耗元素", fullText, "复合元素·特性融合", { pct, echoPct: pct ? Math.round(pct * .55) : 0, hits, kind: id === "HY-12" ? "total-all" : "hybrid" })));
+HYBRIDS.forEach(([id, name, parts, pct, fullText, hits]) => CARDS.push(C(id, name, "hybrid", parts ? fixed(parts) : all(null, 3), "保底效果，不消耗元素", id === "HY-12" ? "消耗全部元素；单目标聚焦提高15%，多目标击杀转移溢出伤害" : fullText, "复合元素·特性融合", { pct, echoPct: pct ? Math.round(pct * .55) : 0, hits, kind: id === "HY-12" ? "total-all" : "hybrid", loneBonus: id === "HY-12" ? .15 : 0 })));
 
 const TOTAL_HYBRIDS = [
   ["HY-13", "烬潮归炉", { fire: 1, water: 1 }, 3, "火伤害、灼烧与水治疗"], ["HY-14", "雷潮归环", { water: 1, wind: 1 }, 3, "风决定段数，水将每段转为治疗"],
@@ -96,14 +96,14 @@ const COMMONS = [
   C("CO-12", "元素同调", "arcane", any(1), "改写下张未翻牌的固定元素", "本轮所有未翻牌的消耗与获取改写为主元素", "元素经济·同调", { kind: "attune" }),
   C("CO-14", "混沌冲击", "arcane", random(2), "140%伤害", "260%伤害，触发两个被消耗元素的余韵", "随机双耗·单段", { pct: 260, echoPct: 140, kind: "basic" }),
   C("CO-15", "双星魔弹", "arcane", random(2), "2段70%伤害", "2段130%伤害，分别继承两种元素", "随机双耗·双段", { pct: 130, echoPct: 70, hits: 2, kind: "basic" }),
-  C("CO-16", "元素散射", "arcane", random(2), "4段35%伤害", "4段65%伤害，击杀后重新选目标", "随机双耗·多段", { pct: 65, echoPct: 35, hits: 4, kind: "basic" }),
-  C("CO-17", "延时坍缩", "arcane", random(2), "140%伤害", "200%即时＋60%延时伤害", "随机双耗·延时", { pct: 260, echoPct: 140, kind: "basic" }),
+  C("CO-16", "元素散射", "arcane", random(2), "4段35%伤害", "4段65%伤害；单目标每次命中使后续段伤害提高15%，击杀后重新选目标", "随机双耗·多段·单体递增", { pct: 65, echoPct: 35, hits: 4, kind: "basic", loneRamp: .15 }),
+  C("CO-17", "延时坍缩", "arcane", random(2), "140%伤害", "200%即时＋60%延时；单目标延时部分提高至90%，目标死亡则转移", "随机双耗·延时·单体聚焦", { pct: 260, lonePct: 290, echoPct: 140, kind: "basic" }),
   C("CO-18", "魔法飞弹", "arcane", any(1), "60%伤害", "110%伤害，无法被闪避", "基础攻击·可靠命中", { pct: 110, echoPct: 60, kind: "basic", sureHit: true }),
   C("CO-19", "奥术冲击", "arcane", any(2), "140%伤害", "250%伤害，暴击率提高15个百分点", "基础攻击·爆发", { pct: 250, echoPct: 140, kind: "basic", crit: .15 }),
-  C("CO-20", "星界陨落", "arcane", any(3), "240%伤害", "440%伤害，击杀时转移部分溢出伤害", "基础攻击·重击", { pct: 440, echoPct: 240, kind: "basic" }),
-  C("CO-21", "裂变魔弹", "arcane", any(2), "2段70%伤害", "2段125%伤害，每段独立判定", "基础攻击·双段", { pct: 125, echoPct: 70, hits: 2, kind: "basic" }),
+  C("CO-20", "星界陨落", "arcane", any(3), "240%伤害", "440%伤害；单目标半血以下时提高20%，多目标击杀时转移部分溢出伤害", "基础攻击·重击·单体处决", { pct: 440, echoPct: 240, kind: "basic", loneThreshold: .5, loneBonus: .2 }),
+  C("CO-21", "裂变魔弹", "arcane", any(2), "2段70%伤害", "2段125%伤害；单目标首段命中后第二段提高20%，击杀后改选目标", "基础攻击·双段·单体递增", { pct: 125, echoPct: 70, hits: 2, kind: "basic", loneRamp: .2 }),
   C("CO-22", "穿透射线", "arcane", any(2), "125%伤害", "220%伤害，忽略目标25%法术防御", "基础攻击·穿透", { pct: 220, echoPct: 125, kind: "basic", pierce: .25 }),
-  C("CO-23", "奥术齐射", "arcane", any(3), "4段60%伤害", "6段75%伤害，击杀后重新选目标", "基础攻击·多段", { pct: 75, echoPct: 60, hits: 6, echoHits: 4, kind: "basic" })
+  C("CO-23", "奥术齐射", "arcane", any(3), "4段60%伤害", "6段75%伤害；单目标每次命中使后续段伤害提高8%，击杀后重新选目标", "基础攻击·多段·单体递增", { pct: 75, echoPct: 60, hits: 6, echoHits: 4, kind: "basic", loneRamp: .08 })
 ];
 CARDS.push(...COMMONS);
 export const CARD_BY_ID = new Map(CARDS.map((card) => [card.id, card]));
