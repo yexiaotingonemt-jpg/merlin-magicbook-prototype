@@ -30,6 +30,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
     access(new URL("../public/game.html", import.meta.url)),
     access(new URL("../public/merlin-assets/grimoire-game.css", import.meta.url)),
     access(new URL("../public/merlin-assets/level-preview.css", import.meta.url)),
+    access(new URL("../public/merlin-assets/battle-redesign.css", import.meta.url)),
     ...modules.map((module) => access(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url))),
     access(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url)),
     ...routes.map((route) => access(new URL(`../app/api/${route}/route.ts`, import.meta.url))),
@@ -37,8 +38,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   const game = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
   const sources = Object.fromEntries(await Promise.all(modules.map(async (module) => [module, await readFile(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url), "utf8")])));
   const engine = Object.values(sources).join("\n");
-  for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "battleRestart"]) assert.match(game, new RegExp(`id="${id}"`));
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=6"/);
+  for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "battleRestart", "enemyBattleStats", "enemyBattleElements", "enemyBattleStatuses", "enemyCurrentCard", "playerBookCount", "enemyBookCount"]) assert.match(game, new RegExp(`id="${id}"`));
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=7"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -47,6 +48,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.battle, /export function paymentFor\(card\)/);
   assert.match(sources.battle, /export function startBattle\(mode/);
   assert.match(sources.battle, /export function targetLowest\(\)/);
+  assert.match(sources.battle, /export function expandedCardEffects\(card\)/);
+  assert.match(sources.battle, /export function enemyBasicPage\(enemy/);
   assert.match(sources.core, /export function variance\(\)/);
   assert.match(sources.core, /\.4 \+ 2\.6 \* Math\.pow\(Math\.random\(\), 10 \/ 3\)/);
   assert.match(sources.battle, /b\.drawPile = shuffle\(state\.deck\)/);
@@ -57,8 +60,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=6"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=6"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=7"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=7"/);
 });
 
 test("renders the next-level preview and its responsive styling", async () => {

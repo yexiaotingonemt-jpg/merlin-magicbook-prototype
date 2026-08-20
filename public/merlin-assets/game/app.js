@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=6";
-import { CARD_BY_ID } from "./cards.js?v=6";
-import { runtime, setState, state } from "./store.js?v=6";
-import { freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=6";
-import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=6";
-import { completeEvent, continueExplore, newTowerRun, resolveEvent } from "./exploration.js?v=6";
-import { cycleBattleSpeed, renderBattle, restartBattle, scheduleBattle, startBattle, stepBattle, toggleBattlePause } from "./battle.js?v=6";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=7";
+import { CARD_BY_ID } from "./cards.js?v=7";
+import { runtime, setState, state } from "./store.js?v=7";
+import { freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=7";
+import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=7";
+import { completeEvent, continueExplore, newTowerRun, resolveEvent } from "./exploration.js?v=7";
+import { cycleBattleSpeed, renderBattle, restartBattle, scheduleBattle, startBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=7";
 
 export function populateFilters() {
   const options = ['<option value="all">全部流派</option>', ...SCHOOL_ORDER.map((s) => `<option value="${s}">${ELEMENTS[s].name}系</option>`)].join("");
@@ -29,6 +29,8 @@ export function bindEvents() {
       const item = SHOP.find((x) => x.id === buy), price = shopCost(item); if (state.score < price) return;
       state.score -= price; item.apply(); state.meta.passiveLevels[buy] = shopLevel(buy) + 1; saveState(); render(); toast(`${item.name}提升至 Lv.${shopLevel(buy)}。`); return;
     }
+    const statusSide = event.target.closest("[data-status-toggle]")?.dataset.statusToggle;
+    if (statusSide) { toggleBattleStatusPanel(statusSide); return; }
     if (event.target.closest("[data-battle-finish]")) { const mode = state.battle.mode; completeEvent(mode === "pvp" ? "镜像对决结束" : "元素试炼完成", mode === "pvp" ? "镜像战斗已经结算，疲劳与奖励记录已更新。" : "塔中敌人已被清除；本章内生命继续继承。"); return; }
     if (event.target.closest("[data-battle-retry]")) { const spec = { ...state.battle.spec }; startBattle(state.battle.mode, spec); return; }
     if (event.target.closest("[data-battle-new-run]")) { newTowerRun(); }

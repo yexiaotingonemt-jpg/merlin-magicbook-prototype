@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=6";
-import { createStarterLoadout } from "./cards.js?v=6";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=6";
-import { setState, state } from "./store.js?v=6";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=7";
+import { createStarterLoadout } from "./cards.js?v=7";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=7";
+import { setState, state } from "./store.js?v=7";
 
 export const RUN_RULES_VERSION = 6;
 

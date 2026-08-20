@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=6";
-import { CARD_BY_ID } from "./cards.js?v=6";
-import { runtime, state } from "./store.js?v=6";
-import { attack, cardLevel, costLabel, crit as critStat, defense, dodge, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=6";
-import { elementOrb, showView, toast } from "./ui.js?v=6";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=7";
+import { CARD_BY_ID } from "./cards.js?v=7";
+import { runtime, state } from "./store.js?v=7";
+import { attack, cardLevel, costLabel, crit as critStat, defense, dodge, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=7";
+import { elementOrb, showView, toast } from "./ui.js?v=7";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -16,6 +16,97 @@ export const MONSTER_PASSIVES = {
   lightMirror: { name: "逆辉镜面", copy: "玩家获得强化时积累辉蚀，每层减伤5%。" },
   cleanse: { name: "净化核心", copy: "每3次怪物行动移除最早的一项Debuff。" },
 };
+
+export const PLAYER_STATUS_INFO = {
+  heat: { name: "炽热", copy: "每层使直接攻击的暴击率提高5个百分点，最多计入5层；熔核终结牌会消耗它追加伤害。" },
+  tide: { name: "潮印", copy: "回潮流派的积累状态；回潮终结牌会消耗潮印并追加攻击与治疗次数。" },
+  wind: { name: "风势", copy: "风系攻击暴击时积累；风势终结牌每2层追加1段攻击，最多追加3段。" },
+  light: { name: "辉光", copy: "下一次造成直接伤害时，每次消耗1层并使该次伤害提高15%。" },
+  star: { name: "星佑", copy: "下一次造成直接伤害时消耗1层，并随机提高12%、18%或24%伤害。" },
+  thorns: { name: "棘甲", copy: "受到敌方直接攻击后消耗1层，并按照自身法术防御造成反击伤害。" },
+  rock: { name: "岩层", copy: "护盾承受攻击后积累；大地终结牌会消耗岩层追加护盾或反击效果。" },
+  waterShield: { name: "水疗盾", copy: "水系终结牌会根据层数追加攻击与治疗段数。" },
+  damageBuff: { name: "伤害强化", copy: "下一段直接伤害结算时消耗，并提高该段最终伤害。", percent: true },
+  nextWind: { name: "追风", copy: "下一张风系攻击牌完整施法时消耗，并追加攻击段数。" },
+  bookmark: { name: "未竟书签", copy: "记录下一张发动残响的书页；元素足够时把该页设为后续指定页。", flag: true },
+  attuned: { name: "元素同调", copy: "本轮尚未翻出的固定元素消耗被改写为当前主元素。", flag: true },
+};
+
+const ENEMY_STATUS_INFO = {
+  burn: { name: "灼烧", copy: "敌方行动前受到持续伤害。", tone: "debuff" },
+  curse: { name: "诅咒", copy: "降低该敌人的攻击输出，并可被暗系终结牌消耗。", tone: "debuff" },
+  thunder: { name: "雷印", copy: "由雷鸣流派积累，可被雷鸣终结牌消耗并追加雷击。", tone: "debuff" },
+  erosion: { name: "蚀痕", copy: "降低有效法术防御，并可被影蚀终结牌消耗。", tone: "debuff" },
+  vulnerable: { name: "易伤", copy: "后续直接伤害提高12%，每次受到直接伤害后减少1层。", tone: "debuff" },
+  mirrorStacks: { name: "辉蚀", copy: "每层使该敌人受到的直接伤害降低5%，最多4层。", tone: "buff" },
+};
+
+function sentence(text) {
+  const copy = String(text || "无额外效果").trim().replace(/[。；]+$/, "");
+  return `${copy}。`;
+}
+
+function naturalEffect(card, effect, castType) {
+  const schoolName = ELEMENTS[card.school]?.name;
+  if (card.kind === "generator" && schoolName) {
+    const suffix = String(card.full).split("并").slice(1).join("并") || `强化下一张${schoolName}系牌`;
+    return `翻到此页魔法咒语时，若当前没有${schoolName}元素，则增加2个${schoolName}元素；否则增加1个${schoolName}元素，并${sentence(suffix)}`;
+  }
+  if (card.kind === "generator-large" && schoolName) return `翻到此页魔法咒语时，增加${card.generatorAmount || 3}个${schoolName}元素；本页只参与正常随机翻页，不能被检索、重演或书签指定。`;
+  let copy = String(effect || "无额外效果");
+  const pct = castType === "full" ? Number(card.pct || 0) : Number(card.echoPct || 0);
+  if (pct > 0 && !copy.includes("%")) {
+    const hits = castType === "echo" && card.echoHits ? card.echoHits : card.hits;
+    const hitCopy = Array.isArray(hits)
+      ? `发动${hits[0]}–${hits[1]}段攻击，每段造成${pct}%伤害`
+      : Number(hits || 1) > 1
+        ? `发动${hits}段攻击，每段造成${pct}%伤害`
+        : `造成${pct}%伤害`;
+    copy = `${hitCopy}；${copy}`;
+  }
+  copy = copy.replace(/^(\d+(?:–\d+)?)段(\d+)%伤害/, "发动$1段攻击，每段造成$2%伤害");
+  copy = copy.replace(/^(\d+)%伤害/, "造成$1%伤害");
+  return `翻到此页魔法咒语并${castType === "full" ? "完整施法" : "发动残响"}时，${sentence(copy)}`;
+}
+
+function paymentRule(card) {
+  const cost = card.cost;
+  if (!cost.amount) return "本页消耗0元素，翻到后自动完整施法。";
+  if (cost.type === "fixed") return `完整施法需要${costLabel(card)}；满足时系统自动支付对应元素。`;
+  if (cost.type === "any") return `完整施法需要${cost.amount}个任意元素，并按照元素池从左到右自动支付。`;
+  if (cost.type === "random") return `完整施法需要元素池中至少有${cost.amount}个元素，并从已占用槽位中随机支付${cost.amount}个。`;
+  return `完整施法需要达到${costLabel(card)}的门槛；满足时消耗卡面指定范围内的全部剩余元素。`;
+}
+
+export function expandedCardEffects(card) {
+  const noEcho = !card.cost.amount || card.echo === "无残响";
+  const attackTotals = new Set(["total", "total-water", "total-wind", "total-all", "total-hybrid"]);
+  const enemyEffects = new Set(["dark", "dark-mark", "dark-finisher", "erosion", "erosion-finisher", "total-dark"]);
+  const attacksEnemy = Boolean(card.pct || card.echoPct || card.hits || attackTotals.has(card.kind));
+  return {
+    payment: paymentRule(card),
+    full: naturalEffect(card, card.full, "full"),
+    echo: noEcho ? "本页不会发动残响。" : `元素不足时不消耗任何元素。${naturalEffect(card, card.echo, "echo")}`,
+    targeting: card.targeting || (attacksEnemy
+      ? "攻击自动选择当前生命最低的敌人；多段攻击每段重新检查，击杀后自动更换目标。"
+      : enemyEffects.has(card.kind)
+        ? "负面效果自动选择当前生命最低的敌人，目标死亡后重新选择。"
+        : "本页作用于自身或魔法书，不主动选择敌方目标。"),
+  };
+}
+
+export function enemyBasicPage(enemy, mode = "pve") {
+  return {
+    id: mode === "pvp" ? "MI-ATK" : "NPC-ATK",
+    name: mode === "pvp" ? "镜像基础术式" : "普通攻击",
+    school: mode === "pvp" ? "arcane" : "dark",
+    cost: { type: "any", amount: 0 },
+    tags: mode === "pvp" ? "镜像魔法书·基础结算页" : "无魔法书·无附加卡牌效果",
+    full: `造成${enemy.attackPct}%法术攻击的直接伤害；本攻击页不附带额外卡牌效果`,
+    echo: "无残响",
+    targeting: "攻击自动作用于对方当前生命最低的战斗单位。",
+  };
+}
 
 function passiveSet(level, boss, finalBoss) {
   const common = ["shell", "windHeal", "shieldBreaker", "lightMirror", "cleanse"];
@@ -31,15 +122,15 @@ export function createEnemies(mode, spec = {}) {
   if (mode === "pvp") {
     const names = ["灰塔的艾莉亚", "翠风学徒罗伊", "暗月记录者", "赤焰魔导师"];
     const hp = Math.round(maxHp() * eventScale);
-    return [{ id: "mirror", name: pick(names), hp, maxHp: hp, atk: attack() * eventScale, def: defense() * eventScale, hit: hit() * eventScale, dodge: dodge() * eventScale, crit: critStat() * eventScale, resist: resist() * eventScale, attackPct: 70, burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: [], actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: "♙" }];
+    return [{ id: "mirror", name: pick(names), hp, maxHp: hp, shield: 0, atk: attack() * eventScale, def: defense() * eventScale, hit: hit() * eventScale, dodge: dodge() * eventScale, crit: critStat() * eventScale, resist: resist() * eventScale, attackPct: 70, elements: state.startElements.slice(0, poolCap()), book: state.deck.slice(), burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: [], actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: "♙" }];
   }
   const boss = Boolean(spec.boss);
   const names = boss ? ["星辉魔像", "深渊典藏官", "六相元素龙"] : ["灰烬小鬼", "结晶魔犬", "风之鸦", "苔石傀儡", "书页幽灵", "虚空信徒"];
   const scale = boss ? 1 : eventScale;
   const hp = Math.round(maxHp() * (boss ? 1 : .6) * scale);
-  return [{ id: "enemy-0", name: spec.name || pick(names), hp, maxHp: hp, atk: attack() * (boss ? 1 : .7) * scale, def: defense() * (boss ? 1 : .5) * scale,
+  return [{ id: "enemy-0", name: spec.name || pick(names), hp, maxHp: hp, shield: 0, atk: attack() * (boss ? 1 : .7) * scale, def: defense() * (boss ? 1 : .5) * scale,
     hit: hit() * scale, dodge: dodge() * scale, crit: critStat() * scale, resist: resist() * scale, attackPct: 70,
-    burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: passiveSet(eventLevel, boss, spec.finalBoss),
+    elements: [], book: [], burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: passiveSet(eventLevel, boss, spec.finalBoss),
     boss, shellReady: true, shellSpent: false, shellCooldown: 0, shellRefreshes: 0, hitSegments: 0, actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: boss ? "♛" : "♞" }];
 }
 export function startBattle(mode, restartSpec = null) {
@@ -53,7 +144,8 @@ export function startBattle(mode, restartSpec = null) {
     elements: state.startElements.slice(0, poolCap()), poolCap: poolCap(),
     drawPile: shuffle(state.deck), discarded: [], cycle: 1, drawnInCycle: 0,
     turn: mode === "pve" ? "player" : (Math.random() < .5 ? "player" : "enemy"),
-    enemyCursor: 0, action: 0, logs: [], over: false, won: false, currentCard: null, castType: null,
+    enemyCursor: 0, action: 0, logs: [], over: false, won: false, currentCard: null, enemyCurrentCard: enemyBasicPage(enemies[0], mode), castType: null,
+    statusPanels: { player: false, enemy: false },
     player: { heat: 0, tide: 0, wind: 0, light: 0, star: 0, thorns: 0, rock: 0, waterShield: 0, nextWind: 0, damageBuff: 0, windWeight: 0, bookmark: null, attuned: null, recent: [] },
     enemyFatigue: mode === "pvp" ? state.fatigue : null
   };
@@ -314,6 +406,7 @@ export function playerAction() {
 export function enemyAction() {
   const b = state.battle, alive = b.enemies.filter((e) => e.hp > 0); if (!alive.length) { endBattle(true); return; }
   const enemy = alive[b.enemyCursor % alive.length]; b.enemyCursor += 1; b.action += 1;
+  b.enemyCurrentCard = enemyBasicPage(enemy, b.mode);
   enemy.actionCount += 1;
   if (enemy.shellSpent && !enemy.shellReady && enemy.shellCooldown > 0 && (enemy.boss || enemy.shellRefreshes < 1)) { enemy.shellCooldown -= 1; if (enemy.shellCooldown === 0) { enemy.shellReady = true; enemy.shellSpent = false; enemy.shellRefreshes += 1; addLog(`${enemy.name}重新生成符文护壳。`, "bad"); } }
   if (enemy.mirrorStacks > 0) enemy.mirrorStacks -= 1;
@@ -362,27 +455,83 @@ export function endBattle(won) {
   } else addLog("你的生命归零，本次战斗失败。", "bad");
   saveState(); renderBattle();
 }
+
+function combatStatsHtml(hp, hpMax, shield, atk) {
+  return `<div class="battle-stat"><span>生命</span><div class="mini-bar"><i style="width:${clamp(hp / Math.max(1, hpMax) * 100, 0, 100)}%"></i></div><b>${Math.ceil(hp)}/${Math.ceil(hpMax)}</b></div><div class="battle-stat"><span>护盾</span><div class="mini-bar"><i style="width:${clamp(shield / Math.max(1, hpMax) * 100, 0, 100)}%;background:#68a5cc"></i></div><b>${Math.round(shield)}</b></div><div class="battle-stat"><span>法攻</span><div class="stat-rule"></div><b>${Math.round(atk)}</b></div>`;
+}
+
+function playerStatusItems(b) {
+  const items = Object.entries(PLAYER_STATUS_INFO).flatMap(([key, info]) => {
+    const raw = b.player[key];
+    if (!raw) return [];
+    let value = info.flag ? "生效中" : info.percent ? `${Math.round(raw * 100)}%` : raw;
+    if (key === "attuned") value = `${ELEMENTS[raw]?.name || raw}系`;
+    if (key === "bookmark" && typeof raw === "string") value = CARD_BY_ID.get(raw)?.name || raw;
+    return [{ ...info, value, tone: "buff" }];
+  });
+  if (b.enemies.some((enemy) => enemy.hp > 0 && (enemy.passives || []).includes("reverseWater"))) items.push({ name: "逆流诅咒", value: "生效中", copy: MONSTER_PASSIVES.reverseWater.copy, tone: "debuff" });
+  return items;
+}
+
+function enemyStatusItems(enemy) {
+  if (!enemy) return [];
+  const passives = (enemy.passives || []).map((id) => ({ name: MONSTER_PASSIVES[id].name, value: "被动", copy: MONSTER_PASSIVES[id].copy, tone: "passive" }));
+  const states = Object.entries(ENEMY_STATUS_INFO).flatMap(([key, info]) => enemy[key] > 0 ? [{ ...info, value: enemy[key] }] : []);
+  return [...passives, ...states];
+}
+
+function statusPanelHtml(items, side, open) {
+  const chips = items.length ? items.map((item) => `<span class="status-pill ${item.tone}">${esc(item.name)} ${esc(item.value)}</span>`).join("") : '<span class="status-pill">无BUFF/DEBUFF</span>';
+  const details = items.length ? items.map((item) => `<article class="status-detail ${item.tone}"><header><b>${esc(item.name)}</b><span>${esc(item.value)}</span></header><p>${esc(item.copy)}</p></article>`).join("") : '<p class="empty-status-copy">当前没有持续状态。</p>';
+  return `<div class="status-overview"><span class="combat-side-label">BUFF / DEBUFF</span><div class="status-pills">${chips}</div><button class="status-toggle" data-status-toggle="${side}">${open ? "收起详细信息" : "查看详细信息"}</button></div><div class="status-detail-list" ${open ? "" : "hidden"}>${details}</div>`;
+}
+
+function spellPageHtml(card, castType = "full") {
+  const effects = expandedCardEffects(card);
+  const fullActive = castType === "full";
+  const echoActive = castType === "echo";
+  return `<span class="card-school">${esc(card.id)} · ${schoolLabel(card.school)} · 消耗 ${costLabel(card)}</span><h2>${esc(card.name)}</h2><p class="spell-tags">${esc(card.tags)}</p><div class="spell-rules"><p class="payment-copy">${esc(effects.payment)}</p><section class="effect-row ${fullActive ? "active" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row ${echoActive ? "active echo" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section><section class="effect-row targeting"><b>目标</b><p>${esc(effects.targeting)}</p></section></div><span class="cast-badge ${echoActive ? "echo" : ""}">${fullActive ? "本次：完整施法" : echoActive ? "本次：残响保底" : "攻击页"}</span>`;
+}
+
 export function renderBattle() {
   const b = state.battle; if (!b) return;
   $("battleMode").textContent = b.mode === "pve" ? "PVE · 玩家先手 · 怪物不预告" : `PVP 镜像 · 随机先手 · 疲劳 ${b.enemyFatigue}`;
   $("battleTitle").textContent = b.mode === "pve" ? `${state.floor % 10 === 0 ? "首领" : "元素"}试炼` : "镜像法师对决";
   $("battleSpeed").textContent = `速度 ×${battleSpeed}`; $("battlePause").textContent = paused ? "继续" : "暂停"; $("battleStep").hidden = !paused;
-  $("playerBattleStats").innerHTML = `<div class="battle-stat"><span>生命</span><div class="mini-bar"><i style="width:${b.playerHp / b.playerMaxHp * 100}%"></i></div><b>${Math.ceil(b.playerHp)}</b></div><div class="battle-stat"><span>护盾</span><div class="mini-bar"><i style="width:${Math.min(100, b.shield / b.playerMaxHp * 100)}%;background:#68a5cc"></i></div><b>${Math.round(b.shield)}</b></div><div class="battle-stat"><span>法攻</span><div></div><b>${attack()}</b></div>`;
+  $("playerBattleStats").innerHTML = combatStatsHtml(b.playerHp, b.playerMaxHp, b.shield, attack());
   $("battleElements").innerHTML = [...b.elements.map((e) => elementOrb(e)), ...Array.from({ length: Math.max(0, b.poolCap - b.elements.length) }, () => elementOrb(null, true))].join("");
-  const labels = { heat: "炽热", tide: "潮印", wind: "风势", light: "辉光", star: "星佑", thorns: "棘甲", rock: "岩层", waterShield: "水疗盾" };
-  $("battleStatuses").innerHTML = Object.entries(labels).filter(([k]) => b.player[k] > 0).map(([k, name]) => `<span class="status-pill">${name} ${b.player[k]}</span>`).join("") || '<span class="status-pill">无状态</span>';
+  $("battleStatuses").innerHTML = statusPanelHtml(playerStatusItems(b), "player", b.statusPanels?.player);
   $("turnRune").textContent = b.over ? "战斗结束" : b.turn === "player" ? "魔法书正在翻页" : "敌方行动";
   if (b.currentCard) {
     const card = b.currentCard; $("currentCard").className = `current-card ${card.school} ${b.over ? "" : "casting"}`;
-    $("currentCard").innerHTML = `<span class="card-school">${card.id} · ${schoolLabel(card.school)} · 消耗 ${costLabel(card)}</span><h2>${card.name}</h2><p>${b.castType === "full" ? card.full : card.echo}</p><span class="cast-badge ${b.castType === "echo" ? "echo" : ""}">${b.castType === "full" ? "完整施法" : "残响保底"}</span>`;
-  } else { $("currentCard").className = "current-card empty"; $("currentCard").innerHTML = '<span class="card-school">WAITING</span><h2>等待翻页</h2><p>每张书页在本轮只会出现一次。</p>'; }
+    $("currentCard").innerHTML = spellPageHtml(card, b.castType);
+  } else { $("currentCard").className = "current-card empty"; $("currentCard").innerHTML = '<span class="card-school">WAITING</span><h2>等待翻页</h2><p>我方每张书页在本轮只会出现一次；翻出后会在这里同时显示完整施法、残响、支付条件和目标规则。</p>'; }
+  $("playerBookCount").textContent = `${state.deck.length}页`;
   $("cycleText").textContent = `第 ${b.cycle} 轮 · ${b.drawnInCycle} / ${state.deck.length}`; $("cycleBar").style.width = `${b.drawnInCycle / Math.max(1, state.deck.length) * 100}%`;
-  $("enemyGroupTitle").textContent = b.mode === "pve" ? `塔中敌人 · ${b.enemies.filter((e) => e.hp > 0).length}存活` : `镜像玩家 · 疲劳 ${b.enemyFatigue}`;
   const target = targetLowest();
-  $("enemyList").innerHTML = b.enemies.map((e) => `<article class="enemy-card ${target?.id === e.id ? "target" : ""}"><header><b>${e.hp > 0 ? e.icon : "☠"} ${e.name}</b><small>${Math.ceil(e.hp)}/${e.maxHp}</small></header><div class="mini-bar"><i style="width:${e.hp / e.maxHp * 100}%"></i></div><p>${e.hp > 0 ? `法攻 ${Math.round(e.atk)} · 法防 ${Math.round(e.def)} · 灼烧 ${e.burn} · 诅咒 ${e.curse}` : "已击败"}</p>${e.passives?.length ? `<p>${e.passives.map((id) => `<span class="status-pill" title="${MONSTER_PASSIVES[id].copy}">${MONSTER_PASSIVES[id].name}</span>`).join(" ")}</p>` : ""}</article>`).join("");
+  const inspectedEnemy = target || b.enemies[0];
+  $("enemyGroupTitle").textContent = inspectedEnemy?.name || "塔中敌人";
+  $("enemyPortrait").textContent = inspectedEnemy?.hp > 0 ? inspectedEnemy.icon : "☠";
+  $("enemyBattleStats").innerHTML = inspectedEnemy ? combatStatsHtml(inspectedEnemy.hp, inspectedEnemy.maxHp, inspectedEnemy.shield || 0, inspectedEnemy.atk) : "";
+  $("enemyBattleElements").innerHTML = inspectedEnemy?.elements?.length ? inspectedEnemy.elements.map((e) => elementOrb(e)).join("") : '<span class="no-element-copy">无元素</span>';
+  $("enemyBattleStatuses").innerHTML = statusPanelHtml(enemyStatusItems(inspectedEnemy), "enemy", b.statusPanels?.enemy);
+  $("enemyList").innerHTML = `<span class="combat-side-label">目标列表 · ${b.enemies.filter((e) => e.hp > 0).length}存活</span>${b.enemies.map((e) => `<article class="enemy-card ${target?.id === e.id ? "target" : ""}"><header><b>${e.hp > 0 ? e.icon : "☠"} ${esc(e.name)}</b><small>${Math.ceil(e.hp)}/${e.maxHp}</small></header><div class="mini-bar"><i style="width:${e.hp / e.maxHp * 100}%"></i></div></article>`).join("")}`;
+  const enemyPage = b.enemyCurrentCard || enemyBasicPage(inspectedEnemy, b.mode);
+  $("enemyCurrentCard").className = `current-card enemy-current-card ${enemyPage.school} ${b.turn === "enemy" && !b.over ? "casting" : ""}`;
+  $("enemyCurrentCard").innerHTML = spellPageHtml(enemyPage, "page");
+  const enemyBook = inspectedEnemy?.book || [];
+  $("enemyBookCount").textContent = b.mode === "pvp" ? `${enemyBook.length}页快照` : "无魔法书";
+  $("enemyBookNote").innerHTML = b.mode === "pvp" ? `<details><summary>查看敌方装订书页</summary><p>${enemyBook.map((id) => esc(CARD_BY_ID.get(id)?.name || id)).join("、") || "没有可识别书页"}</p><small>当前镜像战斗仍使用快照属性与基础术式结算；书页效果将在后续战斗规则中接入。</small></details>` : "该NPC没有战斗魔法书，每次行动使用无附加卡牌效果的普通攻击；怪物被动仍在右侧状态区独立生效。";
   $("battleLog").innerHTML = b.logs.map((log) => `<div class="log-entry ${log.tone}"><b>#${log.n}</b><span>${esc(log.message)}</span></div>`).join("");
   $("battleSummary").hidden = !b.over;
   if (b.over) $("battleSummary").innerHTML = b.won ? `<h2>战斗胜利</h2><p>获得 ${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">收取奖励并继续</button>` : `<h2>挑战失败</h2><p>可以立即重新挑战；镜像玩家事件也可以结算失败并继续探索。</p><button data-battle-retry>重新开打</button>${b.mode === "pvp" ? '<button data-battle-finish="loss">接受结果并继续</button>' : ""}<button data-battle-new-run>重开法师塔</button>`;
+}
+
+export function toggleBattleStatusPanel(side) {
+  if (!state.battle || !["player", "enemy"].includes(side)) return;
+  state.battle.statusPanels ||= { player: false, enemy: false };
+  state.battle.statusPanels[side] = !state.battle.statusPanels[side];
+  renderBattle();
 }
 
 export function stopBattle() {

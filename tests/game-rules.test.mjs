@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=6";
-import { adjustedSegmentPct, createEnemies, doHits, hitEnemy } from "../public/merlin-assets/game/battle.js?v=6";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=6";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=6";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=6";
-import { advanceChapter, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=6";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=6";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=7";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=7";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=7";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=7";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=7";
+import { advanceChapter, ELEMENT_SLOT_UNLOCK_LEVELS, freshState, freshTowerRun, generateEvents, hydrate, poolCap, RUN_RULES_VERSION, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=7";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=7";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -37,6 +37,27 @@ test("card catalog and starter pools remain internally consistent", () => {
   assertStarterLoadout(createStarterLoadout());
   assert.ok(CARDS.every((card) => card.cost.amount >= 0));
   assert.ok(CARDS.every((card) => card.echo && card.full && card.tags));
+});
+
+test("battle card lookup expands shorthand into full casting rules", () => {
+  const generator = expandedCardEffects(CARD_BY_ID.get("FI-01"));
+  assert.equal(generator.payment, "本页消耗0元素，翻到后自动完整施法。");
+  assert.match(generator.full, /若当前没有火元素，则增加2个火元素；否则增加1个火元素，并强化下一张火系攻击。/);
+  assert.equal(generator.echo, "本页不会发动残响。");
+
+  const attackCard = expandedCardEffects(CARD_BY_ID.get("FI-02"));
+  assert.match(attackCard.payment, /完整施法需要1火/);
+  assert.match(attackCard.full, /完整施法时，造成70%伤害，施加2层灼烧。/);
+  assert.match(attackCard.echo, /元素不足时不消耗任何元素/);
+  assert.match(attackCard.targeting, /生命最低/);
+});
+
+test("enemies without spellbooks expose a plain attack page", () => {
+  const page = enemyBasicPage({ attackPct: 70 }, "pve");
+  assert.equal(page.name, "普通攻击");
+  assert.match(page.tags, /无魔法书/);
+  assert.match(page.full, /不附带额外卡牌效果/);
+  assert.match(expandedCardEffects(page).targeting, /对方当前生命最低/);
 });
 
 test("tower exposes all nine exploration event families", () => {
@@ -136,12 +157,22 @@ test("early PVE enemies use the two-element opening baseline", () => {
   assert.equal(floorOne[0].maxHp, 150);
   assert.equal(floorOne[0].atk, 70);
   assert.equal(floorOne[0].def, 25);
+  assert.deepEqual(floorOne[0].elements, []);
+  assert.deepEqual(floorOne[0].book, []);
   current.chapter = 3;
   const boss = createEnemies("pve", { boss: true, name: "星辉魔像" });
   assert.equal(boss.length, 1);
   assert.equal(boss[0].maxHp, 250);
   assert.equal(boss[0].atk, 100);
   assert.equal(boss[0].def, 50);
+});
+
+test("PVP mirror exposes its snapshot spellbook and starting elements", () => {
+  const current = setState(freshState());
+  const mirror = createEnemies("pvp")[0];
+  assert.deepEqual(mirror.book, current.deck);
+  assert.deepEqual(mirror.elements, current.startElements);
+  assert.equal(enemyBasicPage(mirror, "pvp").name, "镜像基础术式");
 });
 
 test("chapter one creates a finite weighted pool and advances countdowns after an event", () => {

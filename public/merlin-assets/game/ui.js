@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=6";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=6";
-import { EVENTS } from "./content.js?v=6";
-import { runtime, state } from "./store.js?v=6";
-import { attack, cardLevel, costLabel, defense, expNeed, maxHp, poolCap, schoolLabel, slotCap } from "./state.js?v=6";
+import { $, ELEMENTS, esc } from "./core.js?v=7";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=7";
+import { EVENTS } from "./content.js?v=7";
+import { runtime, state } from "./store.js?v=7";
+import { attack, cardLevel, costLabel, defense, expNeed, maxHp, poolCap, schoolLabel, slotCap } from "./state.js?v=7";
 
 export function toast(message) {
   $("toast").textContent = message;

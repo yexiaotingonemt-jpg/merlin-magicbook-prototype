@@ -1,0 +1,323 @@
+.battle-stage {
+  grid-template-columns: minmax(250px, .78fr) minmax(560px, 1.55fr) minmax(250px, .78fr);
+  align-items: stretch;
+}
+
+.combatant,
+.spell-focus {
+  min-height: 650px;
+  padding: 18px;
+}
+
+.combatant {
+  text-align: left;
+}
+
+.combatant-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #342b3c;
+}
+
+.combatant-identity .portrait {
+  width: 62px;
+  height: 62px;
+  margin: 0;
+  font-size: 28px;
+  flex: 0 0 auto;
+}
+
+.combatant-identity small,
+.combat-side-label,
+.book-panel > header span {
+  color: #a78a50;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.combatant-identity h2 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  text-align: left;
+}
+
+.combatant #playerBattleStats,
+.combatant #enemyBattleStats {
+  margin: 14px 0;
+}
+
+.battle-stat {
+  grid-template-columns: 38px 1fr auto;
+}
+
+.battle-stat b {
+  min-width: 54px;
+  text-align: right;
+}
+
+.stat-rule {
+  height: 1px;
+  background: #302737;
+}
+
+.combat-side-section,
+.status-overview,
+.enemy-list {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #302737;
+}
+
+.combat-side-section .element-pool {
+  margin-top: 9px;
+}
+
+.no-element-copy {
+  display: inline-block;
+  padding: 7px 10px;
+  border: 1px dashed #493d50;
+  border-radius: 999px;
+  color: #7e7186;
+  font-size: 9px;
+}
+
+.status-overview .status-pills {
+  justify-content: flex-start;
+  margin-top: 9px;
+}
+
+.status-pill.buff {
+  border-color: #3d725d;
+  color: #83d6aa;
+}
+
+.status-pill.debuff {
+  border-color: #7f4849;
+  color: #ec8d84;
+}
+
+.status-pill.passive {
+  border-color: #745d34;
+  color: #e2c16e;
+}
+
+.status-toggle {
+  width: 100%;
+  margin-top: 9px;
+  padding: 7px 9px;
+  border: 1px solid #493b50;
+  border-radius: 7px;
+  color: #cbbdd0;
+  background: #17121d;
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.status-detail-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.status-detail-list[hidden] {
+  display: none;
+}
+
+.status-detail {
+  padding: 9px;
+  border-left: 2px solid #5c4b64;
+  border-radius: 5px;
+  background: #120f17;
+}
+
+.status-detail.buff { border-left-color: #63bd91; }
+.status-detail.debuff { border-left-color: #da746d; }
+.status-detail.passive { border-left-color: #d1ae58; }
+
+.status-detail header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #e1d6e5;
+  font-size: 9px;
+}
+
+.status-detail header span,
+.status-detail p,
+.empty-status-copy {
+  color: #8f8297;
+  font-size: 8px;
+}
+
+.status-detail p,
+.empty-status-copy {
+  margin: 5px 0 0;
+  line-height: 1.55;
+}
+
+.enemy-list {
+  align-content: start;
+}
+
+.enemy-card {
+  margin-top: 8px;
+}
+
+.spell-focus {
+  justify-content: flex-start;
+}
+
+.dual-grimoire {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.book-panel {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #3a3042;
+  border-radius: 14px;
+  background: #100d15;
+}
+
+.book-panel > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.book-panel > header b {
+  color: #d9c47f;
+  font-size: 9px;
+}
+
+.current-card {
+  width: 100%;
+  min-height: 486px;
+  padding: 16px;
+}
+
+.current-card h2 {
+  margin: 8px 0 5px;
+  font-size: 21px;
+}
+
+.spell-tags {
+  min-height: 28px;
+  margin: 0 0 9px;
+  color: var(--school, #bda7c0) !important;
+  font-size: 9px;
+}
+
+.spell-rules {
+  display: grid;
+  gap: 7px;
+}
+
+.payment-copy {
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: #b7a9bd !important;
+  background: #0f0c13;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.effect-row {
+  padding: 8px;
+  border: 1px solid #3a3041;
+  border-radius: 7px;
+  background: #15111a;
+}
+
+.effect-row.active {
+  border-color: #c5a253;
+  box-shadow: 0 0 18px #d1a64a19;
+}
+
+.effect-row.active.echo {
+  border-color: #90649d;
+}
+
+.effect-row b {
+  color: #e0c66f;
+  font-size: 9px;
+}
+
+.effect-row p {
+  margin: 4px 0 0;
+  color: #a99cad;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.effect-row.targeting b {
+  color: #8dbdcb;
+}
+
+.current-card .cast-badge {
+  margin-top: 10px;
+}
+
+.enemy-book-panel .deck-cycle {
+  min-height: 44px;
+  line-height: 1.55;
+}
+
+.enemy-book-panel details summary {
+  color: #d6b966;
+  cursor: pointer;
+}
+
+.enemy-book-panel details p,
+.enemy-book-panel details small {
+  display: block;
+  margin: 5px 0 0;
+  color: #877b8e;
+  font-size: 9px;
+}
+
+@media (max-width: 1200px) {
+  .battle-stage {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .player-side { order: 1; }
+  .enemy-side { order: 2; grid-column: auto; }
+  .spell-focus { order: 3; grid-column: 1 / -1; }
+
+  .combatant {
+    min-height: 480px;
+  }
+}
+
+@media (max-width: 760px) {
+  .battle-stage,
+  .dual-grimoire {
+    grid-template-columns: 1fr;
+  }
+
+  .player-side,
+  .spell-focus,
+  .enemy-side {
+    order: initial;
+    grid-column: auto;
+  }
+
+  .combatant,
+  .spell-focus {
+    min-height: auto;
+  }
+
+  .current-card {
+    min-height: auto;
+  }
+}
