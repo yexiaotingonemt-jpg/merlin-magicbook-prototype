@@ -25,12 +25,13 @@ test("server-renders the Merlin tower entry", async () => {
 
 test("ships exploration, deck building, battle and persistence", async () => {
   const routes = ["account", "leaderboard", "players", "projection", "reset", "state"];
-  const modules = ["app", "battle", "cards", "content", "core", "exploration", "state", "store", "ui"];
+  const modules = ["app", "battle", "cards", "content", "core", "exploration", "glossary", "state", "store", "ui"];
   await Promise.all([
     access(new URL("../public/game.html", import.meta.url)),
     access(new URL("../public/merlin-assets/grimoire-game.css", import.meta.url)),
     access(new URL("../public/merlin-assets/level-preview.css", import.meta.url)),
     access(new URL("../public/merlin-assets/battle-redesign.css", import.meta.url)),
+    access(new URL("../public/merlin-assets/spell-glossary.css", import.meta.url)),
     ...modules.map((module) => access(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url))),
     access(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url)),
     ...routes.map((route) => access(new URL(`../app/api/${route}/route.ts`, import.meta.url))),
@@ -43,7 +44,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=27"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=28"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -69,11 +70,13 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=27"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=27"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=28"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=28"/);
   assert.match(sources.ui, /export function eventDecisionFacts\(event\)/);
   assert.match(sources.ui, /export function cardCostHtml\(card/);
   assert.match(sources.ui, /export function cardMetadataHtml\(card/);
+  assert.match(sources.glossary, /export function glossaryTextHtml\(text\)/);
+  assert.match(sources.app, /data-spell-term/);
   assert.doesNotMatch(sources.ui, /spell-rune.*\$\{card\.id\}/);
   assert.doesNotMatch(sources.exploration, /\$\{card\.id\} · \$\{costLabel\(card\)\}/);
   assert.match(sources.ui, /event-title-level-\$\{threatLevel\}/);

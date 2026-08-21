@@ -1,8 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=27";
-import { CARD_BY_ID } from "./cards.js?v=27";
-import { runtime, state } from "./store.js?v=27";
-import { attack, battleRewards, cardLevel, chapterLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=27";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=27";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=28";
+import { CARD_BY_ID } from "./cards.js?v=28";
+import { glossaryTextHtml } from "./glossary.js?v=28";
+import { runtime, state } from "./store.js?v=28";
+import { attack, battleRewards, cardLevel, chapterLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=28";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=28";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -519,7 +520,7 @@ export function spellPageHtml(card, castType = "full") {
   const effects = expandedCardEffects(card);
   const fullActive = castType === "full";
   const echoActive = castType === "echo";
-  return `${cardMetadataHtml(card)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><section class="effect-row casting-rules"><b>施法规则</b><p>${esc(`${effects.payment} ${effects.targeting}`)}</p></section><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section></div>`;
+  return `${cardMetadataHtml(card, true)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><section class="effect-row casting-rules"><b>施法规则</b><p>${glossaryTextHtml(`${effects.payment} ${effects.targeting}`)}</p></section><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${glossaryTextHtml(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${glossaryTextHtml(effects.echo)}</p></section></div>`;
 }
 
 export function battleCardMotionState(battle) {

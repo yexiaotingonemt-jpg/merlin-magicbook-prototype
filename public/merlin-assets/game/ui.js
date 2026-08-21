@@ -1,8 +1,9 @@
-import { $, ELEMENTS, esc } from "./core.js?v=27";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=27";
-import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "./content.js?v=27";
-import { runtime, state } from "./store.js?v=27";
-import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=27";
+import { $, ELEMENTS, esc } from "./core.js?v=28";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=28";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "./content.js?v=28";
+import { glossaryTextHtml } from "./glossary.js?v=28";
+import { runtime, state } from "./store.js?v=28";
+import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=28";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -49,11 +50,12 @@ export function cardCostHtml(card, compact = false) {
   const all = cost.type === "all" ? `<span class="spell-cost-rule">全部 ≥${cost.amount}</span>` : "";
   return `<span class="spell-cost${compact ? " compact" : ""}">${free}${tokens.join("")}${all}</span>`;
 }
-export function cardMetadataHtml(card) {
+export function cardMetadataHtml(card, interactive = false) {
   const redundantTag = `${ELEMENTS[card.school]?.name || ""}势`;
   const tags = String(card.tags || "").split("·").filter(Boolean);
   if (tags[0] === redundantTag) tags.shift();
-  return `<span class="spell-meta ${card.school}">${schoolLabel(card.school)}${tags.length ? ` · ${esc(tags.join("·"))}` : ""}</span>`;
+  const copy = `${schoolLabel(card.school)}${tags.length ? ` · ${tags.join("·")}` : ""}`;
+  return `<span class="spell-meta ${card.school}">${interactive ? glossaryTextHtml(copy) : esc(copy)}</span>`;
 }
 export function levelPips(level) { return `<span class="level-pips">${Array.from({ length: 6 }, (_, i) => `<i class="${i < level ? "on" : ""}"></i>`).join("")}</span>`; }
 export function deckCounts() {
@@ -193,7 +195,8 @@ export function spellRow(card, location) {
   const action = location === "deck"
     ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>${card.basePage ? "基础页" : "移入仓库"}</button>`
     : `<button data-bind="${card.id}">替换装订</button>`;
-  return `<article class="spell-row ${card.school}"><div class="spell-overview">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${action}</article>`;
+  const effects = `<div class="spell-effect-copy"><p class="spell-effect-line full"><b>完整</b><span>${glossaryTextHtml(card.full)}</span></p><p class="spell-effect-line echo"><b>残响</b><span>${glossaryTextHtml(card.echo)}</span></p></div>`;
+  return `<article class="spell-row ${card.school}"><div class="spell-overview">${cardMetadataHtml(card, true)}<h3>${card.name}</h3>${cardCostHtml(card)}${levelPips(lv)}</div>${effects}${action}</article>`;
 }
 export function renderGrimoire() {
   const search = $("cardSearch").value || "";
@@ -218,7 +221,7 @@ export function renderArchive() {
   $("catalogProgress").innerHTML = `已学 <b>${Object.keys(state.collection).length}</b> / ${CARDS.length}`;
   $("archiveGrid").innerHTML = filtered.map((card) => {
     const lv = cardLevel(card.id);
-    return `<article class="archive-card ${card.school} ${lv ? "" : "locked"}">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}<p>${card.full}</p><footer><span>${lv ? `Lv.${lv}` : "未学习"}</span></footer></article>`;
+    return `<article class="archive-card ${card.school} ${lv ? "" : "locked"}">${cardMetadataHtml(card, true)}<h3>${card.name}</h3>${cardCostHtml(card)}<p>${glossaryTextHtml(card.full)}</p><footer><span>${lv ? `Lv.${lv}` : "未学习"}</span></footer></article>`;
   }).join("");
 }
 export const SHOP = [

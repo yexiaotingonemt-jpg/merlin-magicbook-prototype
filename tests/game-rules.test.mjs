@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=27";
-import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=27";
-import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=27";
-import { candidateFitHtml, decisionContextHtml, LIBRARY_SCHOOLS, librarySpellChoices, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=27";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=27";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=27";
-import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=27";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=27";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, eventThreatLevelLabel, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=27";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=28";
+import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=28";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=28";
+import { candidateFitHtml, decisionContextHtml, LIBRARY_SCHOOLS, librarySpellChoices, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=28";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=28";
+import { glossaryDetailHtml, glossaryTextHtml } from "../public/merlin-assets/game/glossary.js?v=28";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=28";
+import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=28";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=28";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, eventThreatLevelLabel, expectedBattleHpLoss, spellRow } from "../public/merlin-assets/game/ui.js?v=28";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -69,8 +70,8 @@ test("spell presentation hides internal ids and visualizes elemental payment", (
   assert.doesNotMatch(fullPage, /WI-03|本次：完整施法|cast-badge/);
   assert.match(fullPage, /effect-row casting-rules/);
   assert.match(fullPage, /<b>施法规则<\/b>/);
-  assert.match(fullPage, /完整施法需要2个风元素；满足时系统自动支付这些元素。/);
-  assert.match(fullPage, /攻击自动选择当前生命最低的敌人；多段攻击每段重新检查，击杀后自动更换目标。/);
+  assert.match(fullPage, /data-spell-term="完整施法"[^>]*>完整施法<\/button>需要2个风元素；满足时系统自动支付这些元素。/);
+  assert.match(fullPage, /攻击自动选择当前生命最低的敌人；[\s\S]*data-spell-term="多段攻击"[\s\S]*每段重新检查，击杀后自动更换目标。/);
   assert.doesNotMatch(fullPage, /payment-copy|<b>目标<\/b>/);
   assert.match(fullPage, /echo-effect inactive/);
   assert.doesNotMatch(fullPage, /spell-tags/);
@@ -78,6 +79,16 @@ test("spell presentation hides internal ids and visualizes elemental payment", (
   const echoPage = spellPageHtml(tempest, "echo");
   assert.match(echoPage, /full-effect inactive/);
   assert.match(echoPage, /echo-effect active echo/);
+  assert.match(fullPage, /data-spell-term="完整施法"/);
+});
+
+test("spell terminology is emphasized and opens contextual explanations", () => {
+  setState(freshState());
+  const windCopy = glossaryTextHtml("暴击可获得风势");
+  assert.match(windCopy, /class="spell-term combat" data-spell-term="暴击"/);
+  assert.match(windCopy, /class="spell-term wind" data-spell-term="风势"/);
+  assert.match(glossaryDetailHtml("风势"), /风系攻击暴击时积累/);
+  assert.match(spellRow(CARD_BY_ID.get("WI-02"), "deck"), /spell-effect-line full[\s\S]*data-spell-term="风势"/);
 });
 
 test("enemies without spellbooks expose a plain attack page", () => {
