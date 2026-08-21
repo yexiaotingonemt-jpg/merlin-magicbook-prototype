@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=17";
-import { CARD_BY_ID } from "./cards.js?v=17";
-import { runtime, setState, state } from "./store.js?v=17";
-import { freshState, generateEvents, hydrate, loadLocal, organizeBoundPage, replaceBoundPage, saveState } from "./state.js?v=17";
-import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=17";
-import { completeEvent, newTowerRun, resolveEvent, showReplacementModal } from "./exploration.js?v=17";
-import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=17";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=18";
+import { CARD_BY_ID } from "./cards.js?v=18";
+import { runtime, setState, state } from "./store.js?v=18";
+import { freshState, generateEvents, hydrate, loadLocal, organizeBoundPage, replaceBoundPage, saveState } from "./state.js?v=18";
+import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=18";
+import { completeEvent, newTowerRun, resolveEvent, showReplacementModal } from "./exploration.js?v=18";
+import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=18";
 
 export function populateFilters() {
   const options = ['<option value="all">全部流派</option>', ...SCHOOL_ORDER.map((s) => `<option value="${s}">${ELEMENTS[s].name}系</option>`)].join("");

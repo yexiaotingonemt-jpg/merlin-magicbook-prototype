@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=17";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=17";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=17";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=17";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=17";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=17";
-import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=17";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=17";
-import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=17";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=18";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=18";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=18";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=18";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=18";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=18";
+import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=18";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=18";
+import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=18";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -52,7 +52,7 @@ test("battle card lookup expands shorthand into full casting rules", () => {
   assert.equal(generator.echo, "本页不会发动残响。");
 
   const attackCard = expandedCardEffects(CARD_BY_ID.get("FI-02"));
-  assert.match(attackCard.payment, /完整施法需要1火/);
+  assert.match(attackCard.payment, /完整施法需要1个火元素；满足时系统自动支付这些元素。/);
   assert.match(attackCard.full, /完整施法时，造成70%伤害，施加2层灼烧。/);
   assert.match(attackCard.echo, /元素不足时不消耗任何元素/);
   assert.match(attackCard.targeting, /生命最低/);
@@ -67,6 +67,11 @@ test("spell presentation hides internal ids and visualizes elemental payment", (
 
   const fullPage = spellPageHtml(tempest, "full");
   assert.doesNotMatch(fullPage, /WI-03|本次：完整施法|cast-badge/);
+  assert.match(fullPage, /effect-row casting-rules/);
+  assert.match(fullPage, /<b>施法规则<\/b>/);
+  assert.match(fullPage, /完整施法需要2个风元素；满足时系统自动支付这些元素。/);
+  assert.match(fullPage, /攻击自动选择当前生命最低的敌人；多段攻击每段重新检查，击杀后自动更换目标。/);
+  assert.doesNotMatch(fullPage, /payment-copy|<b>目标<\/b>/);
   assert.match(fullPage, /echo-effect inactive/);
   assert.doesNotMatch(fullPage, /spell-tags/);
 

@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=17";
-import { CARD_BY_ID } from "./cards.js?v=17";
-import { runtime, state } from "./store.js?v=17";
-import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=17";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=17";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=18";
+import { CARD_BY_ID } from "./cards.js?v=18";
+import { runtime, state } from "./store.js?v=18";
+import { attack, battleRewards, cardLevel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=18";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=18";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -73,10 +73,17 @@ function paymentRule(card) {
   const cost = card.cost;
   if (card.basePage) return "完整施法需要1个任意富余元素；系统只会支付不影响本轮尚未翻出非基础书页固定需求的元素。";
   if (!cost.amount) return "本页消耗0元素，翻到后自动完整施法。";
-  if (cost.type === "fixed") return `完整施法需要${costLabel(card)}；满足时系统自动支付对应元素。`;
+  if (cost.type === "fixed") {
+    const requirement = Object.entries(cost.parts || {}).map(([element, amount]) => `${amount}个${ELEMENTS[element].name}元素`).join("和");
+    return `完整施法需要${requirement}；满足时系统自动支付这些元素。`;
+  }
   if (cost.type === "any") return `完整施法需要${cost.amount}个任意元素，并按照元素池从左到右自动支付。`;
   if (cost.type === "random") return `完整施法需要元素池中至少有${cost.amount}个元素，并从已占用槽位中随机支付${cost.amount}个。`;
-  return `完整施法需要达到${costLabel(card)}的门槛；满足时消耗卡面指定范围内的全部剩余元素。`;
+  if (cost.parts) {
+    const required = Object.entries(cost.parts).map(([element, amount]) => `${amount}个${ELEMENTS[element].name}元素`).join("和");
+    return `完整施法至少需要${required}，并满足总计不少于${cost.amount}个可消耗元素的门槛；发动后消耗卡面指定元素范围内的全部剩余元素。`;
+  }
+  return `完整施法需要元素池中至少有${cost.amount}个元素；发动后消耗全部剩余元素。`;
 }
 
 export function expandedCardEffects(card) {
@@ -511,7 +518,7 @@ export function spellPageHtml(card, castType = "full") {
   const effects = expandedCardEffects(card);
   const fullActive = castType === "full";
   const echoActive = castType === "echo";
-  return `${cardMetadataHtml(card)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><p class="payment-copy">${esc(effects.payment)}</p><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section><section class="effect-row targeting"><b>目标</b><p>${esc(effects.targeting)}</p></section></div>`;
+  return `${cardMetadataHtml(card)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><section class="effect-row casting-rules"><b>施法规则</b><p>${esc(`${effects.payment} ${effects.targeting}`)}</p></section><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section></div>`;
 }
 
 export function renderBattle() {
