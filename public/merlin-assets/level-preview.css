@@ -100,6 +100,100 @@ body.modal-open {
   overflow: hidden;
 }
 
+.element-balance-panel {
+  margin-bottom: 16px;
+  padding: 15px 17px;
+  border: 1px solid #514157;
+  border-radius: 14px;
+  background: radial-gradient(circle at 0 0, #8b652420, transparent 34%), linear-gradient(145deg, #211a28, #131018);
+}
+
+.element-balance-panel > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.element-balance-panel header small,
+.confirm-balance > span {
+  color: #b58a43;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .15em;
+}
+
+.element-balance-panel h2 {
+  margin: 3px 0 0;
+  font: 700 18px Georgia, "Songti SC", serif;
+}
+
+.element-balance-panel header > span,
+.element-balance-panel > p {
+  color: #827589;
+  font-size: 9px;
+}
+
+.element-balance-panel > p {
+  margin: 10px 0 0;
+}
+
+.element-balance-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.element-balance-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--school, #74677d) 45%, #45394b);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--school, #74677d) 8%, #16121a);
+  font-size: 9px;
+}
+
+.element-balance-chip b {
+  color: #c9bdcd;
+  font-weight: 600;
+}
+
+.element-balance-chip strong {
+  color: #8bd6a9;
+  font-size: 10px;
+}
+
+.element-balance-chip.deficit strong {
+  color: #ed8478;
+}
+
+.element-balance-chip.variable strong {
+  color: #e6c66d;
+}
+
+.element-balance-empty {
+  color: #817486;
+  font-size: 9px;
+}
+
+.confirm-balance {
+  margin: 18px 0;
+  padding: 13px;
+  border: 1px solid #4a3b50;
+  border-radius: 11px;
+  background: #120f16;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+
 .decision-context {
   margin-top: 16px;
   overflow: hidden;
@@ -247,5 +341,21 @@ body.modal-open {
   .context-page {
     width: calc(50% - 3px);
     min-width: 0;
+  }
+
+  .element-balance-panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .element-balance-chip {
+    justify-content: space-between;
+    width: calc(50% - 4px);
+  }
+
+  .confirmation-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }

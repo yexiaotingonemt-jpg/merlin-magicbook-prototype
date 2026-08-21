@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=12";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=12";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=12";
-import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=12";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=12";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=12";
-import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, maxHp, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=12";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=12";
-import { eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=12";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=13";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=13";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=13";
+import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=13";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=13";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=13";
+import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, maxHp, missingBuildElements, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=13";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=13";
+import { elementBalanceHtml, eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=13";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -230,6 +230,31 @@ test("choice events expose the current elements, bound pages, levels, and candid
   assert.match(monoFit, /开局匹配：火1\/1/);
   const hybridFit = candidateFitHtml(CARD_BY_ID.get("HY-01"));
   assert.match(hybridFit, /火1\/1 · 水1\/1/);
+});
+
+test("grimoire element balance shows fixed deficits and best-to-worst ranges", () => {
+  const current = setState(freshState());
+  current.startElements = [];
+  current.deck = ["FI-02"];
+  current.collection = { "FI-02": 1 };
+  assert.deepEqual(theoreticalElementBalance(), [{ element: "fire", best: -1, worst: -1 }]);
+
+  current.startElements = ["fire", "water"];
+  current.deck = ["FI-01", "CO-20"];
+  current.collection = { "FI-01": 1, "CO-20": 1 };
+  const balance = theoreticalElementBalance();
+  assert.deepEqual(balance.find((entry) => entry.element === "water"), { element: "water", best: 1, worst: -2 });
+  assert.match(elementBalanceHtml(), /水元素<\/b><strong>\+1~-2/);
+});
+
+test("binding warns only when a card introduces a completely absent element school", () => {
+  const current = setState(freshState());
+  current.startElements = ["fire"];
+  current.deck = ["FI-02"];
+  current.collection = { "FI-02": 1, "EA-02": 1, "HY-01": 1, "CO-18": 1 };
+  assert.deepEqual(missingBuildElements(CARD_BY_ID.get("EA-02")), ["earth"]);
+  assert.deepEqual(missingBuildElements(CARD_BY_ID.get("HY-01")), ["water"]);
+  assert.deepEqual(missingBuildElements(CARD_BY_ID.get("CO-18")), []);
 });
 
 test("completed battles remain persisted until their result is confirmed", () => {

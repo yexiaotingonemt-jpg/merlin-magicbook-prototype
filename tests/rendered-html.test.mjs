@@ -41,7 +41,9 @@ test("ships exploration, deck building, battle and persistence", async () => {
   for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "enemyBattleStats", "enemyBattleElements", "enemyBattleStatuses", "enemyCurrentCard", "playerBookCount", "enemyBookCount"]) assert.match(game, new RegExp(`id="${id}"`));
   assert.doesNotMatch(game, /battleRestart|重新开打/);
   assert.doesNotMatch(game, /continueButton|继续探索/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=12"/);
+  assert.match(game, /id="elementBalance"/);
+  assert.match(game, /理论元素余缺/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=13"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -66,8 +68,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=12"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=12"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=13"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=13"/);
   assert.match(sources.ui, /export function eventDecisionFacts\(event\)/);
   assert.match(sources.ui, /dataset\.locked/);
   assert.match(sources.ui, /document\.body\.classList\.add\("modal-open"\)/);
@@ -77,6 +79,9 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.exploration, /if \(state\.chapterComplete\)[\s\S]*advanceChapter\(\)/);
   assert.doesNotMatch(sources.exploration, /export function continueExplore\(\)/);
   assert.doesNotMatch(sources.app, /continueExplore|continueButton/);
+  assert.match(sources.state, /export function theoreticalElementBalance\(/);
+  assert.match(sources.state, /export function missingBuildElements\(/);
+  assert.match(sources.app, /data-confirm-bind/);
   assert.doesNotMatch(sources.battle, /data-battle-retry|export function restartBattle/);
   assert.doesNotMatch(sources.app, /data-battle-retry|\brestartBattle\b/);
 });

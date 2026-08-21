@@ -1,5 +1,5 @@
-import { C, all, any, fixed, random, same } from "./core.js?v=12";
-import { state } from "./store.js?v=12";
+import { C, all, any, fixed, random, same } from "./core.js?v=13";
+import { state } from "./store.js?v=13";
 
 export const CARDS = [
   C("FI-01", "余烬召来", "fire", same("fire", 0), "无残响", "缺火时增加2火，否则增加1火并强化下一张火系攻击", "元素呼应·生成", { kind: "generator" }),

@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=12";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=12";
-import { EVENTS } from "./content.js?v=12";
-import { runtime, state } from "./store.js?v=12";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, crit as critStat } from "./state.js?v=12";
+import { $, ELEMENTS, esc } from "./core.js?v=13";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=13";
+import { EVENTS } from "./content.js?v=13";
+import { runtime, state } from "./store.js?v=13";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=13";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -33,6 +33,16 @@ export function deckCounts() {
   const counts = {};
   state.deck.forEach((id) => { const s = CARD_BY_ID.get(id)?.school; if (s) counts[s] = (counts[s] || 0) + 1; });
   return counts;
+}
+function signedElementAmount(amount) { return amount > 0 ? `+${amount}` : String(amount); }
+export function elementBalanceHtml(deck = state.deck) {
+  const balances = theoreticalElementBalance(deck);
+  if (!balances.length) return '<span class="element-balance-empty">暂无可计算的元素系</span>';
+  return balances.map(({ element, best, worst }) => {
+    const value = best === worst ? signedElementAmount(best) : `${signedElementAmount(best)}~${signedElementAmount(worst)}`;
+    const tone = worst >= 0 ? "surplus" : best < 0 ? "deficit" : "variable";
+    return `<span class="element-balance-chip ${element} ${tone}"><b>${ELEMENTS[element].icon} ${ELEMENTS[element].name}元素</b><strong>${value}</strong></span>`;
+  }).join("");
 }
 export function showView(name) {
   if (name !== "battle" && state.battle) { toast(state.battle.over ? "请先确认战斗结果。" : "战斗进行中，请先完成战斗。"); return; }
@@ -130,6 +140,7 @@ export function renderGrimoire() {
   const deckCards = state.deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean).filter((c) => cardMatches(c, search, school, costF));
   const warehouseCards = Object.keys(state.collection).filter((id) => !state.deck.includes(id)).map((id) => CARD_BY_ID.get(id)).filter(Boolean).filter((c) => cardMatches(c, search, school, costF));
   $("organizeTokens").innerHTML = `安全整理 <b>${state.organizeTokens}</b> 次`;
+  $("elementBalance").innerHTML = elementBalanceHtml();
   $("combatDeckCount").textContent = `${state.deck.length} / ${COMBAT_DECK_CAP} 页`;
   $("warehouseCount").textContent = `${Object.keys(state.collection).length - state.deck.length} 页`;
   $("combatDeckCards").innerHTML = deckCards.map((c) => spellRow(c, "deck")).join("") || '<p class="empty-copy">没有符合条件的战斗书页。</p>';

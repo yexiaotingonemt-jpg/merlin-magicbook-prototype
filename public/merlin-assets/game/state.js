@@ -1,10 +1,11 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=12";
-import { createStarterLoadout } from "./cards.js?v=12";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=12";
-import { setState, state } from "./store.js?v=12";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=13";
+import { CARD_BY_ID, createStarterLoadout } from "./cards.js?v=13";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=13";
+import { setState, state } from "./store.js?v=13";
 
 export const RUN_RULES_VERSION = 6;
 export const COMBAT_DECK_CAP = 10;
+export const COMBAT_ELEMENTS = ["fire", "water", "wind", "earth", "light", "dark"];
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
@@ -53,6 +54,70 @@ export function mainElement() {
   const counts = {};
   state.startElements.forEach((e) => { counts[e] = (counts[e] || 0) + 1; });
   return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "fire";
+}
+function configuredMainElement(elements) {
+  const counts = {};
+  elements.forEach((element) => { counts[element] = (counts[element] || 0) + 1; });
+  return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || "fire";
+}
+export function cardBuildElements(card) {
+  if (!card) return [];
+  const fixedElements = Object.keys(card.cost.parts || {}).filter((element) => COMBAT_ELEMENTS.includes(element));
+  if (fixedElements.length) return fixedElements;
+  return COMBAT_ELEMENTS.includes(card.school) ? [card.school] : [];
+}
+export function buildElementCoverage(deck = state.deck, startElements = state.startElements) {
+  const covered = new Set(startElements.filter((element) => COMBAT_ELEMENTS.includes(element)));
+  deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean).forEach((card) => cardBuildElements(card).forEach((element) => covered.add(element)));
+  return covered;
+}
+export function missingBuildElements(card, deck = state.deck, startElements = state.startElements) {
+  const covered = buildElementCoverage(deck, startElements);
+  return cardBuildElements(card).filter((element) => !covered.has(element));
+}
+export function theoreticalElementBalance(deck = state.deck, startElements = state.startElements) {
+  const cards = deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean);
+  const relevant = buildElementCoverage(deck, startElements);
+  const main = configuredMainElement(startElements);
+  if (cards.some((card) => ["refill", "index", "replay"].includes(card.kind))) relevant.add(main);
+  const ranges = Object.fromEntries([...relevant].map((element) => [element, { supplyMin: 0, supplyMax: 0, demandMin: 0, demandMax: 0 }]));
+  const rangeFor = (element) => ranges[element];
+  startElements.forEach((element) => { if (rangeFor(element)) { rangeFor(element).supplyMin += 1; rangeFor(element).supplyMax += 1; } });
+  cards.forEach((card) => {
+    if (card.kind === "generator" && rangeFor(card.school)) { rangeFor(card.school).supplyMin += 1; rangeFor(card.school).supplyMax += 2; }
+    if (card.kind === "generator-large" && rangeFor(card.school)) { const amount = card.generatorAmount || 3; rangeFor(card.school).supplyMin += amount; rangeFor(card.school).supplyMax += amount; }
+    if (card.kind === "meteor" && rangeFor("fire")) rangeFor("fire").supplyMax += 1;
+    if (card.kind === "refill" && rangeFor(main)) rangeFor(main).supplyMax += 2;
+    if (["index", "replay"].includes(card.kind) && rangeFor(main)) rangeFor(main).supplyMax += 1;
+  });
+  cards.forEach((card) => {
+    const cost = card.cost;
+    if (!cost.amount) return;
+    if (cost.type === "fixed") {
+      Object.entries(cost.parts || {}).forEach(([element, amount]) => { if (rangeFor(element)) { rangeFor(element).demandMin += amount; rangeFor(element).demandMax += amount; } });
+      return;
+    }
+    if (cost.type === "all" && cost.parts) {
+      const allowed = Object.entries(cost.parts).filter(([element]) => rangeFor(element));
+      const required = allowed.reduce((sum, [, amount]) => sum + amount, 0);
+      const flexible = Math.max(0, cost.amount - required);
+      allowed.forEach(([element, amount]) => {
+        rangeFor(element).demandMin += amount + (allowed.length === 1 ? flexible : 0);
+        rangeFor(element).demandMax += amount + flexible;
+      });
+      return;
+    }
+    const possible = [...relevant];
+    possible.forEach((element) => {
+      rangeFor(element).demandMin += possible.length === 1 ? cost.amount : 0;
+      rangeFor(element).demandMax += cost.amount;
+    });
+  });
+  return COMBAT_ELEMENTS.filter((element) => ranges[element]).map((element) => ({
+    element,
+    best: ranges[element].supplyMax - ranges[element].demandMin,
+    worst: ranges[element].supplyMin - ranges[element].demandMax,
+  }));
 }
 export function cardLevel(id) { return state.collection[id] || 0; }
 export function normalizeCombatDeck(deck = state.deck) {

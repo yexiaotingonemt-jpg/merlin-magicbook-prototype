@@ -1,10 +1,16 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=12";
-import { CARD_BY_ID } from "./cards.js?v=12";
-import { runtime, setState, state } from "./store.js?v=12";
-import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=12";
-import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=12";
-import { completeEvent, newTowerRun, resolveEvent } from "./exploration.js?v=12";
-import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=12";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=13";
+import { CARD_BY_ID } from "./cards.js?v=13";
+import { runtime, setState, state } from "./store.js?v=13";
+import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, missingBuildElements, saveState } from "./state.js?v=13";
+import { closeModal, elementBalanceHtml, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=13";
+import { completeEvent, newTowerRun, resolveEvent } from "./exploration.js?v=13";
+import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=13";
+
+function commitBinding(id) {
+  const result = bindCard(id);
+  if (result === "full") { toast(`战斗魔法书已达${COMBAT_DECK_CAP}页上限，《${CARD_BY_ID.get(id).name}》继续保留在仓库。`); return; }
+  if (result === "bound") { saveState(); renderGrimoire(); toast(`已将《${CARD_BY_ID.get(id).name}》装订到战斗魔法书。`); }
+}
 
 export function populateFilters() {
   const options = ['<option value="all">全部流派</option>', ...SCHOOL_ORDER.map((s) => `<option value="${s}">${ELEMENTS[s].name}系</option>`)].join("");
@@ -17,11 +23,18 @@ export function bindEvents() {
   document.addEventListener("click", (event) => {
     const view = event.target.closest("[data-view]")?.dataset.view; if (view) { showView(view); return; }
     const eventId = event.target.closest("[data-event]")?.dataset.event; if (eventId) { resolveEvent(eventId); return; }
+    const confirmedBind = event.target.closest("[data-confirm-bind]")?.dataset.confirmBind;
+    if (confirmedBind) { closeModal(true); commitBinding(confirmedBind); return; }
+    if (event.target.closest("[data-cancel-bind]")) { closeModal(true); return; }
     const bind = event.target.closest("[data-bind]")?.dataset.bind;
     if (bind) {
-      const result = bindCard(bind);
-      if (result === "full") { toast(`战斗魔法书已达${COMBAT_DECK_CAP}页上限，《${CARD_BY_ID.get(bind).name}》继续保留在仓库。`); return; }
-      if (result === "bound") { saveState(); renderGrimoire(); toast(`已将《${CARD_BY_ID.get(bind).name}》装订到战斗魔法书。`); }
+      const card = CARD_BY_ID.get(bind), missing = missingBuildElements(card);
+      if (missing.length) {
+        const names = missing.map((element) => `${ELEMENTS[element].icon}${ELEMENTS[element].name}元素`).join("、");
+        showModal(`<h2>装订新的元素系？</h2><p>《${card.name}》会引入当前起始元素和已装订书页中完全没有的 <b>${names}</b>。这可能扩大元素缺口，但不会禁止装订。</p><div class="confirm-balance"><span>装订后理论余缺</span><div class="element-balance-chips">${elementBalanceHtml([...state.deck, bind])}</div></div><div class="confirmation-actions"><button class="secondary" data-cancel-bind>返回调整</button><button class="primary" data-confirm-bind="${bind}">仍然装订</button></div>`);
+        return;
+      }
+      commitBinding(bind);
       return;
     }
     const unbind = event.target.closest("[data-unbind]")?.dataset.unbind;
