@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=20";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=20";
-import { EVENTS } from "./content.js?v=20";
-import { runtime, state } from "./store.js?v=20";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=20";
+import { $, ELEMENTS, esc } from "./core.js?v=21";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=21";
+import { EVENTS } from "./content.js?v=21";
+import { runtime, state } from "./store.js?v=21";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=21";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -70,6 +70,14 @@ export function elementBalanceHtml(deck = state.deck) {
     const tone = worst >= 0 ? "surplus" : best < 0 ? "deficit" : "variable";
     return `<span class="element-balance-chip ${element} ${tone}"><b>${ELEMENTS[element].icon} ${ELEMENTS[element].name}元素</b><strong>${value}</strong></span>`;
   }).join("");
+}
+export function damageForecastHtml(deck = state.deck, levelOverrides = {}, label = "调整后") {
+  const current = expectedDeckPerformance();
+  const next = expectedDeckPerformance(deck, state.startElements, levelOverrides);
+  const delta = next.damagePct - current.damagePct;
+  const tone = delta > 0 ? "improved" : delta < 0 ? "reduced" : "unchanged";
+  const deltaText = delta > 0 ? `+${delta}%` : `${delta}%`;
+  return `<span class="damage-forecast ${tone}"><b>${label} ${next.damagePct}%</b><small>较当前 ${deltaText} · 完整施法率 ${next.fullCastRate}%</small></span>`;
 }
 export function showView(name) {
   if (name !== "battle" && state.battle) { toast(state.battle.over ? "请先确认战斗结果。" : "战斗进行中，请先完成战斗。"); return; }
@@ -190,6 +198,9 @@ export function renderGrimoire() {
   const warehouseCards = Object.keys(state.collection).filter((id) => !state.deck.includes(id)).map((id) => CARD_BY_ID.get(id)).filter(Boolean).filter((c) => cardMatches(c, search, school, costF));
   $("organizeTokens").innerHTML = `安全整理 <b>${state.organizeTokens}</b> 次`;
   $("elementBalance").innerHTML = elementBalanceHtml();
+  const performance = expectedDeckPerformance();
+  $("expectedDamagePct").textContent = `${performance.damagePct}%`;
+  $("expectedFullCastRate").textContent = `完整施法率 ${performance.fullCastRate}%`;
   $("combatDeckCount").textContent = `${state.deck.length} / ${COMBAT_DECK_CAP} 页`;
   $("warehouseCount").textContent = `${warehouseCards.length} 页`;
   $("combatDeckCards").innerHTML = deckCards.map((c) => spellRow(c, "deck")).join("") || '<p class="empty-copy">没有符合条件的战斗书页。</p>';

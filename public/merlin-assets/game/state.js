@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=20";
-import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=20";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=20";
-import { setState, state } from "./store.js?v=20";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=21";
+import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=21";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=21";
+import { setState, state } from "./store.js?v=21";
 
 export const RUN_RULES_VERSION = 7;
 export const COMBAT_DECK_CAP = 10;
@@ -128,6 +128,144 @@ export function theoreticalElementBalance(deck = state.deck, startElements = sta
     best: ranges[element].supplyMax - ranges[element].demandMin,
     worst: ranges[element].supplyMin - ranges[element].demandMax,
   }));
+}
+
+const DAMAGE_ESTIMATE_RUNS = 180;
+const damageEstimateCache = new Map();
+
+function estimateHash(text) {
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function estimateRandom(seed) {
+  let value = seed || 1;
+  return () => {
+    value += 0x6D2B79F5;
+    let mixed = value;
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function estimateShuffle(items, randomValue) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(randomValue() * (index + 1));
+    [result[index], result[target]] = [result[target], result[index]];
+  }
+  return result;
+}
+
+function estimateLevel(id, overrides) {
+  return Math.max(1, Number(overrides[id] ?? cardLevel(id) ?? 1));
+}
+
+function estimateHits(card, full, level) {
+  let hits = typeof card.hits === "number" ? card.hits : Array.isArray(card.hits) ? (card.hits[0] + card.hits[1]) / 2 : 1;
+  if (!full && card.echoHits) hits = card.echoHits;
+  if (!full && Array.isArray(card.hits)) hits = Math.max(1, card.hits[0] - 1);
+  if (full && level >= 3 && hits > 1) hits += 1;
+  return hits;
+}
+
+function estimateDirectDamage(card, full, paidCount, level) {
+  const scale = 1 + Math.max(0, level - 1) * .1;
+  if (card.kind?.startsWith("total")) {
+    if (["total-earth", "total-light", "total-dark"].includes(card.kind)) return 0;
+    const amount = paidCount * 100 * (1 + paidCount / 5);
+    return (full ? Math.max(160, amount * (card.school === "hybrid" ? 1.1 : 1)) : (card.echoPct || 150)) * scale;
+  }
+  const hits = estimateHits(card, full, level);
+  let segment = Number(full ? card.pct : card.echoPct) || 0;
+  if (!segment) return 0;
+  if (full && Number.isFinite(card.lonePct)) segment = card.lonePct;
+  let total = 0;
+  for (let index = 0; index < hits; index += 1) total += segment * (full && card.loneRamp ? 1 + index * card.loneRamp : 1);
+  if (full && card.loneBonus) total *= 1 + card.loneBonus * (card.loneThreshold ? .5 : 1);
+  return total * scale;
+}
+
+function estimatePayment(card, elements, remaining, attuned, randomValue) {
+  const cost = attuned && card.cost.type === "fixed" && card.cost.amount ? { ...card.cost, parts: { [attuned]: card.cost.amount } } : card.cost;
+  if (card.basePage) {
+    const reserved = {};
+    remaining.filter((next) => next && !next.basePage && next.cost.type === "fixed").forEach((next) => {
+      Object.entries(next.cost.parts || {}).forEach(([element, amount]) => { reserved[element] = (reserved[element] || 0) + amount; });
+    });
+    const counts = elements.reduce((result, element) => ({ ...result, [element]: (result[element] || 0) + 1 }), {});
+    const index = elements.findIndex((element) => (counts[element] || 0) > (reserved[element] || 0));
+    return index >= 0 ? [index] : null;
+  }
+  if (!cost.amount) return [];
+  if (cost.type === "any") return elements.length >= cost.amount ? Array.from({ length: cost.amount }, (_, index) => index) : null;
+  if (cost.type === "random") return elements.length >= cost.amount ? estimateShuffle(elements.map((_, index) => index), randomValue).slice(0, cost.amount).sort((a, b) => a - b) : null;
+  if (cost.type === "fixed") {
+    const indices = [], used = new Set();
+    for (const [element, needed] of Object.entries(cost.parts || {})) {
+      const found = elements.map((value, index) => value === element && !used.has(index) ? index : -1).filter((index) => index >= 0).slice(0, needed);
+      if (found.length < needed) return null;
+      found.forEach((index) => { used.add(index); indices.push(index); });
+    }
+    return indices.sort((a, b) => a - b);
+  }
+  if (cost.type === "all") {
+    const allowed = cost.parts ? Object.keys(cost.parts) : null;
+    const counts = elements.reduce((result, element) => ({ ...result, [element]: (result[element] || 0) + 1 }), {});
+    if (cost.parts && Object.keys(cost.parts).some((element) => !counts[element])) return null;
+    const indices = elements.map((element, index) => (!allowed || allowed.includes(element)) ? index : -1).filter((index) => index >= 0);
+    return indices.length >= cost.amount ? indices : null;
+  }
+  return null;
+}
+
+export function expectedDeckPerformance(deck = state.deck, startElements = state.startElements, levelOverrides = {}) {
+  const cards = deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean);
+  const levels = Object.fromEntries(cards.map((card) => [card.id, estimateLevel(card.id, levelOverrides)]));
+  const signature = JSON.stringify([deck, startElements, levels, state.level, state.meta.poolBonus || 0]);
+  if (damageEstimateCache.has(signature)) return damageEstimateCache.get(signature);
+  const seed = estimateHash(signature);
+  const capacity = poolCap();
+  const main = configuredMainElement(startElements);
+  let totalDamage = 0, fullPaidCasts = 0, paidCastChecks = 0;
+  for (let run = 0; run < DAMAGE_ESTIMATE_RUNS; run += 1) {
+    const randomValue = estimateRandom(seed + Math.imul(run + 1, 2654435761));
+    const remaining = estimateShuffle(cards, randomValue);
+    const elements = startElements.slice(0, capacity);
+    let attuned = null;
+    while (remaining.length) {
+      const counts = elements.reduce((result, element) => ({ ...result, [element]: (result[element] || 0) + 1 }), {});
+      const generatorIndex = remaining.findIndex((card) => card.kind === "generator" && !counts[card.school]);
+      const drawIndex = generatorIndex >= 0 ? generatorIndex : Math.floor(randomValue() * remaining.length);
+      const [card] = remaining.splice(drawIndex, 1);
+      const payment = estimatePayment(card, elements, remaining, attuned, randomValue);
+      const full = Boolean(payment);
+      const paid = full ? payment.map((index) => elements[index]) : [];
+      if (card.cost.amount > 0) { paidCastChecks += 1; if (full) fullPaidCasts += 1; }
+      if (full) [...payment].sort((a, b) => b - a).forEach((index) => elements.splice(index, 1));
+      const level = levels[card.id];
+      totalDamage += estimateDirectDamage(card, full, paid.length, level);
+      const add = (element, amount) => { while (amount-- > 0 && elements.length < capacity) elements.push(element); };
+      if (card.kind === "generator") add(card.school, counts[card.school] ? 1 : 2);
+      if (card.kind === "generator-large") add(card.school, card.generatorAmount || 3);
+      if (card.kind === "refill") add(main, Math.min(2, Math.max(0, startElements.filter((element) => element === main).length - elements.filter((element) => element === main).length)));
+      if (card.kind === "attune") attuned = main;
+      if (full && level >= 6 && paid[0] && randomValue() < .2) add(paid[0], 1);
+    }
+  }
+  const result = {
+    damagePct: Math.round(totalDamage / DAMAGE_ESTIMATE_RUNS),
+    fullCastRate: paidCastChecks ? Math.round(fullPaidCasts / paidCastChecks * 100) : 100,
+    samples: DAMAGE_ESTIMATE_RUNS,
+  };
+  if (damageEstimateCache.size > 120) damageEstimateCache.clear();
+  damageEstimateCache.set(signature, result);
+  return result;
 }
 export function cardLevel(id) { return CARD_BY_ID.get(id)?.basePage ? 1 : state.collection[id] || 0; }
 export function normalizeCombatDeck(deck = state.deck) {

@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=20";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=20";
-import { runtime, state } from "./store.js?v=20";
-import { advanceChapter, cardLevel, COMBAT_DECK_CAP, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=20";
-import { cardCostHtml, cardMetadataHtml, closeModal, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=20";
-import { startBattle, stopBattle } from "./battle.js?v=20";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=21";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=21";
+import { runtime, state } from "./store.js?v=21";
+import { advanceChapter, cardLevel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=21";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=21";
+import { startBattle, stopBattle } from "./battle.js?v=21";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -30,9 +30,10 @@ function startElementCounts() {
 }
 export function decisionContextHtml() {
   const counts = startElementCounts();
+  const performance = expectedDeckPerformance();
   const elements = Object.entries(counts).map(([element, amount]) => `<span class="context-element ${element}">${ELEMENTS[element].icon} ${ELEMENTS[element].name} ×${amount}</span>`).join("") || '<span class="context-empty">暂无起始元素</span>';
   const pages = state.deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean).map((card) => `<span class="context-page ${card.school}">${cardMetadataHtml(card)}<b>${esc(card.name)}</b>${cardCostHtml(card, true)}<small>Lv.${cardLevel(card.id)}</small></span>`).join("") || '<span class="context-empty">当前没有已装订书页</span>';
-  return `<section class="decision-context" aria-label="当前构筑"><header><div><small>BUILD REFERENCE</small><b>当前构筑</b></div><span>用于本次选择，事件确认后立即结算</span></header><div class="decision-context-grid"><div><h3>起始元素 <b>${state.startElements.length} / ${slotCap()}</b></h3><div class="context-elements">${elements}</div></div><div><h3>已装订书页 <b>${state.deck.length} / ${COMBAT_DECK_CAP}</b></h3><div class="context-pages">${pages}</div></div></div></section>`;
+  return `<section class="decision-context" aria-label="当前构筑"><header><div><small>BUILD REFERENCE</small><b>当前构筑</b></div><span>预期直伤 <b>${performance.damagePct}%</b> · 完整施法率 ${performance.fullCastRate}%</span></header><div class="decision-context-grid"><div><h3>起始元素 <b>${state.startElements.length} / ${slotCap()}</b></h3><div class="context-elements">${elements}</div></div><div><h3>已装订书页 <b>${state.deck.length} / ${COMBAT_DECK_CAP}</b></h3><div class="context-pages">${pages}</div></div></div></section>`;
 }
 export function candidateFitHtml(card) {
   const counts = startElementCounts();
@@ -84,40 +85,51 @@ export function replacePageWithReward(card, outgoingId) {
   }
   return `《${card.name}》替换了《${CARD_BY_ID.get(outgoingId).name}》；旧书页${CARD_BY_ID.get(outgoingId).basePage ? "回归基础页库" : "已收入仓库"}`;
 }
-function confirmReplacement(card, outgoingId, onReplace, locked) {
+function confirmReplacement(card, outgoingId, onReplace, locked, onActionBack) {
   const remainingDeck = state.deck.filter((id) => id !== outgoingId);
+  const previewDeck = state.deck.map((id) => id === outgoingId ? card.id : id);
   const missing = missingBuildElements(card, remainingDeck);
   if (!missing.length) { onReplace(outgoingId); return; }
   const names = missing.map((element) => `${ELEMENTS[element].icon}${ELEMENTS[element].name}元素`).join("、");
-  showModal(`<h2>替换后将引入新元素系</h2><p>《${card.name}》会引入当前起始元素和替换后魔法书中完全没有的 <b>${names}</b>。这可能扩大元素缺口，但不会禁止装订。</p><div class="confirm-balance"><span>替换后理论余缺</span><div class="element-balance-chips">${elementBalanceHtml([...remainingDeck, card.id])}</div></div><div class="confirmation-actions"><button class="secondary" data-back-replace>返回选择</button><button class="primary" data-confirm-replace>仍然替换</button></div>`, locked);
+  showModal(`<h2>替换后将引入新元素系</h2><p>《${card.name}》会引入当前起始元素和替换后魔法书中完全没有的 <b>${names}</b>。这可能扩大元素缺口，但不会禁止装订。</p><div class="confirm-balance"><span>替换后理论余缺</span><div class="element-balance-chips">${elementBalanceHtml(previewDeck)}</div>${damageForecastHtml(previewDeck, {}, "替换后")}</div><div class="confirmation-actions"><button class="secondary" data-back-replace>返回选择</button><button class="primary" data-confirm-replace>仍然替换</button></div>`, locked);
   $("modalContent").onclick = (event) => {
-    if (event.target.closest("[data-back-replace]")) { showReplacementModal(card, onReplace, locked); return; }
+    if (event.target.closest("[data-back-replace]")) { showReplacementModal(card, onReplace, locked, onActionBack); return; }
     if (event.target.closest("[data-confirm-replace]")) onReplace(outgoingId);
   };
 }
-export function showReplacementModal(card, onReplace, locked = false) {
-  showModal(`<h2>选择要替换的书页</h2><p>魔法书固定为${COMBAT_DECK_CAP}页。新页占据所选槽位；被替换的非基础书页保留等级并进入仓库。</p>${decisionContextHtml()}<div class="choice-grid">${state.deck.map((id) => { const page = CARD_BY_ID.get(id); return `<button class="choice-button ${page.school}" data-replace-page="${id}">${cardMetadataHtml(page)}<h3>${page.name}</h3>${cardCostHtml(page)}<small>${page.basePage ? "基础页" : `Lv.${cardLevel(id)}`}</small></button>`; }).join("")}</div>`, locked);
+export function showReplacementModal(card, onReplace, locked = false, onActionBack = null) {
+  const back = onActionBack ? '<div class="modal-step-actions"><button class="secondary" data-back-acquire>← 返回选择处理方式</button></div>' : "";
+  showModal(`<h2>选择要替换的书页</h2><p>魔法书固定为${COMBAT_DECK_CAP}页。新页占据所选槽位；被替换的非基础书页保留等级并进入仓库。</p>${back}${decisionContextHtml()}<div class="choice-grid">${state.deck.map((id) => { const page = CARD_BY_ID.get(id), previewDeck = state.deck.map((currentId) => currentId === id ? card.id : currentId); return `<button class="choice-button ${page.school}" data-replace-page="${id}">${cardMetadataHtml(page)}<h3>${page.name}</h3>${cardCostHtml(page)}<small>${page.basePage ? "基础页" : `Lv.${cardLevel(id)}`}</small>${damageForecastHtml(previewDeck, {}, "替换后")}</button>`; }).join("")}</div>`, locked);
   $("modalContent").onclick = (event) => {
+    if (event.target.closest("[data-back-acquire]") && onActionBack) { onActionBack(); return; }
     const outgoingId = event.target.closest("[data-replace-page]")?.dataset.replacePage;
-    if (outgoingId) confirmReplacement(card, outgoingId, onReplace, locked);
+    if (outgoingId) confirmReplacement(card, outgoingId, onReplace, locked, onActionBack);
   };
 }
 export function showAcquiredPageModal(card) {
   const upgradeTargets = state.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage && cardLevel(id) < 6);
-  showModal(`<h2>获得《${card.name}》</h2><p>新书页不会自动改变构筑。你可以替换当前一页、将它作为材料升级一张已装订咒语，或收入仓库。</p>${decisionContextHtml()}<div class="choice-grid acquire-actions"><button class="choice-button ${card.school}" data-acquire-action="replace">${cardMetadataHtml(card)}<h3>替换一页</h3><p>装订新书页，并将被替换的非基础页收入仓库。</p></button><button class="choice-button arcane" data-acquire-action="upgrade" ${upgradeTargets.length ? "" : "disabled"}><span class="spell-meta arcane">✶ 奥术 · 书页精炼</span><h3>升级一页</h3><p>${upgradeTargets.length ? "消耗这张新书页，选择一张未满级的已装订咒语升级。" : "当前没有可以升级的已装订咒语。"}</p></button><button class="choice-button arcane" data-acquire-action="store"><span class="spell-meta arcane">✶ 奥术 · 暂存</span><h3>收入仓库</h3><p>保留新书页，不改变当前10页构筑。</p></button></div>`, false);
+  showModal(`<h2>获得《${card.name}》</h2><p>新书页不会自动改变构筑。你可以替换当前一页、将它作为材料升级一张已装订咒语，或收入仓库；进入下一步后仍可返回重新选择处理方式。</p>${decisionContextHtml()}<div class="choice-grid acquire-actions"><button class="choice-button ${card.school}" data-acquire-action="replace">${cardMetadataHtml(card)}<h3>替换一页</h3><p>装订新书页，并将被替换的非基础页收入仓库。</p></button><button class="choice-button arcane" data-acquire-action="upgrade" ${upgradeTargets.length ? "" : "disabled"}><span class="spell-meta arcane">✶ 奥术 · 书页精炼</span><h3>升级一页</h3><p>${upgradeTargets.length ? "消耗这张新书页，选择一张未满级的已装订咒语升级。" : "当前没有可以升级的已装订咒语。"}</p></button><button class="choice-button arcane" data-acquire-action="store"><span class="spell-meta arcane">✶ 奥术 · 暂存</span><h3>收入仓库</h3><p>保留新书页，不改变当前10页构筑。</p></button></div>`, false);
   $("modalContent").onclick = (event) => {
     const action = event.target.closest("[data-acquire-action]")?.dataset.acquireAction;
-    if (action === "store") { completeEvent("书页入库", storeAcquiredPage(card)); return; }
+    if (action === "store") {
+      showModal(`<h2>将《${card.name}》收入仓库？</h2><p>当前10页魔法书不会改变；确认后完成本次事件。</p>${damageForecastHtml(state.deck, {}, "保持") }<div class="confirmation-actions"><button class="secondary" data-back-acquire>返回选择处理方式</button><button class="primary" data-confirm-store>确认收入仓库</button></div>`, false);
+      $("modalContent").onclick = (storeEvent) => {
+        if (storeEvent.target.closest("[data-back-acquire]")) { showAcquiredPageModal(card); return; }
+        if (storeEvent.target.closest("[data-confirm-store]")) completeEvent("书页入库", storeAcquiredPage(card));
+      };
+      return;
+    }
     if (action === "replace") {
       showReplacementModal(card, (outgoingId) => {
         const result = replacePageWithReward(card, outgoingId);
         if (result) completeEvent("替换完成", result);
-      }, false);
+      }, false, () => showAcquiredPageModal(card));
       return;
     }
     if (action === "upgrade" && upgradeTargets.length) {
-      showModal(`<h2>选择要升级的书页</h2><p>《${card.name}》将作为升级材料消耗，不会进入收藏。</p>${decisionContextHtml()}<div class="choice-grid">${upgradeTargets.map((id) => { const target = CARD_BY_ID.get(id); return `<button class="choice-button ${target.school}" data-upgrade-reward="${id}">${cardMetadataHtml(target)}<h3>${target.name}</h3><p>Lv.${cardLevel(id)} → Lv.${cardLevel(id) + 1}</p></button>`; }).join("")}</div>`, false);
+      showModal(`<h2>选择要升级的书页</h2><p>《${card.name}》将作为升级材料消耗，不会进入收藏。</p><div class="modal-step-actions"><button class="secondary" data-back-acquire>← 返回选择处理方式</button></div>${decisionContextHtml()}<div class="choice-grid">${upgradeTargets.map((id) => { const target = CARD_BY_ID.get(id), nextLevel = cardLevel(id) + 1; return `<button class="choice-button ${target.school}" data-upgrade-reward="${id}">${cardMetadataHtml(target)}<h3>${target.name}</h3><p>Lv.${cardLevel(id)} → Lv.${nextLevel}</p>${damageForecastHtml(state.deck, { [id]: nextLevel }, "升级后")}</button>`; }).join("")}</div>`, false);
       $("modalContent").onclick = (upgradeEvent) => {
+        if (upgradeEvent.target.closest("[data-back-acquire]")) { showAcquiredPageModal(card); return; }
         const targetId = upgradeEvent.target.closest("[data-upgrade-reward]")?.dataset.upgradeReward;
         if (!targetId) return;
         const result = upgradePageWithReward(card, targetId);

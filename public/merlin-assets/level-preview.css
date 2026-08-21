@@ -175,15 +175,28 @@ body.modal-open {
   overflow: hidden;
 }
 
-.element-balance-panel {
+.build-evaluation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr);
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.element-balance-panel,
+.damage-estimate-panel {
   padding: 15px 17px;
   border: 1px solid #514157;
   border-radius: 14px;
   background: radial-gradient(circle at 0 0, #8b652420, transparent 34%), linear-gradient(145deg, #211a28, #131018);
 }
 
-.element-balance-panel > header {
+.damage-estimate-panel {
+  border-color: #5a4e38;
+  background: radial-gradient(circle at 100% 0, #c79b3222, transparent 40%), linear-gradient(145deg, #211c23, #131018);
+}
+
+.element-balance-panel > header,
+.damage-estimate-panel > header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -191,6 +204,7 @@ body.modal-open {
 }
 
 .element-balance-panel header small,
+.damage-estimate-panel header small,
 .confirm-balance > span {
   color: #b58a43;
   font-size: 8px;
@@ -198,19 +212,74 @@ body.modal-open {
   letter-spacing: .15em;
 }
 
-.element-balance-panel h2 {
+.element-balance-panel h2,
+.damage-estimate-panel h2 {
   margin: 3px 0 0;
   font: 700 18px Georgia, "Songti SC", serif;
 }
 
 .element-balance-panel header > span,
-.element-balance-panel > p {
+.element-balance-panel > p,
+.damage-estimate-panel header > span,
+.damage-estimate-panel > p {
   color: #827589;
   font-size: 9px;
 }
 
-.element-balance-panel > p {
+.element-balance-panel > p,
+.damage-estimate-panel > p {
   margin: 10px 0 0;
+  line-height: 1.55;
+}
+
+.damage-estimate-result {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.damage-estimate-result strong {
+  color: #f0ce70;
+  font: 800 28px/1 Georgia, serif;
+}
+
+.damage-estimate-result span {
+  color: #a99bad;
+  font-size: 9px;
+}
+
+.damage-forecast {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  padding: 8px 9px;
+  border: 1px solid #4c4052;
+  border-radius: 8px;
+  background: #120f16;
+}
+
+.damage-forecast b {
+  position: static;
+  color: #d9c47b;
+  font-size: 9px;
+}
+
+.damage-forecast small {
+  position: static;
+  color: #918497;
+  font-size: 8px;
+}
+
+.damage-forecast.improved b,
+.damage-forecast.improved small { color: #7ed4a2; }
+.damage-forecast.reduced b,
+.damage-forecast.reduced small { color: #e98179; }
+
+@media (max-width: 900px) {
+  .build-evaluation-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .element-balance-chips {
@@ -267,6 +336,16 @@ body.modal-open {
   justify-content: flex-end;
   gap: 9px;
   margin-top: 20px;
+}
+
+.modal-step-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin: 12px 0 2px;
+}
+
+.modal-step-actions button {
+  cursor: pointer;
 }
 
 .decision-context {
@@ -518,7 +597,8 @@ body.modal-open {
     min-width: 0;
   }
 
-  .element-balance-panel > header {
+  .element-balance-panel > header,
+  .damage-estimate-panel > header {
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;

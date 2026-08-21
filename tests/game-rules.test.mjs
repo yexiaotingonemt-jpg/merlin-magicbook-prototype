@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=20";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=20";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=20";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=20";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=20";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=20";
-import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=20";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=20";
-import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=20";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=21";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=21";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=21";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=21";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=21";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=21";
+import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=21";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=21";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=21";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -321,6 +321,26 @@ test("grimoire element balance shows fixed deficits and best-to-worst ranges", (
   const balance = theoreticalElementBalance();
   assert.deepEqual(balance.find((entry) => entry.element === "water"), { element: "water", best: 1, worst: -2 });
   assert.match(elementBalanceHtml(), /水元素<\/b><strong>\+1~-2/);
+});
+
+test("expected deck damage is stable, element-aware, and responds to upgrades", () => {
+  const current = setState(freshState());
+  current.deck = [...BASE_PAGE_IDS];
+  current.collection = {};
+  current.startElements = [];
+  assert.deepEqual(expectedDeckPerformance(), { damagePct: 300, fullCastRate: 0, samples: 180 });
+  assert.deepEqual(expectedDeckPerformance(), expectedDeckPerformance());
+
+  current.startElements = ["fire", "water"];
+  assert.equal(expectedDeckPerformance().damagePct, 360);
+  assert.equal(expectedDeckPerformance().fullCastRate, 20);
+
+  current.deck = [...BASE_PAGE_IDS.slice(0, 9), "CO-18"];
+  current.collection = { "CO-18": 1 };
+  const before = expectedDeckPerformance();
+  const after = expectedDeckPerformance(current.deck, current.startElements, { "CO-18": 2 });
+  assert.ok(after.damagePct > before.damagePct);
+  assert.match(damageForecastHtml(current.deck, { "CO-18": 2 }, "升级后"), /升级后 \d+%[\s\S]*较当前 \+\d+%/);
 });
 
 test("binding warns only when a card introduces a completely absent element school", () => {
