@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=18";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=18";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=18";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=18";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=18";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=18";
-import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=18";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=18";
-import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=18";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=19";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=19";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=19";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=19";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=19";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=19";
+import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=19";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=19";
+import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=19";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -335,9 +335,40 @@ test("binding warns only when a card introduces a completely absent element scho
 
 test("completed battles remain persisted until their result is confirmed", () => {
   const current = setState(freshState());
-  current.battle = { mode: "pve", over: true, won: true, reward: { exp: 43, points: 29 } };
+  current.hp = 0;
+  current.battle = { mode: "pve", over: true, won: false };
   assert.equal(serializeState().battle.over, true);
-  assert.equal(serializeState().battle.won, true);
+  assert.equal(serializeState().battle.won, false);
+
+  const persisted = serializeState();
+  assert.equal(hydrate(persisted), true);
+  assert.equal(state.hp, 0);
+  assert.equal(state.battle.won, false);
+});
+
+test("confirming a PVE defeat resets the tower while preserving permanent progress", () => {
+  const current = setState(freshState());
+  current.chapter = 4;
+  current.floor = 4;
+  current.level = 5;
+  current.exp = 120;
+  current.hp = 0;
+  current.score = 777;
+  current.meta.attack = 12;
+  current.battle = { mode: "pve", over: true, won: false };
+  const next = resetTowerRun();
+  assert.equal(next, state);
+  assert.equal(state.chapter, 1);
+  assert.equal(state.floor, 1);
+  assert.equal(state.level, 1);
+  assert.equal(state.exp, 0);
+  assert.equal(state.hp, 250);
+  assert.equal(state.score, 777);
+  assert.equal(state.meta.attack, 12);
+  assert.equal(state.battle, null);
+  assert.equal(state.deck.length, 10);
+  assert.equal(state.startElements.length, 2);
+  assert.equal(state.events.length, 3);
 });
 
 test("PVP mirror exposes its snapshot spellbook and starting elements", () => {

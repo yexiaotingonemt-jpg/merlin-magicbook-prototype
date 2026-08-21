@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=18";
-import { CARD_BY_ID } from "./cards.js?v=18";
-import { runtime, setState, state } from "./store.js?v=18";
-import { freshState, generateEvents, hydrate, loadLocal, organizeBoundPage, replaceBoundPage, saveState } from "./state.js?v=18";
-import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=18";
-import { completeEvent, newTowerRun, resolveEvent, showReplacementModal } from "./exploration.js?v=18";
-import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=18";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=19";
+import { CARD_BY_ID } from "./cards.js?v=19";
+import { runtime, setState, state } from "./store.js?v=19";
+import { freshState, generateEvents, hydrate, loadLocal, organizeBoundPage, replaceBoundPage, saveState } from "./state.js?v=19";
+import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=19";
+import { completeEvent, newTowerRun, resolveEvent, restartAfterPveDefeat, showReplacementModal } from "./exploration.js?v=19";
+import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=19";
 
 export function populateFilters() {
   const options = ['<option value="all">全部流派</option>', ...SCHOOL_ORDER.map((s) => `<option value="${s}">${ELEMENTS[s].name}系</option>`)].join("");
@@ -15,7 +15,13 @@ export function showHelp() {
 }
 export function bindEvents() {
   document.addEventListener("click", (event) => {
-    const view = event.target.closest("[data-view]")?.dataset.view; if (view) { showView(view); return; }
+    const view = event.target.closest("[data-view]")?.dataset.view;
+    if (view) {
+      if (state.battle?.mode === "pve" && state.battle.over && !state.battle.won) {
+        showView("battle"); toast("请先确认本轮法师塔的失败结算。"); return;
+      }
+      showView(view); return;
+    }
     const eventId = event.target.closest("[data-event]")?.dataset.event; if (eventId) { resolveEvent(eventId); return; }
     const bind = event.target.closest("[data-bind]")?.dataset.bind;
     if (bind) {
@@ -41,8 +47,9 @@ export function bindEvents() {
     if (statusSide) { toggleBattleStatusPanel(statusSide); return; }
     if (event.target.closest("[data-battle-finish]")) {
       const { mode, won, reward } = state.battle;
+      if (mode === "pve" && !won) { restartAfterPveDefeat(); return; }
       const title = mode === "pvp" ? won ? "镜像对决胜利" : "镜像对决失败" : won ? "元素试炼完成" : "元素试炼失败";
-      const copy = won ? `奖励已领取：${reward.exp}经验与${reward.points}积分。${mode === "pve" ? "当前生命在本章继承。" : "镜像疲劳状态已更新。"}` : `本次事件已结束，不获得经验或积分。${mode === "pve" ? "生命降至1点并继续探索。" : "镜像疲劳状态已更新。"}`;
+      const copy = won ? `奖励已领取：${reward.exp}经验与${reward.points}积分。${mode === "pve" ? "当前生命在本章继承。" : "镜像疲劳状态已更新。"}` : "本次事件已结束，不获得经验或积分。镜像疲劳状态已更新。";
       completeEvent(title, copy); return;
     }
   });

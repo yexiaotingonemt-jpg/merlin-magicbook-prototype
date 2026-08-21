@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=18";
-import { CARD_BY_ID } from "./cards.js?v=18";
-import { runtime, state } from "./store.js?v=18";
-import { attack, battleRewards, cardLevel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=18";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=18";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=19";
+import { CARD_BY_ID } from "./cards.js?v=19";
+import { runtime, state } from "./store.js?v=19";
+import { attack, battleRewards, cardLevel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=19";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=19";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -454,7 +454,8 @@ export function battleTick(manual = false) {
 export function scheduleBattle(delay = 820 / battleSpeed) { clearTimeout(battleTimer); battleTimer = setTimeout(() => battleTick(), delay); }
 export function endBattle(won) {
   const b = state.battle; b.over = true; b.won = won; clearTimeout(battleTimer);
-  if (b.mode === "pve") state.hp = won ? Math.max(1, b.playerHp) : 1;
+  if (!won) b.playerHp = 0;
+  if (b.mode === "pve") state.hp = won ? Math.max(1, b.playerHp) : 0;
   if (b.mode === "pvp") {
     b.enemyFatigue = b.enemies.every((enemy) => enemy.hp <= 0) ? 0 : Math.max(0, b.enemyFatigue - 20);
     if (b.enemyFatigue === 0) {
@@ -553,7 +554,15 @@ export function renderBattle() {
   $("enemyBookNote").innerHTML = b.mode === "pvp" ? `<details><summary>查看敌方装订书页</summary><p>${enemyBook.map((id) => esc(CARD_BY_ID.get(id)?.name || "未知书页")).join("、") || "没有可识别书页"}</p><small>当前镜像战斗仍使用快照属性与基础术式结算；书页效果将在后续战斗规则中接入。</small></details>` : "该NPC没有战斗魔法书，每次行动使用无附加卡牌效果的普通攻击；怪物被动仍在右侧状态区独立生效。";
   $("battleLog").innerHTML = b.logs.map((log) => `<div class="log-entry ${log.tone}"><b>#${log.n}</b><span>${esc(log.message)}</span></div>`).join("");
   $("battleSummary").hidden = !b.over;
-  if (b.over) $("battleSummary").innerHTML = b.won ? `<h2>战斗胜利</h2><p>奖励已直接到账：${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">确认结果并继续</button>` : `<h2>挑战失败</h2><p>本次事件已经结算，不能重新挑战；失败不会获得经验或积分。</p><button data-battle-finish="loss">确认结果并继续</button>`;
+  if (b.over) {
+    if (b.won) {
+      $("battleSummary").innerHTML = `<h2>战斗胜利</h2><p>奖励已直接到账：${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">确认结果并继续</button>`;
+    } else if (b.mode === "pve") {
+      $("battleSummary").innerHTML = `<h2>法师塔挑战失败</h2><p>本轮已经完成结算：到达第 ${state.chapter} 章，塔内等级 Lv.${state.level}；本场战斗不获得经验或积分。此前获得的积分与场外商店成长保留，塔内等级、经验、生命、元素、魔法书和咒语成长将在确认后重置。</p><button data-battle-finish="pve-loss">确认结算并重新开始</button>`;
+    } else {
+      $("battleSummary").innerHTML = '<h2>镜像挑战失败</h2><p>本次镜像事件已经结算，不能重新挑战；失败不会获得经验或积分，镜像疲劳状态已更新。</p><button data-battle-finish="pvp-loss">确认结果并继续</button>';
+    }
+  }
 }
 
 export function toggleBattleStatusPanel(side) {

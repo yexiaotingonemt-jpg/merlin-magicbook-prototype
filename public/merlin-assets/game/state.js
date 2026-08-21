@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=18";
-import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=18";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=18";
-import { setState, state } from "./store.js?v=18";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=19";
+import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=19";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=19";
+import { setState, state } from "./store.js?v=19";
 
 export const RUN_RULES_VERSION = 7;
 export const COMBAT_DECK_CAP = 10;
@@ -34,6 +34,13 @@ export function freshTowerRun(current = state) {
     poolBonus: current.meta.poolBonus, passiveLevels: Object.fromEntries(Object.entries(current.meta.passiveLevels || {}).filter(([id]) => ["attack", "defense", "maxHp"].includes(id))),
   };
   return freshState({ score: current.score, meta: permanentMeta });
+}
+
+export function resetTowerRun(current = state) {
+  const next = freshTowerRun(current);
+  setState(next);
+  generateEvents();
+  return next;
 }
 
 export function maxHp(level = state.level) { return Math.round((250 + (level - 1) * 20 + state.meta.maxHp) * (1 + state.meta.hpPct / 100)); }
@@ -252,7 +259,8 @@ export function hydrate(data) {
     if (state.chapterComplete) advanceChapter();
   }
   if (!state.events?.length && !state.eventResult && !state.runComplete) generateEvents();
-  state.hp = clamp(state.hp, 1, maxHp());
+  const awaitingPveRestart = state.battle?.mode === "pve" && state.battle.over && !state.battle.won;
+  state.hp = awaitingPveRestart ? 0 : clamp(state.hp, 1, maxHp());
   return true;
 }
 export function loadLocal() {

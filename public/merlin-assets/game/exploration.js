@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=18";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=18";
-import { runtime, setState, state } from "./store.js?v=18";
-import { advanceChapter, cardLevel, COMBAT_DECK_CAP, freshTowerRun, gainExp, generateEvents, maxHp, missingBuildElements, replaceBoundPage, saveState, settleExplorationTurn, slotCap } from "./state.js?v=18";
-import { cardCostHtml, cardMetadataHtml, closeModal, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=18";
-import { startBattle, stopBattle } from "./battle.js?v=18";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=19";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=19";
+import { runtime, state } from "./store.js?v=19";
+import { advanceChapter, cardLevel, COMBAT_DECK_CAP, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=19";
+import { cardCostHtml, cardMetadataHtml, closeModal, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=19";
+import { startBattle, stopBattle } from "./battle.js?v=19";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -183,7 +183,17 @@ export function showElementEvent() {
   };
 }
 export function newTowerRun() {
-  setState(freshTowerRun());
+  resetTowerRun();
   const schools = state.startElements.map((element) => ELEMENTS[element].name).join("、");
-  generateEvents(); saveState(); closeModal(true); showView("explore"); toast(`已重新进入法师塔；10页基础魔法书中有3页替换为${schools}初始元素牌，起始元素各1个。`);
+  saveState(); closeModal(true); showView("explore"); toast(`已重新进入法师塔；10页基础魔法书中有3页替换为${schools}初始元素牌，起始元素各1个。`);
+}
+
+export function restartAfterPveDefeat() {
+  if (state.battle?.mode !== "pve" || !state.battle.over || state.battle.won) return false;
+  const failedChapter = state.chapter;
+  resetTowerRun();
+  runtime.currentView = "explore";
+  saveState(); closeModal(true); showView("explore");
+  toast(`第${failedChapter}章挑战失败，本轮结算已确认，新的法师塔挑战已经开始。`);
+  return true;
 }
