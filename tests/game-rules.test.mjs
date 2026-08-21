@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=21";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=21";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=21";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=21";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=21";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=21";
-import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=21";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=21";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=21";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=22";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=22";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=22";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=22";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=22";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=22";
+import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=22";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=22";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=22";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -351,6 +351,30 @@ test("binding warns only when a card introduces a completely absent element scho
   assert.deepEqual(missingBuildElements(CARD_BY_ID.get("EA-02")), ["earth"]);
   assert.deepEqual(missingBuildElements(CARD_BY_ID.get("HY-01")), ["water"]);
   assert.deepEqual(missingBuildElements(CARD_BY_ID.get("CO-18")), []);
+});
+
+test("boiling laboratory only transforms into current-element mono spells with the same cost", () => {
+  const current = setState(freshState());
+  const oldCard = CARD_BY_ID.get("FI-02");
+  current.startElements = ["fire", "water", "water"];
+  current.collection = { [oldCard.id]: 3 };
+  current.deck = [...BASE_PAGE_IDS];
+  current.deck[4] = oldCard.id;
+
+  const options = transmutationOptions(oldCard);
+  assert.ok(options.length > 0);
+  assert.ok(options.every((card) => card.school === "water"));
+  assert.ok(options.every((card) => card.cost.type === oldCard.cost.type && card.cost.amount === oldCard.cost.amount));
+  assert.ok(options.every((card) => !card.id.startsWith("HY-") && !card.id.startsWith("CO-")));
+
+  const replacement = options[0];
+  assert.deepEqual(transmuteLearnedSpell(oldCard, replacement), { level: 3, deckIndex: 4, bound: true });
+  assert.equal(current.collection[oldCard.id], undefined);
+  assert.equal(current.collection[replacement.id], 3);
+  assert.equal(current.deck[4], replacement.id);
+
+  current.startElements = [replacement.school];
+  assert.deepEqual(transmutationOptions(replacement), []);
 });
 
 test("completed battles remain persisted until their result is confirmed", () => {

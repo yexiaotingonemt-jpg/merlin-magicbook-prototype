@@ -43,7 +43,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=21"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=22"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -69,8 +69,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=21"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=21"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=22"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=22"/);
   assert.match(sources.ui, /export function eventDecisionFacts\(event\)/);
   assert.match(sources.ui, /export function cardCostHtml\(card/);
   assert.match(sources.ui, /export function cardMetadataHtml\(card/);

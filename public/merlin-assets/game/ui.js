@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=21";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=21";
-import { EVENTS } from "./content.js?v=21";
-import { runtime, state } from "./store.js?v=21";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=21";
+import { $, ELEMENTS, esc } from "./core.js?v=22";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=22";
+import { EVENTS } from "./content.js?v=22";
+import { runtime, state } from "./store.js?v=22";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=22";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -113,7 +113,7 @@ export function eventDecisionFacts(event) {
   if (event.type === "library") Object.assign(facts, { reward: "3选1书页", risk: "获得后可替换、升级或入库" });
   if (event.type === "upgrade") Object.assign(facts, { reward: "1张战斗书页+1级", risk: "自由选择" });
   if (event.type === "organize") Object.assign(facts, { reward: "安全整理+1", risk: "移入仓库保留等级" });
-  if (event.type === "transmute") Object.assign(facts, { reward: "保留等级与位置", risk: "转为同消耗的其他系" });
+  if (event.type === "transmute") Object.assign(facts, { reward: "保留等级与装订位置", risk: "随机转为当前起始元素中的异系同消耗单系咒语" });
   if (event.type === "monster") {
     const level = Number(event.level || 1), scale = eventThreatScale(level);
     const ratios = event.boss ? "生命100% · 攻防100%" : `生命${Math.round(60 * scale)}% · 攻${Math.round(70 * scale)}% · 防${Math.round(50 * scale)}%`;

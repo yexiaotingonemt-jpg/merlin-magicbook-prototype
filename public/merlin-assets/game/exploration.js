@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=21";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=21";
-import { runtime, state } from "./store.js?v=21";
-import { advanceChapter, cardLevel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=21";
-import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=21";
-import { startBattle, stopBattle } from "./battle.js?v=21";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=22";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=22";
+import { runtime, state } from "./store.js?v=22";
+import { advanceChapter, cardLevel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=22";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=22";
+import { startBattle, stopBattle } from "./battle.js?v=22";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -59,6 +59,27 @@ export function choosePassiveModal() {
     const passive = PASSIVES.find((item) => item.id === id); passive.apply(); state.meta.passiveLevels[id] = Number(state.meta.passiveLevels[id] || 0) + 1;
     closeModal(true); completeEvent("秘典成长", `${passive.name}提升至 Lv.${state.meta.passiveLevels[id]}：${passive.copy}`);
   };
+}
+const SINGLE_SPELL_SCHOOLS = ["fire", "water", "wind", "earth", "light", "dark"];
+export function transmutationOptions(oldCard, startElements = state.startElements) {
+  if (!oldCard || !SINGLE_SPELL_SCHOOLS.includes(oldCard.school)) return [];
+  const availableSchools = new Set(startElements.filter((school) => SINGLE_SPELL_SCHOOLS.includes(school) && school !== oldCard.school));
+  return CARDS.filter((card) => (
+    SINGLE_SPELL_SCHOOLS.includes(card.school)
+    && availableSchools.has(card.school)
+    && card.cost.type === oldCard.cost.type
+    && card.cost.amount === oldCard.cost.amount
+    && !cardLevel(card.id)
+  ));
+}
+export function transmuteLearnedSpell(oldCard, replacement) {
+  if (!oldCard || !replacement || !cardLevel(oldCard.id) || !transmutationOptions(oldCard).some((card) => card.id === replacement.id)) return null;
+  const level = cardLevel(oldCard.id);
+  const deckIndex = state.deck.indexOf(oldCard.id);
+  delete state.collection[oldCard.id];
+  state.collection[replacement.id] = level;
+  if (deckIndex >= 0) state.deck[deckIndex] = replacement.id;
+  return { level, deckIndex, bound: deckIndex >= 0 };
 }
 export function storeAcquiredPage(card) {
   if (cardLevel(card.id)) {
@@ -168,15 +189,20 @@ export function resolveEvent(eventId) {
   }
   if (type === "element") { showElementEvent(); return; }
   if (type === "transmute") {
-    const candidates = Object.keys(state.collection).map((id) => CARD_BY_ID.get(id)).filter((c) => c && ["fire", "water", "wind", "earth", "light", "dark"].includes(c.school));
-    chooseCardModal("沸腾实验室", shuffle(candidates).slice(0, 9), (oldCard) => {
-      const sameCost = CARDS.filter((c) => c.school !== oldCard.school && c.school !== "arcane" && c.cost.type === oldCard.cost.type && c.cost.amount === oldCard.cost.amount && !cardLevel(c.id));
-      const replacement = pick(sameCost.length ? sameCost : CARDS.filter((c) => c.school !== oldCard.school && c.cost.amount === oldCard.cost.amount));
-      const wasDeck = state.deck.includes(oldCard.id), lv = cardLevel(oldCard.id);
-      delete state.collection[oldCard.id]; state.collection[replacement.id] = Math.max(lv, cardLevel(replacement.id));
-      if (wasDeck) state.deck[state.deck.indexOf(oldCard.id)] = replacement.id;
-      completeEvent("转化完成", `${oldCard.name}转化为${replacement.name}，保留 Lv.${lv}。`);
-    }, "选择要转化的已学单系咒语；结果保留等级和装订位置。");
+    const candidates = Object.keys(state.collection).map((id) => CARD_BY_ID.get(id)).filter((card) => card && transmutationOptions(card).length);
+    if (!candidates.length) {
+      state.score += 60;
+      completeEvent("实验条件不足", "当前没有可转化为起始元素中其他系同消耗咒语的已学单系咒语，改为获得60积分。");
+      return;
+    }
+    const availableNames = [...new Set(state.startElements)].map((school) => `${ELEMENTS[school].icon}${ELEMENTS[school].name}`).join("、");
+    chooseCardModal("沸腾实验室", candidates, (oldCard) => {
+      const replacement = pick(transmutationOptions(oldCard));
+      const result = transmuteLearnedSpell(oldCard, replacement);
+      if (!result) return;
+      completeEvent("转化完成", `${oldCard.name}转化为${replacement.name}，保留 Lv.${result.level}${result.bound ? ` 和第${result.deckIndex + 1}页装订位置` : "；原咒语位于仓库，因此新咒语仍在仓库"}。`);
+    }, `当前起始元素为${availableNames}。选择一张已学单系咒语后，它会随机替换为这些元素中与目标不同系、消耗类型和数量相同的未学单系咒语，并保留等级与装订位置。没有合法结果的咒语不会出现在选项中。`);
+    return;
   }
 }
 export function showElementEvent() {
