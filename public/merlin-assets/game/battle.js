@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=13";
-import { CARD_BY_ID } from "./cards.js?v=13";
-import { runtime, state } from "./store.js?v=13";
-import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=13";
-import { elementOrb, renderRunStats, showView, toast } from "./ui.js?v=13";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=14";
+import { CARD_BY_ID } from "./cards.js?v=14";
+import { runtime, state } from "./store.js?v=14";
+import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=14";
+import { elementOrb, renderRunStats, showView, toast } from "./ui.js?v=14";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -118,7 +118,7 @@ function passiveSet(level, boss, finalBoss) {
 
 export function createEnemies(mode, spec = {}) {
   const eventLevel = clamp(Number(spec.eventLevel || 1), 1, 3);
-  const eventScale = 1 + (eventLevel - 1) * .2;
+  const eventScale = eventThreatScale(eventLevel);
   if (mode === "pvp") {
     const names = ["灰塔的艾莉亚", "翠风学徒罗伊", "暗月记录者", "赤焰魔导师"];
     const hp = Math.round(maxHp() * eventScale);

@@ -62,6 +62,49 @@
   margin-bottom: 24px;
 }
 
+.event-timer {
+  position: absolute;
+  top: 17px;
+  right: 18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #d6ba78;
+  font-size: 10px;
+}
+
+.event-timer .event-hourglass {
+  font-size: 18px;
+  filter: drop-shadow(0 0 6px #d9ad5838);
+}
+
+.event-timer > strong {
+  position: static;
+  color: #f0d486;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.event-timer > span:last-child {
+  color: #a99168;
+  font-size: 9px;
+}
+
+.event-timer.urgent,
+.event-timer.urgent > strong,
+.event-timer.urgent > span:last-child {
+  color: #ff6f66;
+}
+
+.event-timer.urgent {
+  animation: event-timer-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes event-timer-pulse {
+  50% { opacity: .68; }
+}
+
 .event-facts {
   display: grid;
   gap: 6px;
@@ -90,6 +133,19 @@
   font-size: 9px;
   font-weight: 600;
   line-height: 1.45;
+}
+
+.event-facts .event-fact-danger {
+  margin: 1px -7px;
+  padding: 6px 7px;
+  border: 1px solid #8d403e;
+  border-radius: 7px;
+  background: #421b213d;
+}
+
+.event-facts .event-fact-danger em,
+.event-facts .event-fact-danger strong {
+  color: #ff8f88;
 }
 
 .modal.decision-modal .modal-card {

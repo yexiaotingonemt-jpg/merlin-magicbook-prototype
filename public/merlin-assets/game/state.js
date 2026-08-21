@@ -1,11 +1,13 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=13";
-import { CARD_BY_ID, createStarterLoadout } from "./cards.js?v=13";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=13";
-import { setState, state } from "./store.js?v=13";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=14";
+import { CARD_BY_ID, createStarterLoadout } from "./cards.js?v=14";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=14";
+import { setState, state } from "./store.js?v=14";
 
 export const RUN_RULES_VERSION = 6;
 export const COMBAT_DECK_CAP = 10;
 export const COMBAT_ELEMENTS = ["fire", "water", "wind", "earth", "light", "dark"];
+export const EVENT_THREAT_UPGRADE_STEP = .1;
+export const LEVEL_UP_HEAL = 60;
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
@@ -150,7 +152,7 @@ export function gainExp(amount) {
   state.exp += Math.round(amount * (1 + state.meta.expPct / 100));
   let gained = 0;
   while (state.exp >= expNeed()) {
-    state.exp -= expNeed(); state.level += 1; gained += 1; state.hp = Math.min(maxHp(), state.hp + 40);
+    state.exp -= expNeed(); state.level += 1; gained += 1; state.hp = Math.min(maxHp(), state.hp + LEVEL_UP_HEAL);
   }
   return gained;
 }
@@ -160,8 +162,28 @@ function createEvent(type, extra = {}) {
   return { id: `${state.chapter}-${state.eventSerial}-${type}`, type, countdown: EVENT_COUNTDOWNS[type], level: 1, ...extra };
 }
 
+export function eventThreatScale(level = 1) {
+  return 1 + (clamp(Number(level || 1), 1, 3) - 1) * EVENT_THREAT_UPGRADE_STEP;
+}
+
+function normalizeEventSlots() {
+  const occupied = new Set();
+  state.events = state.events.map((event) => {
+    let slot = Number.isInteger(event.slot) && event.slot >= 0 && event.slot < 3 && !occupied.has(event.slot) ? event.slot : null;
+    if (slot == null) slot = [0, 1, 2].find((candidate) => !occupied.has(candidate));
+    occupied.add(slot);
+    return { ...event, slot };
+  }).sort((a, b) => a.slot - b.slot);
+}
+
 export function fillEventSlots() {
-  while (state.events.length < 3 && state.eventPool.length) state.events.push(createEvent(state.eventPool.shift()));
+  normalizeEventSlots();
+  const occupied = new Set(state.events.map((event) => event.slot));
+  for (let slot = 0; slot < 3 && state.eventPool.length; slot += 1) {
+    if (occupied.has(slot)) continue;
+    state.events.push(createEvent(state.eventPool.shift(), { slot }));
+  }
+  state.events.sort((a, b) => a.slot - b.slot);
   state.board = state.events.map((event) => ({ id: event.id, kindLabel: EVENTS[event.type].name, hp: event.level, maxHp: 3, element: event.type === "monster" ? "fire" : "light" }));
   state.chapterComplete = !state.events.length && !state.eventPool.length;
 }
@@ -170,7 +192,7 @@ export function generateEvents() {
   const rule = CHAPTER_RULES[state.chapter];
   state.floor = state.chapter;
   state.events = []; state.eventPool = []; state.eventSerial = 0; state.activeEventId = null; state.chapterComplete = false;
-  if (rule?.boss) state.events = [createEvent("monster", { countdown: null, boss: true, finalBoss: Boolean(rule.final), name: rule.boss })];
+  if (rule?.boss) state.events = [createEvent("monster", { slot: 0, countdown: null, boss: true, finalBoss: Boolean(rule.final), name: rule.boss })];
   else if (rule) state.eventPool = Array.from({ length: rule.count }, () => weightedEventType(rule.weights));
   fillEventSlots();
 }
@@ -205,6 +227,7 @@ export function hydrate(data) {
   const migrated = Number(data.runRulesVersion || 0) < RUN_RULES_VERSION ? freshTowerRun(data) : data;
   const normalized = freshState(migrated);
   setState({ ...normalized, ...migrated, gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, meta: normalized.meta, board: Array.isArray(migrated.board) ? migrated.board : [] });
+  normalizeEventSlots();
   state.deck = normalizeCombatDeck(state.deck);
   if (state.eventResult && !state.runComplete) {
     state.eventResult = null;

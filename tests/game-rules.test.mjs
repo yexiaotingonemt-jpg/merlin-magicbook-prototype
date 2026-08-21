@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=13";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=13";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=13";
-import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=13";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=13";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=13";
-import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, maxHp, missingBuildElements, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=13";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=13";
-import { elementBalanceHtml, eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=13";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=14";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=14";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=14";
+import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=14";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=14";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=14";
+import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=14";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=14";
+import { elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=14";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -205,13 +205,33 @@ test("PVE event levels do not multiply percentage-point combat attributes", () =
   assert.equal(criticalChance(100, 50), .5);
 });
 
+test("threat upgrades use ten-percent steps and level-ups restore sixty life", () => {
+  const current = setState(freshState());
+  const enemies = [1, 2, 3].map((eventLevel) => createEnemies("pve", { eventLevel })[0]);
+  assert.deepEqual(enemies.map((enemy) => enemy.maxHp), [150, 165, 180]);
+  assert.deepEqual(enemies.map((enemy) => enemy.atk), [70, 77, 84]);
+  assert.deepEqual(enemies.map((enemy) => Math.round(enemy.def * 10) / 10), [25, 27.5, 30]);
+  current.hp = 100;
+  current.exp = 79;
+  assert.equal(gainExp(1), 1);
+  assert.equal(LEVEL_UP_HEAL, 60);
+  assert.equal(current.level, 2);
+  assert.equal(current.hp, 160);
+});
+
 test("event previews disclose exact rewards, risk, timer outcome, and reduced PVE evasion", () => {
   setState(freshState());
   const monster = eventDecisionFacts({ type: "monster", level: 2, countdown: 2 });
   assert.match(monster.reward, /43经验 \+ 29积分/);
-  assert.match(monster.risk, /Lv\.2.*生命72%.*攻84%.*防60%/);
-  assert.match(monster.combat, /实际闪避10%.*失败无奖励/);
+  assert.match(monster.risk, /Lv\.2.*生命66%.*攻77%.*防55%/);
+  assert.match(monster.combat, /预计掉血约\d+.*实际闪避10%/);
+  assert.match(monster.warning, /极端方差与特殊被动/);
   assert.equal(monster.timer, "2回合后升级");
+  assert.ok(expectedBattleHpLoss({ type: "monster", level: 1 }) > 0);
+  state.hp = 1;
+  const lethalMonster = eventDecisionFacts({ type: "monster", level: 1, countdown: 2 });
+  assert.equal(lethalMonster.lethal, true);
+  assert.match(lethalMonster.warning, /高风险.*预计可能阵亡/);
   assert.deepEqual(battleRewards("pvp", 1), { exp: 43, points: 84 });
 });
 
@@ -279,10 +299,19 @@ test("chapter one creates a finite weighted pool and advances countdowns after a
   assert.equal(current.events.length, 3);
   assert.equal(current.eventPool.length, 12);
   const selected = current.events[0];
+  const selectedSlot = selected.slot;
+  const retainedSlots = new Map(current.events.slice(1).map((event) => [event.id, event.slot]));
   const finiteBefore = current.events.slice(1).filter((event) => event.countdown != null).map((event) => [event.id, event.countdown]);
   settleExplorationTurn(selected.id);
   assert.equal(current.events.length, 3);
   assert.equal(current.eventPool.length, 11);
+  const replacement = current.events.find((event) => event.slot === selectedSlot);
+  assert.ok(replacement);
+  assert.notEqual(replacement.id, selected.id);
+  retainedSlots.forEach((slot, id) => {
+    const retained = current.events.find((event) => event.id === id);
+    if (retained) assert.equal(retained.slot, slot);
+  });
   finiteBefore.forEach(([id, countdown]) => {
     const event = current.events.find((item) => item.id === id);
     if (event && !["monster", "player"].includes(event.type)) assert.equal(event.countdown, countdown - 1);
@@ -301,6 +330,17 @@ test("legacy event result pages resume exploration without another confirmation"
   assert.equal(state.activeEventId, null);
   assert.equal(state.events.length, 3);
   assert.equal(state.eventPool.length, remainingPool);
+});
+
+test("legacy saves assign stable event slots before the next exploration turn", () => {
+  const current = setState(freshState());
+  generateEvents();
+  current.events.forEach((event) => { delete event.slot; });
+  assert.equal(hydrate(serializeState()), true);
+  assert.deepEqual(state.events.map((event) => event.slot), [0, 1, 2]);
+  const retained = state.events[2];
+  settleExplorationTurn(state.events[1].id);
+  assert.equal(state.events.find((event) => event.id === retained.id)?.slot, 2);
 });
 
 test("legacy chapter result pages advance to the next chapter immediately", () => {

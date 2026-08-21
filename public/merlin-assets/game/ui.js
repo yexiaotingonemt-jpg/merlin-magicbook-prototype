@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=13";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=13";
-import { EVENTS } from "./content.js?v=13";
-import { runtime, state } from "./store.js?v=13";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=13";
+import { $, ELEMENTS, esc } from "./core.js?v=14";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=14";
+import { EVENTS } from "./content.js?v=14";
+import { runtime, state } from "./store.js?v=14";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=14";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -56,6 +56,19 @@ export function renderRunStats() {
   $("runStats").innerHTML = `<div class="stat-chip"><span>章节</span><b>${state.chapter}/6</b></div><div class="stat-chip"><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><span>积分</span><b>${state.score}</b></div>`;
 }
 function percent(value) { return `${Math.round(value * 100)}%`; }
+export function expectedBattleHpLoss(event) {
+  const level = Number(event.level || 1), pvp = event.type === "player", scale = event.boss ? 1 : eventThreatScale(level);
+  const enemyAttack = attack() * (pvp ? scale : (event.boss ? 1 : .7) * scale);
+  const enemyHit = pvp ? hit() * scale : hit();
+  const enemyCrit = pvp ? critStat() * scale : critStat();
+  const hitChance = 1 - evasionChance(dodge(), enemyHit);
+  const critMultiplier = 1 + criticalChance(enemyCrit, resist());
+  const defenseFactor = enemyAttack / (enemyAttack + defense());
+  const baseEnemyDefense = defense() * (pvp || event.boss ? 1 : .5);
+  const durationScale = event.boss ? 1 : scale * (attack() + baseEnemyDefense * scale) / (attack() + baseEnemyDefense);
+  const expectedEnemyActions = pvp ? 19.5 * durationScale : event.boss ? 19 : Math.max(1, 10 * durationScale - 1);
+  return Math.max(0, Math.round(enemyAttack * .7 * .25 * defenseFactor * hitChance * critMultiplier * expectedEnemyActions));
+}
 export function eventDecisionFacts(event) {
   const timer = event.countdown == null ? "无限；不会自燃" : ["monster", "player"].includes(event.type) ? `${event.countdown}回合后升级` : `${event.countdown}回合后消失`;
   const facts = { timer };
@@ -67,14 +80,16 @@ export function eventDecisionFacts(event) {
   if (event.type === "organize") Object.assign(facts, { reward: "安全整理+1", risk: "移入仓库保留等级" });
   if (event.type === "transmute") Object.assign(facts, { reward: "保留等级与位置", risk: "转为同消耗的其他系" });
   if (event.type === "monster") {
-    const level = Number(event.level || 1), scale = 1 + (level - 1) * .2;
+    const level = Number(event.level || 1), scale = eventThreatScale(level);
     const ratios = event.boss ? "生命100% · 攻防100%" : `生命${Math.round(60 * scale)}% · 攻${Math.round(70 * scale)}% · 防${Math.round(50 * scale)}%`;
     const reward = battleRewards("pve");
-    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `Lv.${level} · ${ratios}`, combat: `实际闪避${percent(evasionChance(Math.max(0, dodge() - 20), hit()))} · 失败无奖励` });
+    const expectedLoss = expectedBattleHpLoss(event), lethal = expectedLoss >= state.hp;
+    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `Lv.${level} · ${ratios}`, combat: `预计掉血约${expectedLoss} · 实际闪避${percent(evasionChance(Math.max(0, dodge() - 20), hit()))}`, warning: lethal ? `高风险：当前${Math.ceil(state.hp)}生命，预计可能阵亡` : "估算未计极端方差与特殊被动", lethal });
   }
   if (event.type === "player") {
     const reward = battleRewards("pvp");
-    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `Lv.${event.level || 1} · 随机先手`, combat: "双方满血 · 败方无奖励" });
+    const expectedLoss = expectedBattleHpLoss(event), lethal = expectedLoss >= maxHp();
+    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `Lv.${event.level || 1} · 随机先手`, combat: `双方满血 · 预计掉血约${expectedLoss}`, warning: lethal ? `高风险：预计掉血达到满血上限${maxHp()}` : "估算未计极端方差与随机先手", lethal });
   }
   return facts;
 }
@@ -94,7 +109,7 @@ export function renderExplore() {
   $("expBar").firstElementChild.style.width = `${state.exp / expNeed() * 100}%`;
   $("expText").textContent = `经验 ${state.exp} / ${expNeed()}；还需 ${Math.max(0, expNeed() - state.exp)} 点升级。`;
   const nextLevel = state.level + 1;
-  $("levelPreview").innerHTML = `<div><b>Lv.${nextLevel}</b><span>升级立即回复 40 生命</span></div><ul><li>生命上限 <b>+${maxHp(nextLevel) - maxHp()} → ${maxHp(nextLevel)}</b></li><li>法术攻击 <b>+${attack(nextLevel) - attack()} → ${attack(nextLevel)}</b></li><li>法术防御 <b>+${defense(nextLevel) - defense()} → ${defense(nextLevel)}</b></li><li>起始元素上限 <b>${slotCap()} → ${slotCap(nextLevel)}</b></li><li>战斗元素池 <b>${poolCap()} → ${poolCap(nextLevel)}</b></li></ul>`;
+  $("levelPreview").innerHTML = `<div><b>Lv.${nextLevel}</b><span>升级立即回复 ${LEVEL_UP_HEAL} 生命</span></div><ul><li>生命上限 <b>+${maxHp(nextLevel) - maxHp()} → ${maxHp(nextLevel)}</b></li><li>法术攻击 <b>+${attack(nextLevel) - attack()} → ${attack(nextLevel)}</b></li><li>法术防御 <b>+${defense(nextLevel) - defense()} → ${defense(nextLevel)}</b></li><li>起始元素上限 <b>${slotCap()} → ${slotCap(nextLevel)}</b></li><li>战斗元素池 <b>${poolCap()} → ${poolCap(nextLevel)}</b></li></ul>`;
   $("elementSlotText").textContent = `${state.startElements.length} / ${slotCap()}`;
   $("startElements").innerHTML = [...state.startElements.map((e) => elementOrb(e)), ...Array.from({ length: Math.max(0, slotCap() - state.startElements.length) }, () => elementOrb(null, true))].join("");
   $("deckCount").textContent = `${state.deck.length} 页`;
@@ -109,11 +124,13 @@ export function renderExplore() {
     $("eventChoices").classList.toggle("committed", Boolean(state.activeEventId));
     $("eventChoices").innerHTML = visibleEvents.map((event, index) => {
       const meta = EVENTS[event.type];
-      const glow = ["#915c72", "#557f9d", "#74668f"][index];
+      const glow = ["#915c72", "#557f9d", "#74668f"][event.slot ?? index];
       const timer = event.countdown == null ? "∞" : event.countdown;
       const level = ["monster", "player"].includes(event.type) ? ` · Lv.${event.level}` : "";
       const facts = eventDecisionFacts(event);
-      return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><small>展示位 ${index + 1} · 倒计时 ${timer}${level}</small><span class="event-icon">${meta.icon}</span><h3>${event.name || meta.name}</h3><p>${meta.copy}</p><span class="event-facts">${[["收益", facts.reward], ["代价", facts.risk], ["战斗", facts.combat], ["时限", facts.timer]].filter(([, value]) => value).map(([label, value]) => `<span><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"} →</b></button>`;
+      const timerClass = event.countdown === 1 ? " urgent" : "";
+      const factRows = [["收益", facts.reward], ["代价", facts.risk], ["战斗", facts.combat], ["警示", facts.warning], ["时限", facts.timer]];
+      return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><span class="event-timer${timerClass}"><span class="event-hourglass" aria-hidden="true">⌛</span><strong>${timer}</strong><span>回合${level}</span></span><span class="event-icon">${meta.icon}</span><h3>${event.name || meta.name}</h3><p>${meta.copy}</p><span class="event-facts">${factRows.filter(([, value]) => value).map(([label, value]) => `<span class="${label === "警示" && facts.lethal ? "event-fact-danger" : ""}"><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"} →</b></button>`;
     }).join("");
   }
 }
