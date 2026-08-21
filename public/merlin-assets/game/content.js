@@ -1,7 +1,7 @@
 export const EVENTS = {
   experience: { name: "魔法课堂", icon: "✥", copy: "获得角色经验，提升本次探索的基础属性。" },
   element: { name: "元素池", icon: "◈", copy: "增加或替换一个起始元素。" },
-  library: { name: "残破书库", icon: "📖", copy: "从三张随机咒语中选择一张，再决定替换书页、升级现有咒语或收入仓库。" },
+  library: { name: "残破书库", icon: "📖", copy: "从火、水、风、土、光、暗各一张候选咒语中选择一张，再决定替换书页、升级现有咒语或收入仓库。" },
   monster: { name: "元素试炼", icon: "⚔", copy: "挑战塔中怪物，获得经验与积分。" },
   rest: { name: "休息室", icon: "☽", copy: "回复生命值；生命会在探索中继承。" },
   transmute: { name: "沸腾实验室", icon: "⚗", copy: "将选定的已学单系咒语，随机替换为当前起始元素中与目标不同系、同消耗的单系咒语，并保留等级和装订位置。" },

@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=25";
-import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=25";
-import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=25";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=25";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=25";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=25";
-import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=25";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=25";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=25";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=26";
+import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=26";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=26";
+import { candidateFitHtml, decisionContextHtml, LIBRARY_SCHOOLS, librarySpellChoices, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=26";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=26";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=26";
+import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=26";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=26";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=26";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -242,6 +242,18 @@ test("passive tomes are rare full-run rewards with fivefold per-pick growth", ()
   assert.ok(current.hp > beforeHp);
 });
 
+test("ordinary libraries offer one spell from each of the six elemental schools", () => {
+  const unlearned = CARDS.filter((card) => LIBRARY_SCHOOLS.includes(card.school));
+  const choices = librarySpellChoices(unlearned, [], () => 0);
+  assert.equal(choices.length, 6);
+  assert.deepEqual(choices.map((card) => card.school), ["fire", "water", "wind", "earth", "light", "dark"]);
+  assert.ok(choices.every((card) => !["hybrid", "arcane"].includes(card.school)));
+
+  const withoutFire = unlearned.filter((card) => card.school !== "fire");
+  const fallback = [CARD_BY_ID.get("FI-02")];
+  assert.deepEqual(librarySpellChoices(withoutFire, fallback, () => 0).map((card) => card.school), LIBRARY_SCHOOLS);
+});
+
 test("normal chapters keep total weight 1000 and the prologue raises element events to five per tower", () => {
   const normalChapters = [1, 2, 4, 5];
   normalChapters.forEach((chapter) => {
@@ -307,8 +319,8 @@ test("event previews disclose exact rewards, risk, timer outcome, and reduced PV
   assert.match(monster.warning, /极端方差与特殊被动/);
   assert.equal(monster.timer, "2回合后升级");
   const library = eventDecisionFacts({ type: "library", countdown: 2 });
-  assert.equal(library.reward, "3选1奖励");
-  assert.match(library.risk, /16%为被动秘典/);
+  assert.equal(library.reward, "六系6选1奖励");
+  assert.match(library.risk, /16%改为被动秘典三选一/);
   assert.ok(expectedBattleHpLoss({ type: "monster", level: 1 }) > 0);
   state.hp = 1;
   const lethalMonster = eventDecisionFacts({ type: "monster", level: 1, countdown: 2 });

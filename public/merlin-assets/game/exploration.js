@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=25";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=25";
-import { PASSIVE_LIBRARY_CHANCE } from "./content.js?v=25";
-import { runtime, state } from "./store.js?v=25";
-import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=25";
-import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=25";
-import { startBattle, stopBattle } from "./battle.js?v=25";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=26";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=26";
+import { PASSIVE_LIBRARY_CHANCE } from "./content.js?v=26";
+import { runtime, state } from "./store.js?v=26";
+import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=26";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=26";
+import { startBattle, stopBattle } from "./battle.js?v=26";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -60,6 +60,15 @@ export function choosePassiveModal() {
     const passive = PASSIVES.find((item) => item.id === id); passive.apply(); state.meta.passiveLevels[id] = Number(state.meta.passiveLevels[id] || 0) + 1;
     closeModal(true); completeEvent("秘典成长", `${passive.name}提升至 Lv.${state.meta.passiveLevels[id]}：${passive.copy}`);
   };
+}
+export const LIBRARY_SCHOOLS = SCHOOL_ORDER.slice(0, 6);
+export function librarySpellChoices(primaryPool, fallbackPool = [], randomValue = Math.random) {
+  return LIBRARY_SCHOOLS.map((school) => {
+    const primary = primaryPool.filter((card) => card.school === school);
+    const fallback = fallbackPool.filter((card) => card.school === school);
+    const candidates = primary.length ? primary : fallback;
+    return candidates.length ? candidates[Math.floor(randomValue() * candidates.length)] : null;
+  }).filter(Boolean);
 }
 const SINGLE_SPELL_SCHOOLS = ["fire", "water", "wind", "earth", "light", "dark"];
 export function transmutationOptions(oldCard, startElements = state.startElements) {
@@ -179,9 +188,12 @@ export function resolveEvent(eventId) {
   }
   if (type === "organize") { state.organizeTokens += 1; completeEvent("获得安全整理", "获得1次安全拆页机会。可将一张非基础战斗书页移回仓库，空位自动恢复为基础咒术页。"); return; }
   if (type === "library") {
-    const pool = CARDS.filter((c) => !cardLevel(c.id));
+    const pool = CARDS.filter((card) => LIBRARY_SCHOOLS.includes(card.school) && !cardLevel(card.id));
     if (!pool.length || Math.random() < PASSIVE_LIBRARY_CHANCE) { choosePassiveModal(); return; }
-    chooseCardModal("残破书库 · 三选一", shuffle(pool).slice(0, 3), showAcquiredPageModal, `选择一张新书页后，可替换当前一页、作为升级材料或收入仓库；魔法书始终保持${COMBAT_DECK_CAP}页。`); return;
+    const fallbackPool = CARDS.filter((card) => LIBRARY_SCHOOLS.includes(card.school) && cardLevel(card.id) < 6 && !state.deck.includes(card.id));
+    const choices = librarySpellChoices(pool, fallbackPool);
+    if (choices.length < LIBRARY_SCHOOLS.length) { choosePassiveModal(); return; }
+    chooseCardModal("残破书库 · 六系六选一", choices, showAcquiredPageModal, `火、水、风、土、光、暗各提供一张候选咒语。选择后可替换当前一页、作为升级材料或收入仓库；魔法书始终保持${COMBAT_DECK_CAP}页。`); return;
   }
   if (type === "upgrade") {
     const cards = state.deck.map((id) => CARD_BY_ID.get(id)).filter((c) => c && !c.basePage && cardLevel(c.id) < 6);
