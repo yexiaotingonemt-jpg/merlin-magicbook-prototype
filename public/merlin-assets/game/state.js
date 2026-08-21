@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=11";
-import { createStarterLoadout } from "./cards.js?v=11";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=11";
-import { setState, state } from "./store.js?v=11";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=12";
+import { createStarterLoadout } from "./cards.js?v=12";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=12";
+import { setState, state } from "./store.js?v=12";
 
 export const RUN_RULES_VERSION = 6;
 export const COMBAT_DECK_CAP = 10;
@@ -141,6 +141,10 @@ export function hydrate(data) {
   const normalized = freshState(migrated);
   setState({ ...normalized, ...migrated, gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, meta: normalized.meta, board: Array.isArray(migrated.board) ? migrated.board : [] });
   state.deck = normalizeCombatDeck(state.deck);
+  if (state.eventResult && !state.runComplete) {
+    state.eventResult = null;
+    if (state.chapterComplete) advanceChapter();
+  }
   if (!state.events?.length && !state.eventResult && !state.runComplete) generateEvents();
   state.hp = clamp(state.hp, 1, maxHp());
   return true;

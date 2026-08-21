@@ -1,26 +1,26 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=11";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=11";
-import { runtime, setState, state } from "./store.js?v=11";
-import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=11";
-import { closeModal, render, showModal, showView, toast } from "./ui.js?v=11";
-import { startBattle, stopBattle } from "./battle.js?v=11";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=12";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=12";
+import { runtime, setState, state } from "./store.js?v=12";
+import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=12";
+import { closeModal, showModal, showView, toast } from "./ui.js?v=12";
+import { startBattle, stopBattle } from "./battle.js?v=12";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
   if (selectedId) settleExplorationTurn(selectedId);
-  state.eventResult = { title, copy };
   state.battle = null;
   stopBattle();
   closeModal(true);
+  let feedback = `${title}：${copy}`;
+  state.eventResult = null;
+  if (state.chapterComplete) {
+    if (advanceChapter()) feedback += ` 已进入第${state.chapter}章，生命已经补满。`;
+    else state.eventResult = { title: "法师塔探索完成", copy: `${feedback} 你击败了终极首领；本轮构筑、等级和塔内成长将在重新进入法师塔时重置，积分与场外商店成长保留。` };
+  }
   runtime.currentView = "explore";
   saveState();
   showView("explore");
-}
-export function continueExplore() {
-  if (state.chapterComplete) {
-    if (!advanceChapter()) state.eventResult = { title: "法师塔探索完成", copy: "你击败了终极首领。本轮构筑、等级和塔内成长将在重新进入法师塔时重置，积分与场外商店成长保留。" };
-  } else state.eventResult = null;
-  saveState(); render();
+  if (!state.runComplete) toast(feedback);
 }
 function startElementCounts() {
   return state.startElements.reduce((counts, element) => {

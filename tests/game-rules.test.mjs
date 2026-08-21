@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=11";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=11";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=11";
-import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=11";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=11";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=11";
-import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=11";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=11";
-import { eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=11";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=12";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=12";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=12";
+import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=12";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=12";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=12";
+import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, maxHp, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=12";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=12";
+import { eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=12";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -262,6 +262,35 @@ test("chapter one creates a finite weighted pool and advances countdowns after a
     const event = current.events.find((item) => item.id === id);
     if (event && !["monster", "player"].includes(event.type)) assert.equal(event.countdown, countdown - 1);
   });
+});
+
+test("legacy event result pages resume exploration without another confirmation", () => {
+  const current = setState(freshState());
+  generateEvents();
+  const selectedId = current.events[0].id;
+  settleExplorationTurn(selectedId);
+  current.eventResult = { title: "课程完成", copy: "获得经验。" };
+  const remainingPool = current.eventPool.length;
+  assert.equal(hydrate(serializeState()), true);
+  assert.equal(state.eventResult, null);
+  assert.equal(state.activeEventId, null);
+  assert.equal(state.events.length, 3);
+  assert.equal(state.eventPool.length, remainingPool);
+});
+
+test("legacy chapter result pages advance to the next chapter immediately", () => {
+  const current = setState(freshState());
+  current.chapter = 1;
+  current.events = [];
+  current.eventPool = [];
+  current.chapterComplete = true;
+  current.eventResult = { title: "本章完成", copy: "继续探索。" };
+  assert.equal(hydrate(serializeState()), true);
+  assert.equal(state.chapter, 2);
+  assert.equal(state.eventResult, null);
+  assert.equal(state.chapterComplete, false);
+  assert.equal(state.events.length, 3);
+  assert.equal(state.hp, maxHp());
 });
 
 test("all six chapters terminate and boss chapters contain exactly one fixed encounter", () => {

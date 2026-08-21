@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=11";
-import { CARD_BY_ID } from "./cards.js?v=11";
-import { runtime, setState, state } from "./store.js?v=11";
-import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=11";
-import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=11";
-import { completeEvent, continueExplore, newTowerRun, resolveEvent } from "./exploration.js?v=11";
-import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=11";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=12";
+import { CARD_BY_ID } from "./cards.js?v=12";
+import { runtime, setState, state } from "./store.js?v=12";
+import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, saveState } from "./state.js?v=12";
+import { closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=12";
+import { completeEvent, newTowerRun, resolveEvent } from "./exploration.js?v=12";
+import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=12";
 
 export function populateFilters() {
   const options = ['<option value="all">全部流派</option>', ...SCHOOL_ORDER.map((s) => `<option value="${s}">${ELEMENTS[s].name}系</option>`)].join("");
@@ -43,7 +43,6 @@ export function bindEvents() {
       completeEvent(title, copy); return;
     }
   });
-  $("continueButton").addEventListener("click", continueExplore);
   $("newRunButton").addEventListener("click", () => showModal('<h2>重新进入法师塔？</h2><p>层数、塔内等级、经验、生命、起始元素、装订方案、咒语收藏和等级都会重置；积分及商店成长保留。系统将从火、水、风随机选2系，按2页＋1页生成新魔法书，仓库从0页开始。</p><button class="primary" id="confirmNewRun">确认重开</button>'));
   $("modalContent").addEventListener("click", (event) => { if (event.target.id === "confirmNewRun") newTowerRun(); });
   $("modalClose").addEventListener("click", () => closeModal()); $("modal").addEventListener("click", (event) => { if (event.target === $("modal")) closeModal(); });

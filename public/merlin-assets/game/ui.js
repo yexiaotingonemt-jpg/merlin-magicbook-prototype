@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=11";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=11";
-import { EVENTS } from "./content.js?v=11";
-import { runtime, state } from "./store.js?v=11";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, crit as critStat } from "./state.js?v=11";
+import { $, ELEMENTS, esc } from "./core.js?v=12";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=12";
+import { EVENTS } from "./content.js?v=12";
+import { runtime, state } from "./store.js?v=12";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, crit as critStat } from "./state.js?v=12";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -92,7 +92,6 @@ export function renderExplore() {
   $("deckProfile").innerHTML = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([s, n]) => `<span class="profile-chip ${s}">${schoolLabel(s)} ${n}</span>`).join("");
   $("eventChoices").hidden = Boolean(state.eventResult);
   $("eventResult").hidden = !state.eventResult;
-  $("continueButton").hidden = !state.eventResult || state.runComplete;
   if (state.eventResult) {
     $("eventResult").innerHTML = `<div style="font-size:38px">✦</div><h2>${esc(state.eventResult.title)}</h2><p>${esc(state.eventResult.copy)}</p>`;
   } else {
