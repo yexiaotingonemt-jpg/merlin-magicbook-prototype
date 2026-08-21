@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=15";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=15";
-import { runtime, setState, state } from "./store.js?v=15";
-import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, costLabel, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=15";
-import { closeModal, showModal, showView, toast } from "./ui.js?v=15";
-import { startBattle, stopBattle } from "./battle.js?v=15";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=16";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=16";
+import { runtime, setState, state } from "./store.js?v=16";
+import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=16";
+import { cardCostHtml, cardMetadataHtml, closeModal, showModal, showView, toast } from "./ui.js?v=16";
+import { startBattle, stopBattle } from "./battle.js?v=16";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -31,7 +31,7 @@ function startElementCounts() {
 export function decisionContextHtml() {
   const counts = startElementCounts();
   const elements = Object.entries(counts).map(([element, amount]) => `<span class="context-element ${element}">${ELEMENTS[element].icon} ${ELEMENTS[element].name} ×${amount}</span>`).join("") || '<span class="context-empty">暂无起始元素</span>';
-  const pages = state.deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean).map((card) => `<span class="context-page ${card.school}"><b>${esc(card.name)}</b><small>Lv.${cardLevel(card.id)} · ${costLabel(card)}</small></span>`).join("") || '<span class="context-empty">当前没有已装订书页</span>';
+  const pages = state.deck.map((id) => CARD_BY_ID.get(id)).filter(Boolean).map((card) => `<span class="context-page ${card.school}">${cardMetadataHtml(card)}<b>${esc(card.name)}</b>${cardCostHtml(card, true)}<small>Lv.${cardLevel(card.id)}</small></span>`).join("") || '<span class="context-empty">当前没有已装订书页</span>';
   return `<section class="decision-context" aria-label="当前构筑"><header><div><small>BUILD REFERENCE</small><b>当前构筑</b></div><span>用于本次选择，事件确认后立即结算</span></header><div class="decision-context-grid"><div><h3>起始元素 <b>${state.startElements.length} / ${slotCap()}</b></h3><div class="context-elements">${elements}</div></div><div><h3>已装订书页 <b>${state.deck.length} / ${COMBAT_DECK_CAP}</b></h3><div class="context-pages">${pages}</div></div></div></section>`;
 }
 export function candidateFitHtml(card) {
@@ -44,7 +44,7 @@ export function candidateFitHtml(card) {
   return `<span class="candidate-fit"><b>${location}</b><small>开局匹配：${coverage}</small></span>`;
 }
 export function chooseCardModal(title, cards, action, copy = "选择一张书页。") {
-  showModal(`<h2>${title}</h2><p>${copy}</p><p><b>已选定本事件：请做出选择以完成处理。</b></p>${decisionContextHtml()}<div class="choice-grid">${cards.map((card) => `<button class="choice-button ${card.school}" data-modal-card="${card.id}"><h3>${card.name}</h3><small>${card.id} · ${costLabel(card)}</small><p>${card.full}</p>${candidateFitHtml(card)}</button>`).join("")}</div>`, false);
+  showModal(`<h2>${title}</h2><p>${copy}</p><p><b>已选定本事件：请做出选择以完成处理。</b></p>${decisionContextHtml()}<div class="choice-grid">${cards.map((card) => `<button class="choice-button ${card.school}" data-modal-card="${card.id}">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}<p>${card.full}</p>${candidateFitHtml(card)}</button>`).join("")}</div>`, false);
   $("modalContent").onclick = (event) => {
     const id = event.target.closest("[data-modal-card]")?.dataset.modalCard;
     if (!id) return; closeModal(true); action(CARD_BY_ID.get(id));
@@ -52,7 +52,7 @@ export function chooseCardModal(title, cards, action, copy = "选择一张书页
 }
 export function choosePassiveModal() {
   const choices = shuffle(PASSIVES).slice(0, 3);
-  showModal(`<h2>被动秘典 · 三选一</h2><p>被动卡不进入战斗魔法书，可无限升级；当所有战斗咒语满级后，成长牌库只会出现这些秘典。</p><p><b>已选定本事件：请做出选择以完成处理。</b></p>${decisionContextHtml()}<div class="choice-grid">${choices.map((passive) => `<button class="choice-button arcane" data-passive="${passive.id}"><h3>${passive.name}</h3><small>${passive.id} · 当前 Lv.${Number(state.meta.passiveLevels?.[passive.id] || 0)}</small><p>${passive.copy}</p></button>`).join("")}</div>`, false);
+  showModal(`<h2>被动秘典 · 三选一</h2><p>被动卡不进入战斗魔法书，可无限升级；当所有战斗咒语满级后，成长牌库只会出现这些秘典。</p><p><b>已选定本事件：请做出选择以完成处理。</b></p>${decisionContextHtml()}<div class="choice-grid">${choices.map((passive) => `<button class="choice-button arcane" data-passive="${passive.id}"><span class="spell-meta arcane">✶ 奥术 · 被动秘典</span><h3>${passive.name}</h3><small>当前 Lv.${Number(state.meta.passiveLevels?.[passive.id] || 0)}</small><p>${passive.copy}</p></button>`).join("")}</div>`, false);
   $("modalContent").onclick = (event) => {
     const id = event.target.closest("[data-passive]")?.dataset.passive; if (!id) return;
     const passive = PASSIVES.find((item) => item.id === id); passive.apply(); state.meta.passiveLevels[id] = Number(state.meta.passiveLevels[id] || 0) + 1;

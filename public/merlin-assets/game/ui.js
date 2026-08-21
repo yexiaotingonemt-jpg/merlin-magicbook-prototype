@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=15";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=15";
-import { EVENTS } from "./content.js?v=15";
-import { runtime, state } from "./store.js?v=15";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=15";
+import { $, ELEMENTS, esc } from "./core.js?v=16";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=16";
+import { EVENTS } from "./content.js?v=16";
+import { runtime, state } from "./store.js?v=16";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=16";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -27,6 +27,33 @@ export function elementOrb(element, empty = false) {
   if (empty) return '<span class="element-orb empty">+</span>';
   const colors = { fire: "#e46f46", water: "#4aa8dc", wind: "#77cdbd", earth: "#b08b5d", light: "#f1d56f", dark: "#aa76c7" };
   return `<span class="element-orb" style="--c:${colors[element]}">${ELEMENTS[element].name}</span>`;
+}
+function costOrb(element, label, icon) {
+  return `<span class="spell-cost-orb ${element}" title="${esc(label)}" aria-label="${esc(label)}">${icon}</span>`;
+}
+export function cardCostHtml(card, compact = false) {
+  const cost = card?.cost || { type: "any", amount: 0 };
+  let tokens = [];
+  if (cost.type === "fixed") {
+    tokens = Object.entries(cost.parts || {}).flatMap(([element, amount]) => Array.from({ length: amount }, () => costOrb(element, `${ELEMENTS[element].name}元素`, ELEMENTS[element].icon)));
+  } else if (["any", "random"].includes(cost.type)) {
+    const label = cost.type === "any" ? "任意元素" : "随机元素";
+    const icon = cost.type === "any" ? "✦" : "?";
+    tokens = Array.from({ length: cost.amount }, () => costOrb("arcane", label, icon));
+  } else if (cost.type === "all") {
+    tokens = Object.entries(cost.parts || {}).flatMap(([element, amount]) => Array.from({ length: amount }, () => costOrb(element, `${ELEMENTS[element].name}元素`, ELEMENTS[element].icon)));
+    const required = Object.values(cost.parts || {}).reduce((sum, amount) => sum + amount, 0);
+    tokens.push(...Array.from({ length: Math.max(0, cost.amount - required) }, () => costOrb("arcane", "任意元素", "✦")));
+  }
+  const free = !cost.amount ? '<span class="spell-cost-free">零元素</span>' : "";
+  const all = cost.type === "all" ? `<span class="spell-cost-rule">全部 ≥${cost.amount}</span>` : "";
+  return `<span class="spell-cost${compact ? " compact" : ""}">${free}${tokens.join("")}${all}</span>`;
+}
+export function cardMetadataHtml(card) {
+  const redundantTag = `${ELEMENTS[card.school]?.name || ""}势`;
+  const tags = String(card.tags || "").split("·").filter(Boolean);
+  if (tags[0] === redundantTag) tags.shift();
+  return `<span class="spell-meta ${card.school}">${schoolLabel(card.school)}${tags.length ? ` · ${esc(tags.join("·"))}` : ""}</span>`;
 }
 export function levelPips(level) { return `<span class="level-pips">${Array.from({ length: 6 }, (_, i) => `<i class="${i < level ? "on" : ""}"></i>`).join("")}</span>`; }
 export function deckCounts() {
@@ -139,7 +166,7 @@ export function renderExplore() {
 }
 export function cardMatches(card, search, school, costFilter) {
   const q = search.trim().toLowerCase();
-  if (q && !`${card.id}${card.name}${card.tags}`.toLowerCase().includes(q)) return false;
+  if (q && !`${card.name}${card.tags}`.toLowerCase().includes(q)) return false;
   if (school !== "all" && card.school !== school) return false;
   if (costFilter && costFilter !== "all") {
     if (costFilter === "all-cost" && card.cost.type !== "all") return false;
@@ -151,7 +178,7 @@ export function spellRow(card, location) {
   const lv = cardLevel(card.id);
   const canRemove = state.organizeTokens > 0;
   const deckFull = state.deck.length >= COMBAT_DECK_CAP;
-  return `<article class="spell-row ${card.school}"><span class="spell-rune">${card.id}</span><div><h3>${card.name}</h3><small>${schoolLabel(card.school)} · 消耗 ${costLabel(card)}</small>${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${location === "deck" ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>移入仓库</button>` : `<button data-bind="${card.id}" ${deckFull ? "disabled" : ""}>${deckFull ? "已满10页" : "装订"}</button>`}</article>`;
+  return `<article class="spell-row ${card.school}"><div class="spell-overview">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${location === "deck" ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>移入仓库</button>` : `<button data-bind="${card.id}" ${deckFull ? "disabled" : ""}>${deckFull ? "已满10页" : "装订"}</button>`}</article>`;
 }
 export function renderGrimoire() {
   const search = $("cardSearch").value || "";
@@ -173,7 +200,7 @@ export function renderArchive() {
   $("catalogProgress").innerHTML = `已学 <b>${Object.keys(state.collection).length}</b> / ${CARDS.length}`;
   $("archiveGrid").innerHTML = filtered.map((card) => {
     const lv = cardLevel(card.id);
-    return `<article class="archive-card ${card.school} ${lv ? "" : "locked"}"><span class="spell-rune">${card.id}</span><h3>${card.name}</h3><p><b>${costLabel(card)}</b> · ${card.tags}</p><p>${card.full}</p><footer><span>${schoolLabel(card.school)}</span><span>${lv ? `Lv.${lv}` : "未学习"}</span></footer></article>`;
+    return `<article class="archive-card ${card.school} ${lv ? "" : "locked"}">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}<p>${card.full}</p><footer><span>${lv ? `Lv.${lv}` : "未学习"}</span></footer></article>`;
   }).join("");
 }
 export const SHOP = [

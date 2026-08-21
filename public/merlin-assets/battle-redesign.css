@@ -242,6 +242,14 @@
   font-size: 21px;
 }
 
+.current-card .spell-meta {
+  min-height: 26px;
+}
+
+.current-card .spell-cost {
+  margin: 6px 0 10px;
+}
+
 .spell-tags {
   min-height: 28px;
   margin: 0 0 9px;
@@ -278,6 +286,17 @@
 
 .effect-row.active.echo {
   border-color: #90649d;
+}
+
+.effect-row.inactive {
+  border-color: #2a242f;
+  background: #100d14;
+  opacity: .48;
+}
+
+.effect-row.inactive b,
+.effect-row.inactive p {
+  color: #665f6c !important;
 }
 
 .effect-row b {

@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=15";
-import { CARD_BY_ID } from "./cards.js?v=15";
-import { runtime, setState, state } from "./store.js?v=15";
-import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, missingBuildElements, saveState } from "./state.js?v=15";
-import { closeModal, elementBalanceHtml, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=15";
-import { completeEvent, newTowerRun, resolveEvent } from "./exploration.js?v=15";
-import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=15";
+import { $, ELEMENTS, SCHOOL_ORDER } from "./core.js?v=16";
+import { CARD_BY_ID } from "./cards.js?v=16";
+import { runtime, setState, state } from "./store.js?v=16";
+import { bindCard, COMBAT_DECK_CAP, freshState, generateEvents, hydrate, loadLocal, missingBuildElements, saveState } from "./state.js?v=16";
+import { closeModal, elementBalanceHtml, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=16";
+import { completeEvent, newTowerRun, resolveEvent } from "./exploration.js?v=16";
+import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=16";
 
 function commitBinding(id) {
   const result = bindCard(id);

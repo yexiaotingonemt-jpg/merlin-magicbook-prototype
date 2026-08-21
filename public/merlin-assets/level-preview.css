@@ -394,6 +394,106 @@ body.modal-open {
   font-size: 8px;
 }
 
+.spell-meta {
+  display: block;
+  color: var(--school, #bda7c0);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  line-height: 1.45;
+}
+
+.spell-cost {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 24px;
+  margin-top: 7px;
+}
+
+.spell-cost-orb {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid color-mix(in srgb, var(--school, #a9a0bd) 65%, white);
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 32% 27%, color-mix(in srgb, var(--school, #a9a0bd) 78%, white), var(--school, #a9a0bd) 58%, #19141f);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--school, #a9a0bd) 25%, transparent);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.spell-cost.compact {
+  min-height: 18px;
+  margin-top: 4px;
+  gap: 3px;
+}
+
+.spell-cost.compact .spell-cost-orb {
+  width: 18px;
+  height: 18px;
+  font-size: 8px;
+}
+
+.spell-cost-free,
+.spell-cost-rule {
+  padding: 3px 7px;
+  border: 1px solid #49404f;
+  border-radius: 999px;
+  color: #94899b;
+  background: #110e16;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.spell-row {
+  grid-template-columns: minmax(175px, .85fr) minmax(230px, 1.45fr) auto;
+}
+
+.spell-overview {
+  min-width: 0;
+}
+
+.spell-overview h3 {
+  margin-top: 4px;
+}
+
+.spell-overview .level-pips {
+  margin-top: 7px;
+}
+
+.archive-card .spell-meta {
+  margin-bottom: 7px;
+}
+
+.archive-card .spell-cost {
+  margin-bottom: 10px;
+}
+
+.archive-card footer {
+  justify-content: flex-end;
+}
+
+.choice-button .spell-meta {
+  margin-bottom: 5px;
+}
+
+.choice-button .spell-cost {
+  margin: 3px 0 9px;
+}
+
+.context-page .spell-meta {
+  margin-bottom: 3px;
+  font-size: 7px;
+}
+
+.context-page .spell-cost {
+  margin-bottom: 3px;
+}
+
 @media (max-width: 460px) {
   .level-preview ul {
     grid-template-columns: 1fr;
@@ -432,5 +532,13 @@ body.modal-open {
   .confirmation-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .spell-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .spell-row > p {
+    grid-column: 1 / -1;
   }
 }

@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=15";
-import { CARD_BY_ID } from "./cards.js?v=15";
-import { runtime, state } from "./store.js?v=15";
-import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=15";
-import { elementOrb, renderRunStats, showView, toast } from "./ui.js?v=15";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=16";
+import { CARD_BY_ID } from "./cards.js?v=16";
+import { runtime, state } from "./store.js?v=16";
+import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=16";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=16";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -477,7 +477,7 @@ function playerStatusItems(b) {
     if (!raw) return [];
     let value = info.flag ? "生效中" : info.percent ? `${Math.round(raw * 100)}%` : raw;
     if (key === "attuned") value = `${ELEMENTS[raw]?.name || raw}系`;
-    if (key === "bookmark" && typeof raw === "string") value = CARD_BY_ID.get(raw)?.name || raw;
+    if (key === "bookmark" && typeof raw === "string") value = CARD_BY_ID.get(raw)?.name || "未知书页";
     return [{ ...info, value, tone: "buff" }];
   });
   if (b.enemies.some((enemy) => enemy.hp > 0 && (enemy.passives || []).includes("reverseWater"))) items.push({ name: "逆流诅咒", value: "生效中", copy: MONSTER_PASSIVES.reverseWater.copy, tone: "debuff" });
@@ -497,11 +497,11 @@ function statusPanelHtml(items, side, open) {
   return `<div class="status-overview"><span class="combat-side-label">BUFF / DEBUFF</span><div class="status-pills">${chips}</div><button class="status-toggle" data-status-toggle="${side}">${open ? "收起详细信息" : "查看详细信息"}</button></div><div class="status-detail-list" ${open ? "" : "hidden"}>${details}</div>`;
 }
 
-function spellPageHtml(card, castType = "full") {
+export function spellPageHtml(card, castType = "full") {
   const effects = expandedCardEffects(card);
   const fullActive = castType === "full";
   const echoActive = castType === "echo";
-  return `<span class="card-school">${esc(card.id)} · ${schoolLabel(card.school)} · 消耗 ${costLabel(card)}</span><h2>${esc(card.name)}</h2><p class="spell-tags">${esc(card.tags)}</p><div class="spell-rules"><p class="payment-copy">${esc(effects.payment)}</p><section class="effect-row ${fullActive ? "active" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row ${echoActive ? "active echo" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section><section class="effect-row targeting"><b>目标</b><p>${esc(effects.targeting)}</p></section></div><span class="cast-badge ${echoActive ? "echo" : ""}">${fullActive ? "本次：完整施法" : echoActive ? "本次：残响保底" : "攻击页"}</span>`;
+  return `${cardMetadataHtml(card)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><p class="payment-copy">${esc(effects.payment)}</p><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section><section class="effect-row targeting"><b>目标</b><p>${esc(effects.targeting)}</p></section></div>`;
 }
 
 export function renderBattle() {
@@ -533,7 +533,7 @@ export function renderBattle() {
   $("enemyCurrentCard").innerHTML = spellPageHtml(enemyPage, "page");
   const enemyBook = inspectedEnemy?.book || [];
   $("enemyBookCount").textContent = b.mode === "pvp" ? `${enemyBook.length}页快照` : "无魔法书";
-  $("enemyBookNote").innerHTML = b.mode === "pvp" ? `<details><summary>查看敌方装订书页</summary><p>${enemyBook.map((id) => esc(CARD_BY_ID.get(id)?.name || id)).join("、") || "没有可识别书页"}</p><small>当前镜像战斗仍使用快照属性与基础术式结算；书页效果将在后续战斗规则中接入。</small></details>` : "该NPC没有战斗魔法书，每次行动使用无附加卡牌效果的普通攻击；怪物被动仍在右侧状态区独立生效。";
+  $("enemyBookNote").innerHTML = b.mode === "pvp" ? `<details><summary>查看敌方装订书页</summary><p>${enemyBook.map((id) => esc(CARD_BY_ID.get(id)?.name || "未知书页")).join("、") || "没有可识别书页"}</p><small>当前镜像战斗仍使用快照属性与基础术式结算；书页效果将在后续战斗规则中接入。</small></details>` : "该NPC没有战斗魔法书，每次行动使用无附加卡牌效果的普通攻击；怪物被动仍在右侧状态区独立生效。";
   $("battleLog").innerHTML = b.logs.map((log) => `<div class="log-entry ${log.tone}"><b>#${log.n}</b><span>${esc(log.message)}</span></div>`).join("");
   $("battleSummary").hidden = !b.over;
   if (b.over) $("battleSummary").innerHTML = b.won ? `<h2>战斗胜利</h2><p>奖励已直接到账：${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">确认结果并继续</button>` : `<h2>挑战失败</h2><p>本次事件已经结算，不能重新挑战；失败不会获得经验或积分。</p><button data-battle-finish="loss">确认结果并继续</button>`;
