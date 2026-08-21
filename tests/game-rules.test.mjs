@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=24";
-import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=24";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=24";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=24";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=24";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=24";
-import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=24";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=24";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=24";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=25";
+import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=25";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=25";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=25";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=25";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=25";
+import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=25";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=25";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=25";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -204,21 +204,42 @@ test("foundation pages only spend elements left over after unflipped fixed costs
   assert.deepEqual(paymentFor(BASE_PAGES[0]), [0]);
 });
 
-test("level curve starts with two elements in three slots and expands toward five", () => {
+test("level curve starts with two elements and five available starting slots", () => {
   const state = setState(freshState());
-  assert.deepEqual(ELEMENT_SLOT_UNLOCK_LEVELS, [3, 5]);
+  assert.deepEqual(ELEMENT_SLOT_UNLOCK_LEVELS, []);
   assert.equal(state.startElements.length, 2);
-  assert.equal(slotCap(), 3);
-  assert.equal(poolCap(), 5);
+  assert.equal(slotCap(), 5);
+  assert.equal(poolCap(), 7);
   state.level = 3;
-  assert.equal(slotCap(), 4);
-  assert.equal(poolCap(), 6);
+  assert.equal(slotCap(), 5);
+  assert.equal(poolCap(), 7);
   state.level = 5;
   assert.equal(slotCap(), 5);
   assert.equal(poolCap(), 7);
   state.level = 20;
   assert.equal(slotCap(), 5);
   assert.equal(poolCap(), 7);
+});
+
+test("passive tomes are rare full-run rewards with fivefold per-pick growth", () => {
+  assert.equal(PASSIVE_LIBRARY_CHANCE, .16);
+  const expected = .16 + [1, 2, 4, 5].reduce((sum, chapter) => (
+    sum + CHAPTER_RULES[chapter].count * CHAPTER_RULES[chapter].weights.library / 1000 * PASSIVE_LIBRARY_CHANCE
+  ), 0);
+  assert.ok(Math.abs(expected - 1.8264) < 1e-10);
+
+  const current = setState(freshState());
+  const beforeHp = current.hp;
+  PASSIVES.forEach((passive) => passive.apply());
+  assert.equal(current.meta.expPct, 10);
+  assert.equal(current.meta.hpPct, 5);
+  assert.equal(current.meta.attackPct, 5);
+  assert.equal(current.meta.defensePct, 5);
+  assert.equal(current.meta.hit, 5);
+  assert.equal(current.meta.dodge, 5);
+  assert.equal(current.meta.crit, 5);
+  assert.equal(current.meta.resist, 5);
+  assert.ok(current.hp > beforeHp);
 });
 
 test("normal chapters keep total weight 1000 and the prologue raises element events to five per tower", () => {
@@ -285,6 +306,9 @@ test("event previews disclose exact rewards, risk, timer outcome, and reduced PV
   assert.match(monster.combat, /预计掉血约\d+.*实际闪避10%/);
   assert.match(monster.warning, /极端方差与特殊被动/);
   assert.equal(monster.timer, "2回合后升级");
+  const library = eventDecisionFacts({ type: "library", countdown: 2 });
+  assert.equal(library.reward, "3选1奖励");
+  assert.match(library.risk, /16%为被动秘典/);
   assert.ok(expectedBattleHpLoss({ type: "monster", level: 1 }) > 0);
   state.hp = 1;
   const lethalMonster = eventDecisionFacts({ type: "monster", level: 1, countdown: 2 });
@@ -301,7 +325,7 @@ test("choice events expose the current elements, bound pages, levels, and candid
   current.deck = ["FI-01", "WA-02"];
   const context = decisionContextHtml();
   assert.match(context, /当前构筑/);
-  assert.match(context, /起始元素 <b>2 \/ 3<\/b>/);
+  assert.match(context, /起始元素 <b>2 \/ 5<\/b>/);
   assert.match(context, /余烬召来[\s\S]*Lv\.2/);
   assert.match(context, /水刃术[\s\S]*Lv\.1/);
   const monoFit = candidateFitHtml(CARD_BY_ID.get("FI-02"));

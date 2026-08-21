@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=24";
-import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=24";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=24";
-import { setState, state } from "./store.js?v=24";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=25";
+import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=25";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=25";
+import { setState, state } from "./store.js?v=25";
 
 export const RUN_RULES_VERSION = 8;
 export const COMBAT_DECK_CAP = 10;
@@ -56,8 +56,8 @@ export function battleRewards(mode, floor = state.floor) {
   return { exp: Math.round(36 + floor * 7 + (floor > 0 && floor % 10 === 0 ? 80 : 0)), points: Math.round(24 + floor * 5 + (mode === "pvp" ? 55 : 0)) };
 }
 export function expNeed(level = state.level) { return 80 + (level - 1) * 40; }
-export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5];
-export function slotCap(level = state.level) { return Math.min(5, 3 + ELEMENT_SLOT_UNLOCK_LEVELS.filter((unlockLevel) => level >= unlockLevel).length); }
+export const ELEMENT_SLOT_UNLOCK_LEVELS = [];
+export function slotCap() { return 5; }
 export function poolCap(level = state.level) { return Math.min(16, slotCap(level) + 2 + (state.meta.poolBonus || 0)); }
 export function mainElement() {
   const counts = {};

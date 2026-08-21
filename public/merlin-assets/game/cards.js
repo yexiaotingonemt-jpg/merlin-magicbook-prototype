@@ -1,5 +1,5 @@
-import { C, all, any, fixed, random, same } from "./core.js?v=24";
-import { state } from "./store.js?v=24";
+import { C, all, any, fixed, random, same } from "./core.js?v=25";
+import { state } from "./store.js?v=25";
 
 export const BASE_PAGE_IDS = Array.from({ length: 10 }, (_, index) => `BA-${String(index + 1).padStart(2, "0")}`);
 export const BASE_PAGES = BASE_PAGE_IDS.map((id) => C(
@@ -120,14 +120,14 @@ const COMMONS = [
 CARDS.push(...COMMONS);
 export const CARD_BY_ID = new Map([...CARDS, ...BASE_PAGES].map((card) => [card.id, card]));
 export const PASSIVES = [
-  { id: "PA-01", name: "奥术理解", copy: "本轮角色经验获取提高2%。", apply: () => { state.meta.expPct += 2; } },
-  { id: "PA-02", name: "生命铭文", copy: "本轮最大生命提高1%。", apply: () => { state.meta.hpPct += 1; state.hp += Math.max(1, Math.round(state.hp * .01)); } },
-  { id: "PA-03", name: "攻势铭文", copy: "本轮法术攻击提高1%。", apply: () => { state.meta.attackPct += 1; } },
-  { id: "PA-04", name: "守御铭文", copy: "本轮法术防御提高1%。", apply: () => { state.meta.defensePct += 1; } },
-  { id: "PA-05", name: "精准星图", copy: "本轮命中增加1点。", apply: () => { state.meta.hit += 1; } },
-  { id: "PA-06", name: "幻影步法", copy: "本轮闪避增加1点。", apply: () => { state.meta.dodge += 1; } },
-  { id: "PA-07", name: "灾星观测", copy: "本轮暴击增加1点。", apply: () => { state.meta.crit += 1; } },
-  { id: "PA-08", name: "镇定心智", copy: "本轮抗暴增加1点。", apply: () => { state.meta.resist += 1; } }
+  { id: "PA-01", name: "奥术理解", copy: "本轮角色经验获取提高10%。", apply: () => { state.meta.expPct += 10; } },
+  { id: "PA-02", name: "生命铭文", copy: "本轮最大生命提高5%，并立即回复当前生命的5%。", apply: () => { state.meta.hpPct += 5; state.hp += Math.max(1, Math.round(state.hp * .05)); } },
+  { id: "PA-03", name: "攻势铭文", copy: "本轮法术攻击提高5%。", apply: () => { state.meta.attackPct += 5; } },
+  { id: "PA-04", name: "守御铭文", copy: "本轮法术防御提高5%。", apply: () => { state.meta.defensePct += 5; } },
+  { id: "PA-05", name: "精准星图", copy: "本轮命中增加5点。", apply: () => { state.meta.hit += 5; } },
+  { id: "PA-06", name: "幻影步法", copy: "本轮闪避增加5点。", apply: () => { state.meta.dodge += 5; } },
+  { id: "PA-07", name: "灾星观测", copy: "本轮暴击增加5点。", apply: () => { state.meta.crit += 5; } },
+  { id: "PA-08", name: "镇定心智", copy: "本轮抗暴增加5点。", apply: () => { state.meta.resist += 5; } }
 ];
 
 export const STARTER_CARD_POOLS = {

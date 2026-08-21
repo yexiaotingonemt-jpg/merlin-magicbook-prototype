@@ -1,9 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=24";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=24";
-import { runtime, state } from "./store.js?v=24";
-import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=24";
-import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=24";
-import { startBattle, stopBattle } from "./battle.js?v=24";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=25";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=25";
+import { PASSIVE_LIBRARY_CHANCE } from "./content.js?v=25";
+import { runtime, state } from "./store.js?v=25";
+import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=25";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=25";
+import { startBattle, stopBattle } from "./battle.js?v=25";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -179,7 +180,7 @@ export function resolveEvent(eventId) {
   if (type === "organize") { state.organizeTokens += 1; completeEvent("获得安全整理", "获得1次安全拆页机会。可将一张非基础战斗书页移回仓库，空位自动恢复为基础咒术页。"); return; }
   if (type === "library") {
     const pool = CARDS.filter((c) => !cardLevel(c.id));
-    if (!pool.length || Math.random() < .16) { choosePassiveModal(); return; }
+    if (!pool.length || Math.random() < PASSIVE_LIBRARY_CHANCE) { choosePassiveModal(); return; }
     chooseCardModal("残破书库 · 三选一", shuffle(pool).slice(0, 3), showAcquiredPageModal, `选择一张新书页后，可替换当前一页、作为升级材料或收入仓库；魔法书始终保持${COMBAT_DECK_CAP}页。`); return;
   }
   if (type === "upgrade") {

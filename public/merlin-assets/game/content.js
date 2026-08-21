@@ -20,6 +20,8 @@ export const CHAPTER_RULES = {
   6: { boss: "六相元素龙", final: true },
 };
 
+export const PASSIVE_LIBRARY_CHANCE = .16;
+
 export const EVENT_COUNTDOWNS = {
   experience: null, element: 4, library: 2, monster: 2, rest: null,
   transmute: 3, upgrade: null, organize: 4, player: 2,

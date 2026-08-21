@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=24";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=24";
-import { EVENTS } from "./content.js?v=24";
-import { runtime, state } from "./store.js?v=24";
-import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=24";
+import { $, ELEMENTS, esc } from "./core.js?v=25";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=25";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "./content.js?v=25";
+import { runtime, state } from "./store.js?v=25";
+import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=25";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -110,7 +110,7 @@ export function eventDecisionFacts(event) {
   if (event.type === "experience") Object.assign(facts, { reward: `${42 + state.floor * 5}经验`, risk: "立即结算" });
   if (event.type === "rest") Object.assign(facts, { reward: `回复${Math.min(maxHp() - Math.ceil(state.hp), Math.ceil(maxHp() * .42))}生命`, risk: "不会溢出上限" });
   if (event.type === "element") Object.assign(facts, { reward: "起始元素+1", risk: state.startElements.length >= slotCap() ? "已满，需替换1个" : "可直接增加" });
-  if (event.type === "library") Object.assign(facts, { reward: "3选1书页", risk: "获得后可替换、升级或入库" });
+  if (event.type === "library") Object.assign(facts, { reward: "3选1奖励", risk: `${Math.round(PASSIVE_LIBRARY_CHANCE * 100)}%为被动秘典；否则为新书页` });
   if (event.type === "upgrade") Object.assign(facts, { reward: "1张战斗书页+1级", risk: "自由选择" });
   if (event.type === "organize") Object.assign(facts, { reward: "安全整理+1", risk: "移入仓库保留等级" });
   if (event.type === "transmute") Object.assign(facts, { reward: "保留等级与装订位置", risk: "随机转为当前起始元素中的异系同消耗单系咒语" });
