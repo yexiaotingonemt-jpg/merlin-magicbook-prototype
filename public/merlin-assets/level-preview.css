@@ -92,6 +92,139 @@
   line-height: 1.45;
 }
 
+.modal.decision-modal .modal-card {
+  width: min(980px, 100%);
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.decision-context {
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid #55445d;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #17121c, #0f0c13);
+}
+
+.decision-context > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #3c3144;
+  background: #211925;
+}
+
+.decision-context > header div {
+  display: grid;
+  gap: 2px;
+}
+
+.decision-context > header small {
+  color: #b78e48;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.decision-context > header b {
+  color: #eee2ef;
+  font: 700 15px Georgia, "Songti SC", serif;
+}
+
+.decision-context > header > span {
+  color: #8c7f93;
+  font-size: 9px;
+}
+
+.decision-context-grid {
+  display: grid;
+  grid-template-columns: minmax(210px, .7fr) minmax(0, 1.3fr);
+  gap: 1px;
+  background: #3c3144;
+}
+
+.decision-context-grid > div {
+  padding: 13px 14px;
+  background: #141018;
+}
+
+.decision-context h3 {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+  color: #9f92a7;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.decision-context h3 b {
+  color: #e4c66f;
+}
+
+.context-elements,
+.context-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.context-element,
+.context-page {
+  border: 1px solid color-mix(in srgb, var(--school, #74677d) 54%, #3f3546);
+  background: color-mix(in srgb, var(--school, #74677d) 8%, #17121c);
+}
+
+.context-element {
+  padding: 6px 8px;
+  border-radius: 999px;
+  color: #ddd1df;
+  font-size: 9px;
+}
+
+.context-page {
+  display: grid;
+  gap: 2px;
+  min-width: 112px;
+  padding: 6px 8px;
+  border-radius: 7px;
+}
+
+.context-page b {
+  color: #ddd1df;
+  font-size: 9px;
+}
+
+.context-page small,
+.context-empty {
+  color: #887b90;
+  font-size: 7px;
+}
+
+.candidate-fit {
+  display: grid;
+  gap: 3px;
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px solid #3d3244;
+}
+
+.candidate-fit b {
+  position: static;
+  color: #e3c36c;
+  font-size: 8px;
+}
+
+.candidate-fit small {
+  position: static;
+  color: #908398;
+  font-size: 8px;
+}
+
 @media (max-width: 460px) {
   .level-preview ul {
     grid-template-columns: 1fr;
@@ -99,5 +232,20 @@
 
   .event-card {
     min-height: 390px;
+  }
+
+  .decision-context > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .decision-context-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .context-page {
+    width: calc(50% - 3px);
+    min-width: 0;
   }
 }

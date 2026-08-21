@@ -40,7 +40,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   const engine = Object.values(sources).join("\n");
   for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "enemyBattleStats", "enemyBattleElements", "enemyBattleStatuses", "enemyCurrentCard", "playerBookCount", "enemyBookCount"]) assert.match(game, new RegExp(`id="${id}"`));
   assert.doesNotMatch(game, /battleRestart|重新开打/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=10"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=11"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -65,11 +65,14 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=10"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=10"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=11"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=11"/);
   assert.match(sources.ui, /export function eventDecisionFacts\(event\)/);
   assert.match(sources.ui, /dataset\.locked/);
+  assert.match(sources.ui, /document\.body\.classList\.add\("modal-open"\)/);
   assert.match(sources.exploration, /showModal\([\s\S]*false\)/);
+  assert.match(sources.exploration, /export function decisionContextHtml\(\)/);
+  assert.match(sources.exploration, /export function candidateFitHtml\(card\)/);
   assert.doesNotMatch(sources.battle, /data-battle-retry|export function restartBattle/);
   assert.doesNotMatch(sources.app, /data-battle-retry|\brestartBattle\b/);
 });

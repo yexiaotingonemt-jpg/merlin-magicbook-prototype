@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=10";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=10";
-import { EVENTS } from "./content.js?v=10";
-import { runtime, state } from "./store.js?v=10";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, crit as critStat } from "./state.js?v=10";
+import { $, ELEMENTS, esc } from "./core.js?v=11";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=11";
+import { EVENTS } from "./content.js?v=11";
+import { runtime, state } from "./store.js?v=11";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, evasionChance, expNeed, hit, maxHp, poolCap, resist, schoolLabel, slotCap, crit as critStat } from "./state.js?v=11";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -14,11 +14,13 @@ export function showModal(html, closable = true) {
   $("modalContent").innerHTML = html;
   $("modalClose").hidden = !closable;
   $("modal").dataset.locked = closable ? "false" : "true";
+  $("modal").classList.toggle("decision-modal", html.includes('class="decision-context"'));
+  document.body.classList.add("modal-open");
   $("modal").hidden = false;
 }
 export function closeModal(force = false) {
   if (!force && $("modal").dataset.locked === "true") return false;
-  $("modal").hidden = true; runtime.pendingElement = null;
+  $("modal").hidden = true; document.body.classList.remove("modal-open"); runtime.pendingElement = null;
   return true;
 }
 export function elementOrb(element, empty = false) {

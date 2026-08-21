@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=10";
-import { CARD_BY_ID } from "./cards.js?v=10";
-import { runtime, state } from "./store.js?v=10";
-import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=10";
-import { elementOrb, renderRunStats, showView, toast } from "./ui.js?v=10";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=11";
+import { CARD_BY_ID } from "./cards.js?v=11";
+import { runtime, state } from "./store.js?v=11";
+import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState, schoolLabel } from "./state.js?v=11";
+import { elementOrb, renderRunStats, showView, toast } from "./ui.js?v=11";
 
 let battleTimer = null;
 let battleSpeed = 1;

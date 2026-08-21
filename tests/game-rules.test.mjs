@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=10";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=10";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=10";
-import { learnCard } from "../public/merlin-assets/game/exploration.js?v=10";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=10";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=10";
-import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=10";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=10";
-import { eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=10";
+import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=11";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy } from "../public/merlin-assets/game/battle.js?v=11";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=11";
+import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=11";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=11";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=11";
+import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, generateEvents, hydrate, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap } from "../public/merlin-assets/game/state.js?v=11";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=11";
+import { eventDecisionFacts } from "../public/merlin-assets/game/ui.js?v=11";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 3);
@@ -213,6 +213,23 @@ test("event previews disclose exact rewards, risk, timer outcome, and reduced PV
   assert.match(monster.combat, /实际闪避10%.*失败无奖励/);
   assert.equal(monster.timer, "2回合后升级");
   assert.deepEqual(battleRewards("pvp", 1), { exp: 43, points: 84 });
+});
+
+test("choice events expose the current elements, bound pages, levels, and candidate fit", () => {
+  const current = setState(freshState());
+  current.startElements = ["fire", "water"];
+  current.collection = { "FI-01": 2, "WA-02": 1 };
+  current.deck = ["FI-01", "WA-02"];
+  const context = decisionContextHtml();
+  assert.match(context, /当前构筑/);
+  assert.match(context, /起始元素 <b>2 \/ 3<\/b>/);
+  assert.match(context, /余烬召来[\s\S]*Lv\.2/);
+  assert.match(context, /水刃术[\s\S]*Lv\.1/);
+  const monoFit = candidateFitHtml(CARD_BY_ID.get("FI-02"));
+  assert.match(monoFit, /尚未学习/);
+  assert.match(monoFit, /开局匹配：火1\/1/);
+  const hybridFit = candidateFitHtml(CARD_BY_ID.get("HY-01"));
+  assert.match(hybridFit, /火1\/1 · 水1\/1/);
 });
 
 test("completed battles remain persisted until their result is confirmed", () => {
