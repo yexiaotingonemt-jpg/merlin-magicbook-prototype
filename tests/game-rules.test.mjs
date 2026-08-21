@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=23";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=23";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=23";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=23";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=23";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=23";
-import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=23";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=23";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=23";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=24";
+import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=24";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=24";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=24";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=24";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=24";
+import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=24";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=24";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=24";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -398,6 +398,13 @@ test("PVE results mark one combatant as winner and the other as loser", () => {
   assert.equal(pvePanelOutcomes({ mode: "pvp", over: true, won: false }), null);
   assert.deepEqual(pvePanelOutcomes({ mode: "pve", over: true, won: true }), { player: "winner", enemy: "loser" });
   assert.deepEqual(pvePanelOutcomes({ mode: "pve", over: true, won: false }), { player: "loser", enemy: "winner" });
+});
+
+test("player and enemy spell pages alternate their motion state and settle upright", () => {
+  assert.deepEqual(battleCardMotionState({ turn: "player", over: false }), { player: true, enemy: false });
+  assert.deepEqual(battleCardMotionState({ turn: "enemy", over: false }), { player: false, enemy: true });
+  assert.deepEqual(battleCardMotionState({ turn: "player", over: true }), { player: false, enemy: false });
+  assert.deepEqual(battleCardMotionState(null), { player: false, enemy: false });
 });
 
 test("confirming a PVE defeat resets the tower while preserving permanent progress", () => {

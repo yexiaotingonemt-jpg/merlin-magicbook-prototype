@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=23";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=23";
-import { runtime, state } from "./store.js?v=23";
-import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=23";
-import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=23";
-import { startBattle, stopBattle } from "./battle.js?v=23";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=24";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=24";
+import { runtime, state } from "./store.js?v=24";
+import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=24";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=24";
+import { startBattle, stopBattle } from "./battle.js?v=24";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;

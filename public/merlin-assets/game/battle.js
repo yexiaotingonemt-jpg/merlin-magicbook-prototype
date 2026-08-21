@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=23";
-import { CARD_BY_ID } from "./cards.js?v=23";
-import { runtime, state } from "./store.js?v=23";
-import { attack, battleRewards, cardLevel, chapterLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=23";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=23";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=24";
+import { CARD_BY_ID } from "./cards.js?v=24";
+import { runtime, state } from "./store.js?v=24";
+import { attack, battleRewards, cardLevel, chapterLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=24";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=24";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -522,6 +522,11 @@ export function spellPageHtml(card, castType = "full") {
   return `${cardMetadataHtml(card)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><section class="effect-row casting-rules"><b>施法规则</b><p>${esc(`${effects.payment} ${effects.targeting}`)}</p></section><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section></div>`;
 }
 
+export function battleCardMotionState(battle) {
+  const active = Boolean(battle && !battle.over);
+  return { player: active && battle.turn === "player", enemy: active && battle.turn === "enemy" };
+}
+
 export function pvePanelOutcomes(battle) {
   if (!battle?.over || battle.mode !== "pve") return null;
   return battle.won ? { player: "winner", enemy: "loser" } : { player: "loser", enemy: "winner" };
@@ -540,6 +545,7 @@ function renderPvePanelOutcomes(battle) {
 
 export function renderBattle() {
   const b = state.battle; if (!b) return;
+  const cardMotion = battleCardMotionState(b);
   renderPvePanelOutcomes(b);
   $("battleMode").textContent = b.mode === "pve" ? "PVE · 玩家先手 · 怪物不预告" : `PVP 镜像 · 随机先手 · 疲劳 ${b.enemyFatigue}`;
   $("battleTitle").textContent = b.mode === "pve" ? `${b.spec.boss ? "首领" : "元素"}试炼` : "镜像法师对决";
@@ -552,7 +558,7 @@ export function renderBattle() {
   $("battleStatuses").innerHTML = statusPanelHtml(playerStatusItems(b), "player", b.statusPanels?.player);
   $("turnRune").textContent = b.over ? "战斗结束" : b.turn === "player" ? "魔法书正在翻页" : "敌方行动";
   if (b.currentCard) {
-    const card = b.currentCard; $("currentCard").className = `current-card ${card.school} ${b.over ? "" : "casting"}`;
+    const card = b.currentCard; $("currentCard").className = `current-card ${card.school} ${cardMotion.player ? "casting" : ""}`;
     $("currentCard").innerHTML = spellPageHtml(card, b.castType);
   } else { $("currentCard").className = "current-card empty"; $("currentCard").innerHTML = '<span class="card-school">WAITING</span><h2>等待翻页</h2><p>我方每张书页在本轮只会出现一次；翻出后会在这里同时显示完整施法、残响、支付条件和目标规则。</p>'; }
   $("playerBookCount").textContent = `${state.deck.length}页`;
@@ -564,7 +570,7 @@ export function renderBattle() {
   $("enemyBattleStatuses").innerHTML = statusPanelHtml(enemyStatusItems(inspectedEnemy), "enemy", b.statusPanels?.enemy);
   $("enemyList").innerHTML = `<span class="combat-side-label">目标列表 · ${b.enemies.filter((e) => e.hp > 0).length}存活</span>${b.enemies.map((e) => `<article class="enemy-card ${target?.id === e.id ? "target" : ""}"><header><b>${e.hp > 0 ? e.icon : "☠"} ${esc(e.name)}</b><small>${Math.ceil(e.hp)}/${e.maxHp}</small></header><div class="mini-bar"><i style="width:${e.hp / e.maxHp * 100}%"></i></div></article>`).join("")}`;
   const enemyPage = b.enemyCurrentCard || enemyBasicPage(inspectedEnemy, b.mode);
-  $("enemyCurrentCard").className = `current-card enemy-current-card ${enemyPage.school} ${b.turn === "enemy" && !b.over ? "casting" : ""}`;
+  $("enemyCurrentCard").className = `current-card enemy-current-card ${enemyPage.school} ${cardMotion.enemy ? "casting" : ""}`;
   $("enemyCurrentCard").innerHTML = spellPageHtml(enemyPage, "page");
   const enemyBook = inspectedEnemy?.book || [];
   $("enemyBookCount").textContent = b.mode === "pvp" ? `${enemyBook.length}页快照` : "无魔法书";
