@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=26";
-import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=26";
-import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=26";
-import { candidateFitHtml, decisionContextHtml, LIBRARY_SCHOOLS, librarySpellChoices, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=26";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=26";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=26";
-import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=26";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=26";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=26";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=27";
+import { adjustedSegmentPct, battleCardMotionState, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=27";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "../public/merlin-assets/game/content.js?v=27";
+import { candidateFitHtml, decisionContextHtml, LIBRARY_SCHOOLS, librarySpellChoices, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=27";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=27";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=27";
+import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=27";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=27";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, eventThreatLevelLabel, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=27";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -318,6 +318,10 @@ test("event previews disclose exact rewards, risk, timer outcome, and reduced PV
   assert.match(monster.combat, /预计掉血约\d+.*实际闪避10%/);
   assert.match(monster.warning, /极端方差与特殊被动/);
   assert.equal(monster.timer, "2回合后升级");
+  const maxMonster = eventDecisionFacts({ type: "monster", level: 3, countdown: 1 });
+  assert.equal(eventThreatLevelLabel(3), "Max");
+  assert.match(maxMonster.risk, /^Max ·/);
+  assert.equal(maxMonster.timer, "1回合后重置");
   const library = eventDecisionFacts({ type: "library", countdown: 2 });
   assert.equal(library.reward, "六系6选1奖励");
   assert.match(library.risk, /16%改为被动秘典三选一/);

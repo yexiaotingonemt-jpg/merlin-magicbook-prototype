@@ -1,10 +1,10 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=26";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=26";
-import { PASSIVE_LIBRARY_CHANCE } from "./content.js?v=26";
-import { runtime, state } from "./store.js?v=26";
-import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=26";
-import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=26";
-import { startBattle, stopBattle } from "./battle.js?v=26";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=27";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=27";
+import { PASSIVE_LIBRARY_CHANCE } from "./content.js?v=27";
+import { runtime, state } from "./store.js?v=27";
+import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=27";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=27";
+import { startBattle, stopBattle } from "./battle.js?v=27";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;

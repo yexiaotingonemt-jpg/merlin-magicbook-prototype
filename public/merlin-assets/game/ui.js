@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=26";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=26";
-import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "./content.js?v=26";
-import { runtime, state } from "./store.js?v=26";
-import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=26";
+import { $, ELEMENTS, esc } from "./core.js?v=27";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=27";
+import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "./content.js?v=27";
+import { runtime, state } from "./store.js?v=27";
+import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=27";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -104,8 +104,13 @@ export function expectedBattleHpLoss(event) {
   const expectedEnemyActions = pvp ? 19.5 * durationScale : event.boss ? 19 : Math.max(1, 10 * durationScale - 1);
   return Math.max(0, Math.round(enemyAttack * .7 * .25 * defenseFactor * hitChance * critMultiplier * expectedEnemyActions));
 }
+export function eventThreatLevelLabel(level) {
+  const normalized = Math.max(1, Number(level || 1));
+  return normalized >= 3 ? "Max" : `Lv.${normalized}`;
+}
 export function eventDecisionFacts(event) {
-  const timer = event.countdown == null ? "无限；不会自燃" : ["monster", "player"].includes(event.type) ? `${event.countdown}回合后升级` : `${event.countdown}回合后消失`;
+  const threat = ["monster", "player"].includes(event.type);
+  const timer = event.countdown == null ? "无限；不会自燃" : threat ? Number(event.level || 1) >= 3 ? `${event.countdown}回合后重置` : `${event.countdown}回合后升级` : `${event.countdown}回合后消失`;
   const facts = { timer };
   if (event.type === "experience") Object.assign(facts, { reward: `${42 + state.floor * 5}经验`, risk: "立即结算" });
   if (event.type === "rest") Object.assign(facts, { reward: `回复${Math.min(maxHp() - Math.ceil(state.hp), Math.ceil(maxHp() * .42))}生命`, risk: "不会溢出上限" });
@@ -119,12 +124,12 @@ export function eventDecisionFacts(event) {
     const ratios = event.boss ? "生命100% · 攻防100%" : `生命${Math.round(60 * scale)}% · 攻${Math.round(70 * scale)}% · 防${Math.round(50 * scale)}%`;
     const reward = battleRewards("pve");
     const expectedLoss = expectedBattleHpLoss(event), lethal = expectedLoss >= state.hp;
-    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `Lv.${level} · ${ratios}`, combat: `预计掉血约${expectedLoss} · 实际闪避${percent(evasionChance(Math.max(0, dodge() - 20), hit()))}`, warning: lethal ? `高风险：当前${Math.ceil(state.hp)}生命，预计可能阵亡` : "估算未计极端方差与特殊被动", lethal });
+    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `${eventThreatLevelLabel(level)} · ${ratios}`, combat: `预计掉血约${expectedLoss} · 实际闪避${percent(evasionChance(Math.max(0, dodge() - 20), hit()))}`, warning: lethal ? `高风险：当前${Math.ceil(state.hp)}生命，预计可能阵亡` : "估算未计极端方差与特殊被动", lethal });
   }
   if (event.type === "player") {
     const reward = battleRewards("pvp");
     const expectedLoss = expectedBattleHpLoss(event), lethal = expectedLoss >= maxHp();
-    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `Lv.${event.level || 1} · 随机先手`, combat: `双方满血 · 预计掉血约${expectedLoss}`, warning: lethal ? `高风险：预计掉血达到满血上限${maxHp()}` : "估算未计极端方差与随机先手", lethal });
+    Object.assign(facts, { reward: `${reward.exp}经验 + ${reward.points}积分`, risk: `${eventThreatLevelLabel(event.level)} · 随机先手`, combat: `双方满血 · 预计掉血约${expectedLoss}`, warning: lethal ? `高风险：预计掉血达到满血上限${maxHp()}` : "估算未计极端方差与随机先手", lethal });
   }
   return facts;
 }
@@ -167,7 +172,7 @@ export function renderExplore() {
       const timerClass = event.countdown === 1 ? " urgent" : "";
       const factRows = [["收益", facts.reward], ["代价", facts.risk], ["战斗", facts.combat], ["警示", facts.warning], ["时限", facts.timer]];
       const titleClass = isThreat ? ` event-title-level-${threatLevel}` : "";
-      const levelLabel = isThreat ? `<span class="event-level-label">Lv.${threatLevel}</span>` : "";
+      const levelLabel = isThreat ? `<span class="event-level-label">${eventThreatLevelLabel(threatLevel)}</span>` : "";
       return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><span class="event-timer${timerClass}"><span class="event-hourglass" aria-hidden="true">⌛</span><strong>${timer}</strong></span><span class="event-icon">${meta.icon}</span><h3 class="event-title${titleClass}"><span>${event.name || meta.name}</span>${levelLabel}</h3><p>${meta.copy}</p><span class="event-facts">${factRows.filter(([, value]) => value).map(([label, value]) => `<span class="${label === "警示" && facts.lethal ? "event-fact-danger" : ""}"><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"} →</b></button>`;
     }).join("");
   }
