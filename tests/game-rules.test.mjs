@@ -1,24 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=16";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=16";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=16";
-import { candidateFitHtml, decisionContextHtml, learnCard } from "../public/merlin-assets/game/exploration.js?v=16";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=16";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=16";
-import { advanceChapter, battleRewards, bindCard, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=16";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=16";
-import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=16";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=17";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=17";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=17";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=17";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=17";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=17";
+import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=17";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=17";
+import { cardCostHtml, cardMetadataHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=17";
 
 function assertStarterLoadout(loadout) {
-  assert.equal(loadout.deck.length, 3);
-  assert.equal(new Set(loadout.deck).size, 3);
+  assert.equal(loadout.deck.length, 10);
+  assert.equal(new Set(loadout.deck).size, 10);
+  assert.equal(loadout.starterPages?.length ?? loadout.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).length, 3);
+  assert.equal(loadout.deck.filter((id) => CARD_BY_ID.get(id)?.basePage).length, 7);
   assert.equal(loadout.startElements.length, 2);
   assert.equal(new Set(loadout.startElements).size, 2);
   assert.ok(loadout.startElements.every((school) => ["fire", "water", "wind"].includes(school)));
   const schoolCounts = Object.fromEntries(loadout.startElements.map((school) => [school, 0]));
-  loadout.deck.forEach((id) => {
+  loadout.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).forEach((id) => {
     const card = CARD_BY_ID.get(id);
     assert.ok(card);
     assert.ok(loadout.startElements.includes(card.school));
@@ -31,7 +33,9 @@ function assertStarterLoadout(loadout) {
 
 test("card catalog and starter pools remain internally consistent", () => {
   assert.equal(CARDS.length, 91);
-  assert.equal(CARD_BY_ID.size, 91);
+  assert.equal(BASE_PAGES.length, 10);
+  assert.equal(BASE_PAGE_IDS.length, 10);
+  assert.equal(CARD_BY_ID.size, 101);
   assert.equal(new Set(CARDS.map((card) => card.id)).size, 91);
   assert.equal(PASSIVES.length, 8);
   assert.deepEqual(Object.keys(STARTER_CARD_POOLS), ["fire", "water", "wind"]);
@@ -86,24 +90,32 @@ test("tower exposes all nine exploration event families", () => {
   );
 });
 
-test("new mages begin with three pages, two schools, and an empty warehouse", () => {
+test("new mages begin with ten pages, three elemental replacements, and an empty warehouse", () => {
   const current = freshState();
   assertStarterLoadout(current);
-  assert.deepEqual(Object.keys(current.collection).sort(), [...current.deck].sort());
+  assert.deepEqual(Object.keys(current.collection).sort(), current.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).sort());
 });
 
-test("combat grimoire stops at ten pages and new learned pages enter the warehouse", () => {
+test("new pages can replace, upgrade, or enter the warehouse without changing ten slots", () => {
   const current = setState(freshState());
-  const learnedIds = CARDS.slice(0, COMBAT_DECK_CAP + 1).map((card) => card.id);
-  current.collection = Object.fromEntries(learnedIds.slice(0, COMBAT_DECK_CAP).map((id) => [id, 1]));
-  current.deck = learnedIds.slice(0, COMBAT_DECK_CAP);
-  assert.equal(bindCard(learnedIds[COMBAT_DECK_CAP]), "unknown");
-  const overflowCard = CARD_BY_ID.get(learnedIds[COMBAT_DECK_CAP]);
-  const result = learnCard(overflowCard, true);
+  const incoming = CARDS.find((card) => !current.collection[card.id]);
+  const outgoingBase = current.deck.find((id) => CARD_BY_ID.get(id)?.basePage);
+  assert.match(replacePageWithReward(incoming, outgoingBase), /替换/);
   assert.equal(current.deck.length, COMBAT_DECK_CAP);
-  assert.equal(current.collection[overflowCard.id], 1);
-  assert.ok(!current.deck.includes(overflowCard.id));
-  assert.match(result, /10页上限.*自动放入仓库/);
+  assert.ok(current.deck.includes(incoming.id));
+  assert.equal(current.collection[incoming.id], 1);
+
+  const material = CARDS.find((card) => !current.collection[card.id]);
+  const targetId = current.deck.find((id) => !CARD_BY_ID.get(id)?.basePage);
+  const beforeLevel = current.collection[targetId];
+  assert.match(upgradePageWithReward(material, targetId), /升级材料/);
+  assert.equal(current.collection[targetId], beforeLevel + 1);
+  assert.equal(current.collection[material.id], undefined);
+
+  const stored = CARDS.find((card) => !current.collection[card.id]);
+  assert.match(storeAcquiredPage(stored), /仓库/);
+  assert.equal(current.collection[stored.id], 1);
+  assert.ok(!current.deck.includes(stored.id));
 });
 
 test("loaded decks above the cap keep their first ten unique learned pages", () => {
@@ -117,7 +129,7 @@ test("loaded decks above the cap keep their first ten unique learned pages", () 
   assert.ok(state.collection[ids[COMBAT_DECK_CAP]]);
 });
 
-test("legacy starters migrate to a clean three-page collection", () => {
+test("legacy starters migrate to a clean ten-page book with three learned replacements", () => {
   const legacy = freshState();
   delete legacy.runRulesVersion;
   legacy.deck = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19"];
@@ -125,10 +137,10 @@ test("legacy starters migrate to a clean three-page collection", () => {
   legacy.collection["FI-04"] = 2;
   assert.equal(hydrate(legacy), true);
   assertStarterLoadout(state);
-  assert.deepEqual(Object.keys(state.collection).sort(), [...state.deck].sort());
+  assert.deepEqual(Object.keys(state.collection).sort(), state.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).sort());
 });
 
-test("customized old saves migrate once from eleven bound pages to three", () => {
+test("customized old saves migrate once to the fixed ten-page rules", () => {
   const legacy = freshState();
   delete legacy.runRulesVersion;
   legacy.deck = ["FI-01", "FI-02", "FI-03", "FI-04", "FI-06", "FI-07", "FI-08", "CO-08", "CO-18", "CO-19", "WA-01"];
@@ -137,13 +149,14 @@ test("customized old saves migrate once from eleven bound pages to three", () =>
   assert.equal(hydrate(legacy), true);
   assert.equal(state.runRulesVersion, RUN_RULES_VERSION);
   assertStarterLoadout(state);
-  assert.deepEqual(Object.keys(state.collection).sort(), [...state.deck].sort());
+  assert.deepEqual(Object.keys(state.collection).sort(), state.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).sort());
 
   const reboundDeck = [...state.deck, "CO-14"];
   state.collection["CO-14"] = 1;
   state.deck = reboundDeck;
   assert.equal(hydrate(JSON.parse(JSON.stringify(state))), true);
-  assert.deepEqual(state.deck, reboundDeck);
+  assert.equal(state.deck.length, COMBAT_DECK_CAP);
+  assert.deepEqual(state.deck, reboundDeck.slice(0, COMBAT_DECK_CAP));
 });
 
 test("every tower run resets binding, elements, collection, and spell levels", () => {
@@ -161,8 +174,29 @@ test("every tower run resets binding, elements, collection, and spell levels", (
   assert.equal(next.level, 1);
   assert.equal(next.exp, 0);
   assert.equal(next.score, 777);
-  assert.deepEqual(Object.keys(next.collection).sort(), [...next.deck].sort());
-  next.deck.forEach((id) => assert.equal(next.collection[id], 1));
+  assert.deepEqual(Object.keys(next.collection).sort(), next.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).sort());
+  next.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).forEach((id) => assert.equal(next.collection[id], 1));
+});
+
+test("organizing a learned page restores a foundation page and keeps ten slots", () => {
+  const current = setState(freshState());
+  const learnedId = current.deck.find((id) => !CARD_BY_ID.get(id)?.basePage);
+  assert.equal(organizeBoundPage(learnedId), "organized");
+  assert.equal(current.deck.length, COMBAT_DECK_CAP);
+  assert.ok(!current.deck.includes(learnedId));
+  assert.equal(current.collection[learnedId], 1);
+  assert.equal(current.deck.filter((id) => CARD_BY_ID.get(id)?.basePage).length, 8);
+});
+
+test("foundation pages only spend elements left over after unflipped fixed costs", () => {
+  const current = setState(freshState());
+  current.battle = { elements: ["fire"], drawPile: ["FI-02"], player: { attuned: null } };
+  assert.equal(paymentFor(BASE_PAGES[0]), null);
+  current.battle.elements.push("fire");
+  assert.deepEqual(paymentFor(BASE_PAGES[0]), [0]);
+  current.battle.drawPile = [];
+  current.battle.elements = ["water"];
+  assert.deepEqual(paymentFor(BASE_PAGES[0]), [0]);
 });
 
 test("level curve starts with two elements in three slots and expands toward five", () => {

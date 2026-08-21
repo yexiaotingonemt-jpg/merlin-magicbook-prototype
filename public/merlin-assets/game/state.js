@@ -1,9 +1,9 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=16";
-import { CARD_BY_ID, createStarterLoadout } from "./cards.js?v=16";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=16";
-import { setState, state } from "./store.js?v=16";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=17";
+import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=17";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=17";
+import { setState, state } from "./store.js?v=17";
 
-export const RUN_RULES_VERSION = 6;
+export const RUN_RULES_VERSION = 7;
 export const COMBAT_DECK_CAP = 10;
 export const COMBAT_ELEMENTS = ["fire", "water", "wind", "earth", "light", "dark"];
 export const EVENT_THREAT_UPGRADE_STEP = .1;
@@ -11,7 +11,7 @@ export const LEVEL_UP_HEAL = 60;
 
 export function freshState(legacy = {}) {
   const starter = createStarterLoadout();
-  const collection = Object.fromEntries(starter.deck.map((id) => [id, 1]));
+  const collection = Object.fromEntries(starter.starterPages.map((id) => [id, 1]));
   const meta = legacy.meta || {};
   return {
     gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, board: [], preview: [], chapter: 1, projection: 0,
@@ -93,6 +93,7 @@ export function theoreticalElementBalance(deck = state.deck, startElements = sta
     if (["index", "replay"].includes(card.kind) && rangeFor(main)) rangeFor(main).supplyMax += 1;
   });
   cards.forEach((card) => {
+    if (card.basePage) return;
     const cost = card.cost;
     if (!cost.amount) return;
     if (cost.type === "fixed") {
@@ -121,21 +122,38 @@ export function theoreticalElementBalance(deck = state.deck, startElements = sta
     worst: ranges[element].supplyMin - ranges[element].demandMax,
   }));
 }
-export function cardLevel(id) { return state.collection[id] || 0; }
+export function cardLevel(id) { return CARD_BY_ID.get(id)?.basePage ? 1 : state.collection[id] || 0; }
 export function normalizeCombatDeck(deck = state.deck) {
   const seen = new Set();
-  return deck.filter((id) => {
-    if (!state.collection[id] || seen.has(id)) return false;
+  const normalized = deck.filter((id) => {
+    const card = CARD_BY_ID.get(id);
+    if (!card || (!card.basePage && !state.collection[id]) || seen.has(id)) return false;
     seen.add(id);
     return true;
   }).slice(0, COMBAT_DECK_CAP);
+  for (const id of BASE_PAGE_IDS) {
+    if (normalized.length >= COMBAT_DECK_CAP) break;
+    if (!seen.has(id)) { normalized.push(id); seen.add(id); }
+  }
+  return normalized;
 }
-export function bindCard(id) {
-  if (!state.collection[id]) return "unknown";
-  if (state.deck.includes(id)) return "already";
-  if (state.deck.length >= COMBAT_DECK_CAP) return "full";
-  state.deck.push(id);
-  return "bound";
+export function replaceBoundPage(incomingId, outgoingId) {
+  if (!state.collection[incomingId]) return "unknown";
+  if (state.deck.includes(incomingId)) return "already";
+  const index = state.deck.indexOf(outgoingId);
+  if (index < 0) return "missing";
+  state.deck[index] = incomingId;
+  return "replaced";
+}
+export function organizeBoundPage(id) {
+  const card = CARD_BY_ID.get(id);
+  if (!card || card.basePage) return "base";
+  const index = state.deck.indexOf(id);
+  if (index < 0) return "missing";
+  const replacement = BASE_PAGE_IDS.find((baseId) => !state.deck.includes(baseId));
+  if (!replacement) return "missing-base";
+  state.deck[index] = replacement;
+  return "organized";
 }
 export function levelScale(id) { return 1 + Math.max(0, cardLevel(id) - 1) * .1; }
 export function costLabel(card) {

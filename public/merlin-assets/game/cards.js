@@ -1,5 +1,17 @@
-import { C, all, any, fixed, random, same } from "./core.js?v=16";
-import { state } from "./store.js?v=16";
+import { C, all, any, fixed, random, same } from "./core.js?v=17";
+import { state } from "./store.js?v=17";
+
+export const BASE_PAGE_IDS = Array.from({ length: 10 }, (_, index) => `BA-${String(index + 1).padStart(2, "0")}`);
+export const BASE_PAGES = BASE_PAGE_IDS.map((id) => C(
+  id,
+  "基础咒术页",
+  "arcane",
+  any(1),
+  "30%伤害，不消耗元素",
+  "60%伤害",
+  "基础咒术·保底输出",
+  { pct: 60, echoPct: 30, kind: "foundation", basePage: true },
+));
 
 export const CARDS = [
   C("FI-01", "余烬召来", "fire", same("fire", 0), "无残响", "缺火时增加2火，否则增加1火并强化下一张火系攻击", "元素呼应·生成", { kind: "generator" }),
@@ -106,7 +118,7 @@ const COMMONS = [
   C("CO-23", "奥术齐射", "arcane", any(3), "4段60%伤害", "6段75%伤害；单目标每次命中使后续段伤害提高8%，击杀后重新选目标", "基础攻击·多段·单体递增", { pct: 75, echoPct: 60, hits: 6, echoHits: 4, kind: "basic", loneRamp: .08 })
 ];
 CARDS.push(...COMMONS);
-export const CARD_BY_ID = new Map(CARDS.map((card) => [card.id, card]));
+export const CARD_BY_ID = new Map([...CARDS, ...BASE_PAGES].map((card) => [card.id, card]));
 export const PASSIVES = [
   { id: "PA-01", name: "奥术理解", copy: "本轮角色经验获取提高2%。", apply: () => { state.meta.expPct += 2; } },
   { id: "PA-02", name: "生命铭文", copy: "本轮最大生命提高1%。", apply: () => { state.meta.hpPct += 1; state.hp += Math.max(1, Math.round(state.hp * .01)); } },
@@ -135,11 +147,16 @@ function shuffledWith(items, randomValue) {
 
 export function createStarterLoadout(randomValue = Math.random) {
   const [doubleSchool, singleSchool] = shuffledWith(Object.keys(STARTER_CARD_POOLS), randomValue).slice(0, 2);
+  const starterPages = [
+    ...shuffledWith(STARTER_CARD_POOLS[doubleSchool], randomValue).slice(0, 2),
+    shuffledWith(STARTER_CARD_POOLS[singleSchool], randomValue)[0],
+  ];
+  const deck = [...BASE_PAGE_IDS];
+  const replacementSlots = shuffledWith(deck.map((_, index) => index), randomValue).slice(0, starterPages.length);
+  starterPages.forEach((id, index) => { deck[replacementSlots[index]] = id; });
   return {
-    deck: [
-      ...shuffledWith(STARTER_CARD_POOLS[doubleSchool], randomValue).slice(0, 2),
-      shuffledWith(STARTER_CARD_POOLS[singleSchool], randomValue)[0],
-    ],
+    deck,
+    starterPages,
     startElements: [doubleSchool, singleSchool],
   };
 }

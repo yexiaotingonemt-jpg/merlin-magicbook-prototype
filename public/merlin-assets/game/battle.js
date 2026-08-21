@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=16";
-import { CARD_BY_ID } from "./cards.js?v=16";
-import { runtime, state } from "./store.js?v=16";
-import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=16";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=16";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=17";
+import { CARD_BY_ID } from "./cards.js?v=17";
+import { runtime, state } from "./store.js?v=17";
+import { attack, battleRewards, cardLevel, costLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=17";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=17";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -71,6 +71,7 @@ function naturalEffect(card, effect, castType) {
 
 function paymentRule(card) {
   const cost = card.cost;
+  if (card.basePage) return "完整施法需要1个任意富余元素；系统只会支付不影响本轮尚未翻出非基础书页固定需求的元素。";
   if (!cost.amount) return "本页消耗0元素，翻到后自动完整施法。";
   if (cost.type === "fixed") return `完整施法需要${costLabel(card)}；满足时系统自动支付对应元素。`;
   if (cost.type === "any") return `完整施法需要${cost.amount}个任意元素，并按照元素池从左到右自动支付。`;
@@ -166,6 +167,15 @@ export function effectiveCost(card) {
 }
 export function paymentFor(card) {
   const elements = state.battle.elements, c = effectiveCost(card);
+  if (card.basePage) {
+    const reserved = {};
+    state.battle.drawPile.map((id) => CARD_BY_ID.get(id)).filter((next) => next && !next.basePage && next.cost.type === "fixed").forEach((next) => {
+      Object.entries(next.cost.parts || {}).forEach(([element, amount]) => { reserved[element] = (reserved[element] || 0) + amount; });
+    });
+    const available = countElements();
+    const index = elements.findIndex((element) => (available[element] || 0) > (reserved[element] || 0));
+    return index >= 0 ? [index] : null;
+  }
   if (c.type === "any") return elements.length >= c.amount ? [...Array(c.amount).keys()] : null;
   if (c.type === "random") return elements.length >= c.amount ? shuffle([...elements.keys()]).slice(0, c.amount).sort((a, b) => a - b) : null;
   if (c.type === "fixed") {

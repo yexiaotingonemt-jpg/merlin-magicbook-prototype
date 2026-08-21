@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=16";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=16";
-import { EVENTS } from "./content.js?v=16";
-import { runtime, state } from "./store.js?v=16";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=16";
+import { $, ELEMENTS, esc } from "./core.js?v=17";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=17";
+import { EVENTS } from "./content.js?v=17";
+import { runtime, state } from "./store.js?v=17";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=17";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -102,7 +102,7 @@ export function eventDecisionFacts(event) {
   if (event.type === "experience") Object.assign(facts, { reward: `${42 + state.floor * 5}经验`, risk: "立即结算" });
   if (event.type === "rest") Object.assign(facts, { reward: `回复${Math.min(maxHp() - Math.ceil(state.hp), Math.ceil(maxHp() * .42))}生命`, risk: "不会溢出上限" });
   if (event.type === "element") Object.assign(facts, { reward: "起始元素+1", risk: state.startElements.length >= slotCap() ? "已满，需替换1个" : "可直接增加" });
-  if (event.type === "library") Object.assign(facts, { reward: "3选1书页", risk: state.deck.length >= COMBAT_DECK_CAP ? "魔法书已满，进仓库" : "新书页直接装订" });
+  if (event.type === "library") Object.assign(facts, { reward: "3选1书页", risk: "获得后可替换、升级或入库" });
   if (event.type === "upgrade") Object.assign(facts, { reward: "1张战斗书页+1级", risk: "自由选择" });
   if (event.type === "organize") Object.assign(facts, { reward: "安全整理+1", risk: "移入仓库保留等级" });
   if (event.type === "transmute") Object.assign(facts, { reward: "保留等级与位置", risk: "转为同消耗的其他系" });
@@ -176,9 +176,11 @@ export function cardMatches(card, search, school, costFilter) {
 }
 export function spellRow(card, location) {
   const lv = cardLevel(card.id);
-  const canRemove = state.organizeTokens > 0;
-  const deckFull = state.deck.length >= COMBAT_DECK_CAP;
-  return `<article class="spell-row ${card.school}"><div class="spell-overview">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${location === "deck" ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>移入仓库</button>` : `<button data-bind="${card.id}" ${deckFull ? "disabled" : ""}>${deckFull ? "已满10页" : "装订"}</button>`}</article>`;
+  const canRemove = state.organizeTokens > 0 && !card.basePage;
+  const action = location === "deck"
+    ? `<button data-unbind="${card.id}" ${canRemove ? "" : "disabled"}>${card.basePage ? "基础页" : "移入仓库"}</button>`
+    : `<button data-bind="${card.id}">替换装订</button>`;
+  return `<article class="spell-row ${card.school}"><div class="spell-overview">${cardMetadataHtml(card)}<h3>${card.name}</h3>${cardCostHtml(card)}${levelPips(lv)}</div><p><b>完整：</b>${card.full}<br><b>残响：</b>${card.echo}</p>${action}</article>`;
 }
 export function renderGrimoire() {
   const search = $("cardSearch").value || "";
@@ -189,7 +191,7 @@ export function renderGrimoire() {
   $("organizeTokens").innerHTML = `安全整理 <b>${state.organizeTokens}</b> 次`;
   $("elementBalance").innerHTML = elementBalanceHtml();
   $("combatDeckCount").textContent = `${state.deck.length} / ${COMBAT_DECK_CAP} 页`;
-  $("warehouseCount").textContent = `${Object.keys(state.collection).length - state.deck.length} 页`;
+  $("warehouseCount").textContent = `${warehouseCards.length} 页`;
   $("combatDeckCards").innerHTML = deckCards.map((c) => spellRow(c, "deck")).join("") || '<p class="empty-copy">没有符合条件的战斗书页。</p>';
   $("warehouseCards").innerHTML = warehouseCards.map((c) => spellRow(c, "warehouse")).join("") || '<p class="empty-copy">仓库中没有符合条件的书页。</p>';
 }

@@ -43,7 +43,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=16"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=17"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -56,7 +56,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.battle, /export function spellPageHtml\(card/);
   assert.match(sources.battle, /export function enemyBasicPage\(enemy/);
   assert.match(sources.state, /export const COMBAT_DECK_CAP = 10/);
-  assert.match(sources.exploration, /战斗魔法书已达\$\{COMBAT_DECK_CAP\}页上限/);
+  assert.match(sources.exploration, /替换当前一页、作为升级材料或收入仓库/);
   for (const label of ["法攻", "法防", "命中", "闪避", "暴击", "抗暴"]) assert.match(sources.battle, new RegExp(`\\["${label}"`));
   assert.match(sources.battle, /实际 \$\{percent\(evasionChance/);
   assert.match(sources.core, /export function variance\(\)/);
@@ -69,8 +69,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=16"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=16"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=17"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=17"/);
   assert.match(sources.ui, /export function eventDecisionFacts\(event\)/);
   assert.match(sources.ui, /export function cardCostHtml\(card/);
   assert.match(sources.ui, /export function cardMetadataHtml\(card/);
@@ -89,7 +89,9 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.app, /continueExplore|continueButton/);
   assert.match(sources.state, /export function theoreticalElementBalance\(/);
   assert.match(sources.state, /export function missingBuildElements\(/);
-  assert.match(sources.app, /data-confirm-bind/);
+  assert.match(sources.exploration, /data-acquire-action="replace"/);
+  assert.match(sources.exploration, /data-acquire-action="upgrade"/);
+  assert.match(sources.exploration, /data-acquire-action="store"/);
   assert.doesNotMatch(sources.battle, /data-battle-retry|export function restartBattle/);
   assert.doesNotMatch(sources.app, /data-battle-retry|\brestartBattle\b/);
 });

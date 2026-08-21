@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#100d18">
   <title>梅林的魔法书 · 法师塔</title>
-  <link rel="stylesheet" href="./merlin-assets/grimoire-game.css?v=16">
-  <link rel="stylesheet" href="./merlin-assets/level-preview.css?v=16">
-  <link rel="stylesheet" href="./merlin-assets/battle-redesign.css?v=16">
+  <link rel="stylesheet" href="./merlin-assets/grimoire-game.css?v=17">
+  <link rel="stylesheet" href="./merlin-assets/level-preview.css?v=17">
+  <link rel="stylesheet" href="./merlin-assets/battle-redesign.css?v=17">
 </head>
 <body>
   <div id="game" class="game-shell">
@@ -116,7 +116,7 @@
       </section>
 
       <section id="grimoireView" class="view" aria-labelledby="grimoireTitle">
-        <div class="page-heading"><div><p class="eyebrow">BINDING DESK</p><h1 id="grimoireTitle">战斗魔法书</h1><p>最多装订10页；仓库书页可在未满时自由装订，战斗书页只能消耗整理次数安全移回仓库。</p></div><div id="organizeTokens" class="token-badge"></div></div>
+        <div class="page-heading"><div><p class="eyebrow">BINDING DESK</p><h1 id="grimoireTitle">战斗魔法书</h1><p>固定10页；新页或仓库页通过替换装订，主动移回仓库仍需消耗整理次数，空位恢复为基础页。</p></div><div id="organizeTokens" class="token-badge"></div></div>
         <section class="element-balance-panel" aria-labelledby="elementBalanceTitle"><header><div><small>ELEMENT ECONOMY</small><h2 id="elementBalanceTitle">理论元素余缺</h2></div><span>+ 为盈余 · − 为缺口 · 区间按最好～最差显示</span></header><div id="elementBalance" class="element-balance-chips"></div><p>按起始元素、理论生成量与全部书页的完整施法最低需求估算；不模拟翻页顺序、元素池溢出或残响。</p></section>
         <div class="filters"><input id="cardSearch" placeholder="搜索咒语名称或关键词"><select id="schoolFilter"></select><select id="costFilter"><option value="all">全部消耗</option><option value="0">0 元素</option><option value="1">1 元素</option><option value="2">2 元素</option><option value="3">3 元素</option><option value="all-cost">完全消耗</option></select></div>
         <div class="book-layout">
@@ -140,6 +140,6 @@
     <div id="modal" class="modal" hidden><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalContent"></div></div></div>
     <div id="toast" class="toast" hidden></div>
   </div>
-  <script type="module" src="./merlin-assets/game/app.js?v=16"></script>
+  <script type="module" src="./merlin-assets/game/app.js?v=17"></script>
 </body>
 </html>

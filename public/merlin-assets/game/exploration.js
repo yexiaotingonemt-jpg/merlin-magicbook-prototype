@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=16";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=16";
-import { runtime, setState, state } from "./store.js?v=16";
-import { advanceChapter, bindCard, cardLevel, COMBAT_DECK_CAP, freshTowerRun, gainExp, generateEvents, maxHp, saveState, settleExplorationTurn, slotCap } from "./state.js?v=16";
-import { cardCostHtml, cardMetadataHtml, closeModal, showModal, showView, toast } from "./ui.js?v=16";
-import { startBattle, stopBattle } from "./battle.js?v=16";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=17";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=17";
+import { runtime, setState, state } from "./store.js?v=17";
+import { advanceChapter, cardLevel, COMBAT_DECK_CAP, freshTowerRun, gainExp, generateEvents, maxHp, missingBuildElements, replaceBoundPage, saveState, settleExplorationTurn, slotCap } from "./state.js?v=17";
+import { cardCostHtml, cardMetadataHtml, closeModal, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=17";
+import { startBattle, stopBattle } from "./battle.js?v=17";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -59,15 +59,72 @@ export function choosePassiveModal() {
     closeModal(true); completeEvent("秘典成长", `${passive.name}提升至 Lv.${state.meta.passiveLevels[id]}：${passive.copy}`);
   };
 }
-export function learnCard(card, forceDeck = true) {
+export function storeAcquiredPage(card) {
   if (cardLevel(card.id)) {
     state.collection[card.id] = Math.min(6, cardLevel(card.id) + 1);
-    return `${card.name}升至 Lv.${cardLevel(card.id)}`;
+    return `${card.name}的同名书页已转化为升级，提升至 Lv.${cardLevel(card.id)}`;
   }
   state.collection[card.id] = 1;
-  if (!forceDeck) return `学会${card.name}，已放入仓库`;
-  if (bindCard(card.id) === "bound") return `学会${card.name}，已装订到战斗魔法书`;
-  return `学会${card.name}；战斗魔法书已达${COMBAT_DECK_CAP}页上限，书页已自动放入仓库`;
+  return `学会${card.name}，已放入仓库`;
+}
+export function upgradePageWithReward(card, targetId) {
+  const target = CARD_BY_ID.get(targetId);
+  if (!target || target.basePage || !state.deck.includes(targetId) || cardLevel(targetId) >= 6) return null;
+  state.collection[targetId] = cardLevel(targetId) + 1;
+  return `将《${card.name}》作为升级材料，《${target.name}》提升至 Lv.${cardLevel(targetId)}`;
+}
+export function replacePageWithReward(card, outgoingId) {
+  if (state.deck.includes(card.id) || !state.deck.includes(outgoingId)) return null;
+  const wasKnown = Boolean(cardLevel(card.id));
+  if (!wasKnown) state.collection[card.id] = 1;
+  const result = replaceBoundPage(card.id, outgoingId);
+  if (result !== "replaced") {
+    if (!wasKnown) delete state.collection[card.id];
+    return null;
+  }
+  return `《${card.name}》替换了《${CARD_BY_ID.get(outgoingId).name}》；旧书页${CARD_BY_ID.get(outgoingId).basePage ? "回归基础页库" : "已收入仓库"}`;
+}
+function confirmReplacement(card, outgoingId, onReplace, locked) {
+  const remainingDeck = state.deck.filter((id) => id !== outgoingId);
+  const missing = missingBuildElements(card, remainingDeck);
+  if (!missing.length) { onReplace(outgoingId); return; }
+  const names = missing.map((element) => `${ELEMENTS[element].icon}${ELEMENTS[element].name}元素`).join("、");
+  showModal(`<h2>替换后将引入新元素系</h2><p>《${card.name}》会引入当前起始元素和替换后魔法书中完全没有的 <b>${names}</b>。这可能扩大元素缺口，但不会禁止装订。</p><div class="confirm-balance"><span>替换后理论余缺</span><div class="element-balance-chips">${elementBalanceHtml([...remainingDeck, card.id])}</div></div><div class="confirmation-actions"><button class="secondary" data-back-replace>返回选择</button><button class="primary" data-confirm-replace>仍然替换</button></div>`, locked);
+  $("modalContent").onclick = (event) => {
+    if (event.target.closest("[data-back-replace]")) { showReplacementModal(card, onReplace, locked); return; }
+    if (event.target.closest("[data-confirm-replace]")) onReplace(outgoingId);
+  };
+}
+export function showReplacementModal(card, onReplace, locked = false) {
+  showModal(`<h2>选择要替换的书页</h2><p>魔法书固定为${COMBAT_DECK_CAP}页。新页占据所选槽位；被替换的非基础书页保留等级并进入仓库。</p>${decisionContextHtml()}<div class="choice-grid">${state.deck.map((id) => { const page = CARD_BY_ID.get(id); return `<button class="choice-button ${page.school}" data-replace-page="${id}">${cardMetadataHtml(page)}<h3>${page.name}</h3>${cardCostHtml(page)}<small>${page.basePage ? "基础页" : `Lv.${cardLevel(id)}`}</small></button>`; }).join("")}</div>`, locked);
+  $("modalContent").onclick = (event) => {
+    const outgoingId = event.target.closest("[data-replace-page]")?.dataset.replacePage;
+    if (outgoingId) confirmReplacement(card, outgoingId, onReplace, locked);
+  };
+}
+export function showAcquiredPageModal(card) {
+  const upgradeTargets = state.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage && cardLevel(id) < 6);
+  showModal(`<h2>获得《${card.name}》</h2><p>新书页不会自动改变构筑。你可以替换当前一页、将它作为材料升级一张已装订咒语，或收入仓库。</p>${decisionContextHtml()}<div class="choice-grid acquire-actions"><button class="choice-button ${card.school}" data-acquire-action="replace">${cardMetadataHtml(card)}<h3>替换一页</h3><p>装订新书页，并将被替换的非基础页收入仓库。</p></button><button class="choice-button arcane" data-acquire-action="upgrade" ${upgradeTargets.length ? "" : "disabled"}><span class="spell-meta arcane">✶ 奥术 · 书页精炼</span><h3>升级一页</h3><p>${upgradeTargets.length ? "消耗这张新书页，选择一张未满级的已装订咒语升级。" : "当前没有可以升级的已装订咒语。"}</p></button><button class="choice-button arcane" data-acquire-action="store"><span class="spell-meta arcane">✶ 奥术 · 暂存</span><h3>收入仓库</h3><p>保留新书页，不改变当前10页构筑。</p></button></div>`, false);
+  $("modalContent").onclick = (event) => {
+    const action = event.target.closest("[data-acquire-action]")?.dataset.acquireAction;
+    if (action === "store") { completeEvent("书页入库", storeAcquiredPage(card)); return; }
+    if (action === "replace") {
+      showReplacementModal(card, (outgoingId) => {
+        const result = replacePageWithReward(card, outgoingId);
+        if (result) completeEvent("替换完成", result);
+      }, false);
+      return;
+    }
+    if (action === "upgrade" && upgradeTargets.length) {
+      showModal(`<h2>选择要升级的书页</h2><p>《${card.name}》将作为升级材料消耗，不会进入收藏。</p>${decisionContextHtml()}<div class="choice-grid">${upgradeTargets.map((id) => { const target = CARD_BY_ID.get(id); return `<button class="choice-button ${target.school}" data-upgrade-reward="${id}">${cardMetadataHtml(target)}<h3>${target.name}</h3><p>Lv.${cardLevel(id)} → Lv.${cardLevel(id) + 1}</p></button>`; }).join("")}</div>`, false);
+      $("modalContent").onclick = (upgradeEvent) => {
+        const targetId = upgradeEvent.target.closest("[data-upgrade-reward]")?.dataset.upgradeReward;
+        if (!targetId) return;
+        const result = upgradePageWithReward(card, targetId);
+        if (result) completeEvent("升级完成", result);
+      };
+    }
+  };
 }
 export function resolveEvent(eventId) {
   if (state.activeEventId && state.activeEventId !== eventId) { toast("已选定其他事件，请先完成当前处理。"); return; }
@@ -86,14 +143,14 @@ export function resolveEvent(eventId) {
     const before = state.hp; state.hp = Math.min(maxHp(), state.hp + Math.ceil(maxHp() * .42));
     completeEvent("壁炉仍有余温", `回复 ${Math.ceil(state.hp - before)} 点生命。`); return;
   }
-  if (type === "organize") { state.organizeTokens += 1; completeEvent("获得安全整理", "获得1次安全拆页机会。在魔法书中可将一张战斗书页移回仓库，并保留等级。"); return; }
+  if (type === "organize") { state.organizeTokens += 1; completeEvent("获得安全整理", "获得1次安全拆页机会。可将一张非基础战斗书页移回仓库，空位自动恢复为基础咒术页。"); return; }
   if (type === "library") {
-    const pool = CARDS.filter((c) => cardLevel(c.id) < 6);
+    const pool = CARDS.filter((c) => !cardLevel(c.id));
     if (!pool.length || Math.random() < .16) { choosePassiveModal(); return; }
-    chooseCardModal("残破书库 · 三选一", shuffle(pool).slice(0, 3), (card) => completeEvent("书页归位", learnCard(card, true)), `学习新咒语时优先直接装订；战斗魔法书达到${COMBAT_DECK_CAP}页后自动放入仓库。同名书页会升级，Lv.3与Lv.6发生质变。`); return;
+    chooseCardModal("残破书库 · 三选一", shuffle(pool).slice(0, 3), showAcquiredPageModal, `选择一张新书页后，可替换当前一页、作为升级材料或收入仓库；魔法书始终保持${COMBAT_DECK_CAP}页。`); return;
   }
   if (type === "upgrade") {
-    const cards = state.deck.map((id) => CARD_BY_ID.get(id)).filter((c) => cardLevel(c.id) < 6);
+    const cards = state.deck.map((id) => CARD_BY_ID.get(id)).filter((c) => c && !c.basePage && cardLevel(c.id) < 6);
     if (!cards.length) { state.score += 60; completeEvent("幽灵导师", "战斗魔法书中所有咒语已满级，改为获得60积分。"); return; }
     chooseCardModal("幽灵导师", cards, (card) => { state.collection[card.id] += 1; completeEvent("指导完成", `${card.name}升至 Lv.${cardLevel(card.id)}。${[3, 6].includes(cardLevel(card.id)) ? "该咒语已发生机制质变。" : ""}`); }); return;
   }
@@ -128,5 +185,5 @@ export function showElementEvent() {
 export function newTowerRun() {
   setState(freshTowerRun());
   const schools = state.startElements.map((element) => ELEMENTS[element].name).join("、");
-  generateEvents(); saveState(); closeModal(true); showView("explore"); toast(`已重新进入法师塔；从${schools}基础牌中生成3页，起始元素各1个。`);
+  generateEvents(); saveState(); closeModal(true); showView("explore"); toast(`已重新进入法师塔；10页基础魔法书中有3页替换为${schools}初始元素牌，起始元素各1个。`);
 }
