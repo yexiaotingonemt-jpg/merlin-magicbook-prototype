@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=22";
-import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=22";
-import { EVENTS } from "../public/merlin-assets/game/content.js?v=22";
-import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=22";
-import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=22";
-import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=22";
-import { advanceChapter, battleRewards, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=22";
-import { setState, state } from "../public/merlin-assets/game/store.js?v=22";
-import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=22";
+import { BASE_PAGE_IDS, BASE_PAGES, CARDS, CARD_BY_ID, createStarterLoadout, PASSIVES, STARTER_CARD_POOLS } from "../public/merlin-assets/game/cards.js?v=23";
+import { adjustedSegmentPct, createEnemies, doHits, enemyBasicPage, expandedCardEffects, hitEnemy, paymentFor, pvePanelOutcomes, spellPageHtml } from "../public/merlin-assets/game/battle.js?v=23";
+import { EVENTS } from "../public/merlin-assets/game/content.js?v=23";
+import { candidateFitHtml, decisionContextHtml, replacePageWithReward, storeAcquiredPage, transmutationOptions, transmuteLearnedSpell, upgradePageWithReward } from "../public/merlin-assets/game/exploration.js?v=23";
+import { microVariance, variance } from "../public/merlin-assets/game/core.js?v=23";
+import { CHAPTER_RULES } from "../public/merlin-assets/game/content.js?v=23";
+import { advanceChapter, battleRewards, chapterLabel, COMBAT_DECK_CAP, criticalChance, ELEMENT_SLOT_UNLOCK_LEVELS, evasionChance, expectedDeckPerformance, freshState, freshTowerRun, gainExp, generateEvents, hydrate, LEVEL_UP_HEAL, maxHp, missingBuildElements, normalizeCombatDeck, organizeBoundPage, poolCap, resetTowerRun, RUN_RULES_VERSION, serializeState, settleExplorationTurn, slotCap, theoreticalElementBalance } from "../public/merlin-assets/game/state.js?v=23";
+import { setState, state } from "../public/merlin-assets/game/store.js?v=23";
+import { cardCostHtml, cardMetadataHtml, damageForecastHtml, elementBalanceHtml, eventDecisionFacts, expectedBattleHpLoss } from "../public/merlin-assets/game/ui.js?v=23";
 
 function assertStarterLoadout(loadout) {
   assert.equal(loadout.deck.length, 10);
@@ -221,7 +221,7 @@ test("level curve starts with two elements in three slots and expands toward fiv
   assert.equal(poolCap(), 7);
 });
 
-test("each normal chapter keeps total weight 1000 and element events average four per tower", () => {
+test("normal chapters keep total weight 1000 and the prologue raises element events to five per tower", () => {
   const normalChapters = [1, 2, 4, 5];
   normalChapters.forEach((chapter) => {
     assert.equal(Object.values(CHAPTER_RULES[chapter].weights).reduce((sum, weight) => sum + weight, 0), 1000);
@@ -231,6 +231,8 @@ test("each normal chapter keeps total weight 1000 and element events average fou
     sum + CHAPTER_RULES[chapter].count * CHAPTER_RULES[chapter].weights.element / 1000
   ), 0);
   assert.equal(expectedElementEvents, 4);
+  assert.deepEqual(CHAPTER_RULES[0].fixedEvents, ["element", "library", "monster"]);
+  assert.equal(expectedElementEvents + CHAPTER_RULES[0].fixedEvents.filter((type) => type === "element").length, 5);
 });
 
 test("early PVE enemies use the two-element opening baseline", () => {
@@ -278,7 +280,7 @@ test("threat upgrades use ten-percent steps and level-ups restore sixty life", (
 test("event previews disclose exact rewards, risk, timer outcome, and reduced PVE evasion", () => {
   setState(freshState());
   const monster = eventDecisionFacts({ type: "monster", level: 2, countdown: 2 });
-  assert.match(monster.reward, /43经验 \+ 29积分/);
+  assert.match(monster.reward, /36经验 \+ 24积分/);
   assert.match(monster.risk, /Lv\.2.*生命66%.*攻77%.*防55%/);
   assert.match(monster.combat, /预计掉血约\d+.*实际闪避10%/);
   assert.match(monster.warning, /极端方差与特殊被动/);
@@ -288,6 +290,7 @@ test("event previews disclose exact rewards, risk, timer outcome, and reduced PV
   const lethalMonster = eventDecisionFacts({ type: "monster", level: 1, countdown: 2 });
   assert.equal(lethalMonster.lethal, true);
   assert.match(lethalMonster.warning, /高风险.*预计可能阵亡/);
+  assert.deepEqual(battleRewards("pve", 0), { exp: 36, points: 24 });
   assert.deepEqual(battleRewards("pvp", 1), { exp: 43, points: 84 });
 });
 
@@ -409,8 +412,8 @@ test("confirming a PVE defeat resets the tower while preserving permanent progre
   current.battle = { mode: "pve", over: true, won: false };
   const next = resetTowerRun();
   assert.equal(next, state);
-  assert.equal(state.chapter, 1);
-  assert.equal(state.floor, 1);
+  assert.equal(state.chapter, 0);
+  assert.equal(state.floor, 0);
   assert.equal(state.level, 1);
   assert.equal(state.exp, 0);
   assert.equal(state.hp, 250);
@@ -420,6 +423,7 @@ test("confirming a PVE defeat resets the tower while preserving permanent progre
   assert.equal(state.deck.length, 10);
   assert.equal(state.startElements.length, 2);
   assert.equal(state.events.length, 3);
+  assert.deepEqual(state.events.map((event) => event.type), ["element", "library", "monster"]);
 });
 
 test("PVP mirror exposes its snapshot spellbook and starting elements", () => {
@@ -430,8 +434,21 @@ test("PVP mirror exposes its snapshot spellbook and starting elements", () => {
   assert.equal(enemyBasicPage(mirror, "pvp").name, "镜像基础术式");
 });
 
+test("the prologue always opens with element, library, and monster events", () => {
+  const current = setState(freshState());
+  generateEvents();
+  assert.equal(current.chapter, 0);
+  assert.equal(current.floor, 0);
+  assert.equal(chapterLabel(), "序章");
+  assert.deepEqual(current.events.map((event) => event.type), ["element", "library", "monster"]);
+  assert.deepEqual(current.events.map((event) => event.slot), [0, 1, 2]);
+  assert.deepEqual(current.events.map((event) => event.countdown), [4, 2, 2]);
+  assert.equal(current.eventPool.length, 0);
+});
+
 test("chapter one creates a finite weighted pool and advances countdowns after an event", () => {
   const current = setState(freshState());
+  current.chapter = 1;
   generateEvents();
   assert.equal(CHAPTER_RULES[1].count, 15);
   assert.equal(current.events.length, 3);
@@ -463,10 +480,11 @@ test("legacy event result pages resume exploration without another confirmation"
   settleExplorationTurn(selectedId);
   current.eventResult = { title: "课程完成", copy: "获得经验。" };
   const remainingPool = current.eventPool.length;
+  const remainingEvents = current.events.length;
   assert.equal(hydrate(serializeState()), true);
   assert.equal(state.eventResult, null);
   assert.equal(state.activeEventId, null);
-  assert.equal(state.events.length, 3);
+  assert.equal(state.events.length, remainingEvents);
   assert.equal(state.eventPool.length, remainingPool);
 });
 
@@ -496,10 +514,10 @@ test("legacy chapter result pages advance to the next chapter immediately", () =
   assert.equal(state.hp, maxHp());
 });
 
-test("all six chapters terminate and boss chapters contain exactly one fixed encounter", () => {
+test("the prologue and all six chapters terminate with two fixed boss encounters", () => {
   const current = setState(freshState());
   generateEvents();
-  for (let chapter = 1; chapter <= 6; chapter += 1) {
+  for (let chapter = 0; chapter <= 6; chapter += 1) {
     assert.equal(current.chapter, chapter);
     if ([3, 6].includes(chapter)) {
       assert.equal(current.events.length, 1);

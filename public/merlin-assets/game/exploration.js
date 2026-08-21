@@ -1,9 +1,9 @@
-import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=22";
-import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=22";
-import { runtime, state } from "./store.js?v=22";
-import { advanceChapter, cardLevel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=22";
-import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=22";
-import { startBattle, stopBattle } from "./battle.js?v=22";
+import { $, ELEMENTS, SCHOOL_ORDER, esc, pick, shuffle } from "./core.js?v=23";
+import { CARDS, CARD_BY_ID, PASSIVES } from "./cards.js?v=23";
+import { runtime, state } from "./store.js?v=23";
+import { advanceChapter, cardLevel, chapterLabel, COMBAT_DECK_CAP, expectedDeckPerformance, gainExp, maxHp, missingBuildElements, replaceBoundPage, resetTowerRun, saveState, settleExplorationTurn, slotCap } from "./state.js?v=23";
+import { cardCostHtml, cardMetadataHtml, closeModal, damageForecastHtml, elementBalanceHtml, showModal, showView, toast } from "./ui.js?v=23";
+import { startBattle, stopBattle } from "./battle.js?v=23";
 
 export function completeEvent(title, copy) {
   const selectedId = state.activeEventId;
@@ -14,7 +14,7 @@ export function completeEvent(title, copy) {
   let feedback = `${title}：${copy}`;
   state.eventResult = null;
   if (state.chapterComplete) {
-    if (advanceChapter()) feedback += ` 已进入第${state.chapter}章，生命已经补满。`;
+    if (advanceChapter()) feedback += ` 已进入${chapterLabel()}，生命已经补满。`;
     else state.eventResult = { title: "法师塔探索完成", copy: `${feedback} 你击败了终极首领；本轮构筑、等级和塔内成长将在重新进入法师塔时重置，积分与场外商店成长保留。` };
   }
   runtime.currentView = "explore";
@@ -232,6 +232,6 @@ export function restartAfterPveDefeat() {
   resetTowerRun();
   runtime.currentView = "explore";
   saveState(); closeModal(true); showView("explore");
-  toast(`第${failedChapter}章挑战失败，本轮结算已确认，新的法师塔挑战已经开始。`);
+  toast(`${chapterLabel(failedChapter)}挑战失败，本轮结算已确认，新的法师塔挑战已经从序章开始。`);
   return true;
 }

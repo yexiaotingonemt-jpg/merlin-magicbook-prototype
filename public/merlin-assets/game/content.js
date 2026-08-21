@@ -11,6 +11,7 @@ export const EVENTS = {
 };
 
 export const CHAPTER_RULES = {
+  0: { fixedEvents: ["element", "library", "monster"] },
   1: { count: 15, weights: { monster: 262, experience: 175, element: 80, library: 197, rest: 88, transmute: 55, upgrade: 66, organize: 33, player: 44 } },
   2: { count: 20, weights: { monster: 318, experience: 127, element: 70, library: 169, rest: 95, transmute: 63, upgrade: 74, organize: 42, player: 42 } },
   3: { boss: "星辉魔像", final: false },

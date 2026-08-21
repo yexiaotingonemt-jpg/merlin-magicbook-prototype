@@ -1,9 +1,9 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=22";
-import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=22";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=22";
-import { setState, state } from "./store.js?v=22";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=23";
+import { BASE_PAGE_IDS, CARD_BY_ID, createStarterLoadout } from "./cards.js?v=23";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=23";
+import { setState, state } from "./store.js?v=23";
 
-export const RUN_RULES_VERSION = 7;
+export const RUN_RULES_VERSION = 8;
 export const COMBAT_DECK_CAP = 10;
 export const COMBAT_ELEMENTS = ["fire", "water", "wind", "earth", "light", "dark"];
 export const EVENT_THREAT_UPGRADE_STEP = .1;
@@ -14,8 +14,8 @@ export function freshState(legacy = {}) {
   const collection = Object.fromEntries(starter.starterPages.map((id) => [id, 1]));
   const meta = legacy.meta || {};
   return {
-    gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, board: [], preview: [], chapter: 1, projection: 0,
-    score: Number(legacy.score || 0), floor: 1, level: 1, exp: 0,
+    gameVersion: VERSION, runRulesVersion: RUN_RULES_VERSION, board: [], preview: [], chapter: 0, projection: 0,
+    score: Number(legacy.score || 0), floor: 0, level: 1, exp: 0,
     hp: 250 + (meta.maxHp || 0), startElements: starter.startElements,
     collection, deck: starter.deck, organizeTokens: 0, fatigue: 100,
     meta: {
@@ -53,7 +53,7 @@ export function resist() { return 50 + state.meta.resist; }
 export function evasionChance(defenderDodge, attackerHit) { return clamp((defenderDodge - attackerHit) / 100, 0, .8); }
 export function criticalChance(attackerCrit, defenderResist, bonus = 0) { return clamp((attackerCrit - defenderResist) / 100 + bonus, 0, .75); }
 export function battleRewards(mode, floor = state.floor) {
-  return { exp: Math.round(36 + floor * 7 + (floor % 10 === 0 ? 80 : 0)), points: Math.round(24 + floor * 5 + (mode === "pvp" ? 55 : 0)) };
+  return { exp: Math.round(36 + floor * 7 + (floor > 0 && floor % 10 === 0 ? 80 : 0)), points: Math.round(24 + floor * 5 + (mode === "pvp" ? 55 : 0)) };
 }
 export function expNeed(level = state.level) { return 80 + (level - 1) * 40; }
 export const ELEMENT_SLOT_UNLOCK_LEVELS = [3, 5];
@@ -310,6 +310,7 @@ export function costLabel(card) {
   return Object.entries(c.parts).map(([e, n]) => `${n}${ELEMENTS[e].name}`).join("+");
 }
 export function schoolLabel(school) { return `${ELEMENTS[school].icon} ${ELEMENTS[school].name}`; }
+export function chapterLabel(chapter = state.chapter) { return chapter === 0 ? "序章" : `第${chapter}章`; }
 
 export function gainExp(amount) {
   state.exp += Math.round(amount * (1 + state.meta.expPct / 100));
@@ -356,6 +357,7 @@ export function generateEvents() {
   state.floor = state.chapter;
   state.events = []; state.eventPool = []; state.eventSerial = 0; state.activeEventId = null; state.chapterComplete = false;
   if (rule?.boss) state.events = [createEvent("monster", { slot: 0, countdown: null, boss: true, finalBoss: Boolean(rule.final), name: rule.boss })];
+  else if (rule?.fixedEvents) state.eventPool = [...rule.fixedEvents];
   else if (rule) state.eventPool = Array.from({ length: rule.count }, () => weightedEventType(rule.weights));
   fillEventSlots();
 }

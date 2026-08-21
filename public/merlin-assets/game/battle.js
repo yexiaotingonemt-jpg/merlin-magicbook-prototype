@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=22";
-import { CARD_BY_ID } from "./cards.js?v=22";
-import { runtime, state } from "./store.js?v=22";
-import { attack, battleRewards, cardLevel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=22";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=22";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=23";
+import { CARD_BY_ID } from "./cards.js?v=23";
+import { runtime, state } from "./store.js?v=23";
+import { attack, battleRewards, cardLevel, chapterLabel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=23";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=23";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -542,7 +542,7 @@ export function renderBattle() {
   const b = state.battle; if (!b) return;
   renderPvePanelOutcomes(b);
   $("battleMode").textContent = b.mode === "pve" ? "PVE · 玩家先手 · 怪物不预告" : `PVP 镜像 · 随机先手 · 疲劳 ${b.enemyFatigue}`;
-  $("battleTitle").textContent = b.mode === "pve" ? `${state.floor % 10 === 0 ? "首领" : "元素"}试炼` : "镜像法师对决";
+  $("battleTitle").textContent = b.mode === "pve" ? `${b.spec.boss ? "首领" : "元素"}试炼` : "镜像法师对决";
   $("battleSpeed").textContent = `速度 ×${battleSpeed}`; $("battlePause").textContent = paused ? "继续" : "暂停"; $("battleStep").hidden = !paused;
   const target = targetLowest();
   const inspectedEnemy = target || b.enemies[0];
@@ -575,7 +575,7 @@ export function renderBattle() {
     if (b.won) {
       $("battleSummary").innerHTML = `<h2>战斗胜利</h2><p>奖励已直接到账：${b.reward.exp} 经验与 ${b.reward.points} 积分${b.reward.levels ? `，角色提升 ${b.reward.levels} 级` : ""}。</p><button data-battle-finish="win">确认结果并继续</button>`;
     } else if (b.mode === "pve") {
-      $("battleSummary").innerHTML = `<h2>法师塔挑战失败</h2><p>本轮已经完成结算：到达第 ${state.chapter} 章，塔内等级 Lv.${state.level}；本场战斗不获得经验或积分。此前获得的积分与场外商店成长保留，塔内等级、经验、生命、元素、魔法书和咒语成长将在确认后重置。</p><button data-battle-finish="pve-loss">确认结算并重新开始</button>`;
+      $("battleSummary").innerHTML = `<h2>法师塔挑战失败</h2><p>本轮已经完成结算：到达${chapterLabel()}，塔内等级 Lv.${state.level}；本场战斗不获得经验或积分。此前获得的积分与场外商店成长保留，塔内等级、经验、生命、元素、魔法书和咒语成长将在确认后重置。</p><button data-battle-finish="pve-loss">确认结算并重新开始</button>`;
     } else {
       $("battleSummary").innerHTML = '<h2>镜像挑战失败</h2><p>本次镜像事件已经结算，不能重新挑战；失败不会获得经验或积分，镜像疲劳状态已更新。</p><button data-battle-finish="pvp-loss">确认结果并继续</button>';
     }

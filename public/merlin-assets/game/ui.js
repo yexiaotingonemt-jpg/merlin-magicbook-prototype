@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=22";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=22";
-import { EVENTS } from "./content.js?v=22";
-import { runtime, state } from "./store.js?v=22";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=22";
+import { $, ELEMENTS, esc } from "./core.js?v=23";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=23";
+import { EVENTS } from "./content.js?v=23";
+import { runtime, state } from "./store.js?v=23";
+import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=23";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -88,7 +88,7 @@ export function showView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 export function renderRunStats() {
-  $("runStats").innerHTML = `<div class="stat-chip"><span>章节</span><b>${state.chapter}/6</b></div><div class="stat-chip"><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><span>积分</span><b>${state.score}</b></div>`;
+  $("runStats").innerHTML = `<div class="stat-chip"><span>章节</span><b>${state.chapter === 0 ? "序章" : `${state.chapter}/6`}</b></div><div class="stat-chip"><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><span>积分</span><b>${state.score}</b></div>`;
 }
 function percent(value) { return `${Math.round(value * 100)}%`; }
 export function expectedBattleHpLoss(event) {
@@ -130,7 +130,7 @@ export function eventDecisionFacts(event) {
 }
 export function renderExplore() {
   const bossChapter = [3, 6].includes(state.chapter);
-  $("floorTitle").textContent = `第 ${state.chapter} 章${bossChapter ? state.chapter === 6 ? " · 终极首领" : " · 首领" : ""}`;
+  $("floorTitle").textContent = `${chapterLabel()}${bossChapter ? state.chapter === 6 ? " · 终极首领" : " · 首领" : ""}`;
   $("routeHint").textContent = state.activeEventId ? "已选定事件：必须完成后才能继续" : bossChapter ? "可先查看首领信息并调整魔法书" : `事件池剩余 ${state.eventPool.length} · 展示位 ${state.events.length}`;
   $("wizardLevel").textContent = `Lv.${state.level}`;
   const mainAttributes = [
