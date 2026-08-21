@@ -86,14 +86,8 @@
   line-height: 1;
 }
 
-.event-timer > span:last-child {
-  color: #a99168;
-  font-size: 9px;
-}
-
 .event-timer.urgent,
-.event-timer.urgent > strong,
-.event-timer.urgent > span:last-child {
+.event-timer.urgent > strong {
   color: #ff6f66;
 }
 
@@ -103,6 +97,31 @@
 
 @keyframes event-timer-pulse {
   50% { opacity: .68; }
+}
+
+.event-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.event-title .event-level-label {
+  color: currentColor;
+  font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  opacity: .85;
+}
+
+.event-title.event-title-level-2 {
+  color: #e8c45f;
+  text-shadow: 0 0 18px #d9aa3d2e;
+}
+
+.event-title.event-title-level-3 {
+  color: #f06f67;
+  text-shadow: 0 0 18px #d84e473d;
 }
 
 .event-facts {

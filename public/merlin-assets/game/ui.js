@@ -1,8 +1,8 @@
-import { $, ELEMENTS, esc } from "./core.js?v=14";
-import { CARDS, CARD_BY_ID } from "./cards.js?v=14";
-import { EVENTS } from "./content.js?v=14";
-import { runtime, state } from "./store.js?v=14";
-import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=14";
+import { $, ELEMENTS, esc } from "./core.js?v=15";
+import { CARDS, CARD_BY_ID } from "./cards.js?v=15";
+import { EVENTS } from "./content.js?v=15";
+import { runtime, state } from "./store.js?v=15";
+import { attack, battleRewards, cardLevel, COMBAT_DECK_CAP, costLabel, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=15";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -126,11 +126,14 @@ export function renderExplore() {
       const meta = EVENTS[event.type];
       const glow = ["#915c72", "#557f9d", "#74668f"][event.slot ?? index];
       const timer = event.countdown == null ? "∞" : event.countdown;
-      const level = ["monster", "player"].includes(event.type) ? ` · Lv.${event.level}` : "";
+      const isThreat = ["monster", "player"].includes(event.type);
+      const threatLevel = isThreat ? Number(event.level || 1) : 0;
       const facts = eventDecisionFacts(event);
       const timerClass = event.countdown === 1 ? " urgent" : "";
       const factRows = [["收益", facts.reward], ["代价", facts.risk], ["战斗", facts.combat], ["警示", facts.warning], ["时限", facts.timer]];
-      return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><span class="event-timer${timerClass}"><span class="event-hourglass" aria-hidden="true">⌛</span><strong>${timer}</strong><span>回合${level}</span></span><span class="event-icon">${meta.icon}</span><h3>${event.name || meta.name}</h3><p>${meta.copy}</p><span class="event-facts">${factRows.filter(([, value]) => value).map(([label, value]) => `<span class="${label === "警示" && facts.lethal ? "event-fact-danger" : ""}"><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"} →</b></button>`;
+      const titleClass = isThreat ? ` event-title-level-${threatLevel}` : "";
+      const levelLabel = isThreat ? `<span class="event-level-label">Lv.${threatLevel}</span>` : "";
+      return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><span class="event-timer${timerClass}"><span class="event-hourglass" aria-hidden="true">⌛</span><strong>${timer}</strong></span><span class="event-icon">${meta.icon}</span><h3 class="event-title${titleClass}"><span>${event.name || meta.name}</span>${levelLabel}</h3><p>${meta.copy}</p><span class="event-facts">${factRows.filter(([, value]) => value).map(([label, value]) => `<span class="${label === "警示" && facts.lethal ? "event-fact-danger" : ""}"><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"} →</b></button>`;
     }).join("");
   }
 }

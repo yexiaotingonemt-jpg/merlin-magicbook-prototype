@@ -1,7 +1,7 @@
-import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=14";
-import { CARD_BY_ID, createStarterLoadout } from "./cards.js?v=14";
-import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=14";
-import { setState, state } from "./store.js?v=14";
+import { clamp, ELEMENTS, SAVE_KEY, VERSION } from "./core.js?v=15";
+import { CARD_BY_ID, createStarterLoadout } from "./cards.js?v=15";
+import { CHAPTER_RULES, EVENT_COUNTDOWNS, EVENTS, weightedEventType } from "./content.js?v=15";
+import { setState, state } from "./store.js?v=15";
 
 export const RUN_RULES_VERSION = 6;
 export const COMBAT_DECK_CAP = 10;

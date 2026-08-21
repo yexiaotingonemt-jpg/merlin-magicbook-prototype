@@ -43,7 +43,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=14"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=15"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);
@@ -68,9 +68,12 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.battle, /1000 \/ \(1000 \+/);
   assert.match(sources.state, /localStorage\.setItem\(SAVE_KEY/);
   assert.match(sources.state, /type: "merlin:state"/);
-  assert.match(sources.app, /from "\.\/battle\.js\?v=14"/);
-  assert.match(sources.exploration, /from "\.\/battle\.js\?v=14"/);
+  assert.match(sources.app, /from "\.\/battle\.js\?v=15"/);
+  assert.match(sources.exploration, /from "\.\/battle\.js\?v=15"/);
   assert.match(sources.ui, /export function eventDecisionFacts\(event\)/);
+  assert.match(sources.ui, /event-title-level-\$\{threatLevel\}/);
+  assert.match(sources.ui, /event-level-label/);
+  assert.doesNotMatch(sources.ui, /<span>回合/);
   assert.match(sources.ui, /dataset\.locked/);
   assert.match(sources.ui, /document\.body\.classList\.add\("modal-open"\)/);
   assert.match(sources.exploration, /showModal\([\s\S]*false\)/);
@@ -88,9 +91,12 @@ test("ships exploration, deck building, battle and persistence", async () => {
 
 test("renders the next-level preview and its responsive styling", async () => {
   const gameHtml = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
+  const levelCss = await readFile(new URL("../public/merlin-assets/level-preview.css", import.meta.url), "utf8");
   assert.match(gameHtml, /id="levelPreview"/);
   assert.match(gameHtml, /查看下一级效果/);
   assert.match(gameHtml, /level-preview\.css/);
+  assert.match(levelCss, /event-title-level-2[\s\S]*#e8c45f/);
+  assert.match(levelCss, /event-title-level-3[\s\S]*#f06f67/);
 });
 
 test("serves hydration assets and the standalone game directly on Cloudflare Pages", async () => {
