@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#100d18">
   <title>梅林的魔法书 · 法师塔</title>
-  <link rel="stylesheet" href="./merlin-assets/grimoire-game.css?v=19">
-  <link rel="stylesheet" href="./merlin-assets/level-preview.css?v=19">
-  <link rel="stylesheet" href="./merlin-assets/battle-redesign.css?v=19">
+  <link rel="stylesheet" href="./merlin-assets/grimoire-game.css?v=20">
+  <link rel="stylesheet" href="./merlin-assets/level-preview.css?v=20">
+  <link rel="stylesheet" href="./merlin-assets/battle-redesign.css?v=20">
 </head>
 <body>
   <div id="game" class="game-shell">
@@ -75,7 +75,8 @@
           </div>
         </div>
         <div class="battle-stage">
-          <section class="combatant player-side">
+          <section id="playerCombatant" class="combatant player-side">
+            <span id="playerResultStamp" class="battle-result-stamp" aria-hidden="true"></span>
             <div class="combatant-identity"><div class="portrait wizard-portrait">✦</div><div><small>PLAYER</small><h2>你的魔法师</h2></div></div>
             <div id="playerBattleStats"></div>
             <div class="combat-side-section"><span class="combat-side-label">元素</span><div id="battleElements" class="element-pool"></div></div>
@@ -100,7 +101,8 @@
               </section>
             </div>
           </section>
-          <section class="combatant enemy-side">
+          <section id="enemyCombatant" class="combatant enemy-side">
+            <span id="enemyResultStamp" class="battle-result-stamp" aria-hidden="true"></span>
             <div class="combatant-identity enemy-identity"><div id="enemyPortrait" class="portrait enemy-portrait">♞</div><div><small>ENEMY</small><h2 id="enemyGroupTitle">塔中敌人</h2></div></div>
             <div id="enemyBattleStats"></div>
             <div class="combat-side-section"><span class="combat-side-label">元素</span><div id="enemyBattleElements" class="element-pool"></div></div>
@@ -139,6 +141,6 @@
     <div id="modal" class="modal" hidden><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalContent"></div></div></div>
     <div id="toast" class="toast" hidden></div>
   </div>
-  <script type="module" src="./merlin-assets/game/app.js?v=19"></script>
+  <script type="module" src="./merlin-assets/game/app.js?v=20"></script>
 </body>
 </html>

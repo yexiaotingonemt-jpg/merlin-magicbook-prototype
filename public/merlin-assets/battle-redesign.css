@@ -10,7 +10,74 @@
 }
 
 .combatant {
+  position: relative;
+  overflow: hidden;
   text-align: left;
+  transition: border-color .28s ease, box-shadow .28s ease, background .28s ease;
+}
+
+.battle-result-stamp {
+  position: absolute;
+  z-index: 8;
+  top: 22px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 48px;
+  border: 4px double currentColor;
+  border-radius: 8px;
+  opacity: 0;
+  background: color-mix(in srgb, #17121d 88%, transparent);
+  box-shadow: 0 8px 28px #000b, inset 0 0 0 2px color-mix(in srgb, currentColor 16%, transparent);
+  font: 900 21px/1 Georgia, "Songti SC", serif;
+  letter-spacing: .12em;
+  pointer-events: none;
+  transform: rotate(-9deg) scale(1.45);
+  transform-origin: center;
+}
+
+.combatant.battle-result-settled .battle-result-stamp {
+  opacity: .96;
+  animation: battle-stamp-in .38s cubic-bezier(.2,.9,.25,1.15) both;
+}
+
+.combatant.battle-result-winner {
+  border-color: color-mix(in srgb, var(--green) 55%, var(--gold));
+  box-shadow: var(--shadow), 0 0 34px color-mix(in srgb, var(--green) 18%, transparent);
+}
+
+.battle-result-winner .battle-result-stamp {
+  color: #d9c76f;
+}
+
+.combatant.battle-result-loser {
+  border-color: #5f5962;
+  background: radial-gradient(circle at 50% 0,rgba(115,110,120,.12),transparent 42%),linear-gradient(#1a181c,#0f0e11);
+  box-shadow: 0 18px 54px #0008;
+}
+
+.combatant.battle-result-loser > :not(.battle-result-stamp) {
+  opacity: .55;
+  filter: grayscale(1) saturate(0);
+}
+
+.battle-result-loser .battle-result-stamp {
+  color: #d96d67;
+  background: color-mix(in srgb, #1a1215 90%, transparent);
+}
+
+@keyframes battle-stamp-in {
+  0% { opacity: 0; transform: rotate(-9deg) scale(1.45); }
+  70% { opacity: 1; transform: rotate(-9deg) scale(.94); }
+  100% { opacity: .96; transform: rotate(-9deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combatant.battle-result-settled .battle-result-stamp {
+    animation: none;
+    transform: rotate(-9deg);
+  }
 }
 
 .combatant-identity {

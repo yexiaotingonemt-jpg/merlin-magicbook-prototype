@@ -1,5 +1,5 @@
-import { C, all, any, fixed, random, same } from "./core.js?v=19";
-import { state } from "./store.js?v=19";
+import { C, all, any, fixed, random, same } from "./core.js?v=20";
+import { state } from "./store.js?v=20";
 
 export const BASE_PAGE_IDS = Array.from({ length: 10 }, (_, index) => `BA-${String(index + 1).padStart(2, "0")}`);
 export const BASE_PAGES = BASE_PAGE_IDS.map((id) => C(

@@ -1,8 +1,8 @@
-import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=19";
-import { CARD_BY_ID } from "./cards.js?v=19";
-import { runtime, state } from "./store.js?v=19";
-import { attack, battleRewards, cardLevel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=19";
-import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=19";
+import { $, ELEMENTS, SCHOOL_ORDER, clamp, esc, fixed, microVariance, pick, randomInt, shuffle, variance } from "./core.js?v=20";
+import { CARD_BY_ID } from "./cards.js?v=20";
+import { runtime, state } from "./store.js?v=20";
+import { attack, battleRewards, cardLevel, crit as critStat, criticalChance, defense, dodge, eventThreatScale, evasionChance, gainExp, hit, levelScale, mainElement, maxHp, poolCap, resist, saveState } from "./state.js?v=20";
+import { cardCostHtml, cardMetadataHtml, elementOrb, renderRunStats, showView, toast } from "./ui.js?v=20";
 
 let battleTimer = null;
 let battleSpeed = 1;
@@ -522,8 +522,25 @@ export function spellPageHtml(card, castType = "full") {
   return `${cardMetadataHtml(card)}<h2>${esc(card.name)}</h2>${cardCostHtml(card)}<div class="spell-rules"><section class="effect-row casting-rules"><b>施法规则</b><p>${esc(`${effects.payment} ${effects.targeting}`)}</p></section><section class="effect-row full-effect ${fullActive ? "active" : echoActive ? "inactive" : ""}"><b>完整施法</b><p>${esc(effects.full)}</p></section><section class="effect-row echo-effect ${echoActive ? "active echo" : fullActive ? "inactive" : ""}"><b>残响</b><p>${esc(effects.echo)}</p></section></div>`;
 }
 
+export function pvePanelOutcomes(battle) {
+  if (!battle?.over || battle.mode !== "pve") return null;
+  return battle.won ? { player: "winner", enemy: "loser" } : { player: "loser", enemy: "winner" };
+}
+
+function renderPvePanelOutcomes(battle) {
+  const outcomes = pvePanelOutcomes(battle);
+  [["player", "playerCombatant", "playerResultStamp"], ["enemy", "enemyCombatant", "enemyResultStamp"]].forEach(([side, panelId, stampId]) => {
+    const panel = $(panelId), stamp = $(stampId), outcome = outcomes?.[side] || null;
+    panel.classList.toggle("battle-result-winner", outcome === "winner");
+    panel.classList.toggle("battle-result-loser", outcome === "loser");
+    panel.classList.toggle("battle-result-settled", Boolean(outcome));
+    stamp.textContent = outcome === "winner" ? "胜利" : outcome === "loser" ? "失败" : "";
+  });
+}
+
 export function renderBattle() {
   const b = state.battle; if (!b) return;
+  renderPvePanelOutcomes(b);
   $("battleMode").textContent = b.mode === "pve" ? "PVE · 玩家先手 · 怪物不预告" : `PVP 镜像 · 随机先手 · 疲劳 ${b.enemyFatigue}`;
   $("battleTitle").textContent = b.mode === "pve" ? `${state.floor % 10 === 0 ? "首领" : "元素"}试炼` : "镜像法师对决";
   $("battleSpeed").textContent = `速度 ×${battleSpeed}`; $("battlePause").textContent = paused ? "继续" : "暂停"; $("battleStep").hidden = !paused;
