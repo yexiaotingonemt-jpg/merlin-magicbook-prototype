@@ -51,10 +51,13 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
   assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=31"/);
-  assert.match(game, /formal-game-ui\.css\?v=40/);
+  assert.match(game, /formal-game-ui\.css\?v=43/);
   assert.match(formalUi, /grid-template-rows: auto auto minmax\(0, 1fr\)/);
   assert.match(formalUi, /\.event-facts strong \{ font-size: 12px/);
-  assert.match(formalUi, /minmax\(720px, 2\.25fr\)/);
+  assert.match(formalUi, /minmax\(760px, 2\.4fr\)/);
+  assert.match(formalUi, /justify-self: center/);
+  assert.match(formalUi, /aspect-ratio: 13 \/ 8/);
+  assert.match(formalUi, /grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(formalUi, /padding: 7\.5% 13% 10%/);
   assert.match(formalUi, /\.modal-card \.context-page \{ min-width: 126px/);
   assert.match(formalUi, /scrollbar-color: #806a43 #090b09/);
