@@ -67,8 +67,11 @@ export function bindEvents() {
       completeEvent(title, copy); return;
     }
   });
-  $("newRunButton").addEventListener("click", () => showModal('<h2>重新进入法师塔？</h2><p>层数、塔内等级、经验、生命、起始元素、装订方案、咒语收藏和等级都会重置；积分及商店成长保留。系统先生成10张基础咒术页，再从火、水、风随机选2系，以2页＋1页替换其中3页，仓库从0页开始。</p><button class="primary" id="confirmNewRun">确认重开</button>'));
-  $("modalContent").addEventListener("click", (event) => { if (event.target.id === "confirmNewRun") newTowerRun(); });
+  $("newRunButton").addEventListener("click", () => showModal('<div class="modal-kicker"><i class="fa-solid fa-tower-observation" aria-hidden="true"></i><span>TOWER RESTART</span></div><h2>重新进入法师塔？</h2><p class="modal-lead">确认后将结束当前探索，并以新的初始构筑重新进入序章。</p><div class="restart-summary"><section><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i><div><b>本局重置</b><p>层数、塔内等级、经验、生命、起始元素、装订方案、咒语收藏与等级。</p></div></section><section class="retained"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><div><b>永久保留</b><p>当前积分，以及场外商店提供的永久成长。</p></div></section><section><i class="fa-solid fa-book-open" aria-hidden="true"></i><div><b>新书开局</b><p>生成10张基础咒术页；从火、水、风随机选2系，以2页＋1页替换其中3页，仓库从0页开始。</p></div></section></div><div class="restart-actions"><button class="secondary" id="cancelNewRun">返回探索</button><button class="primary" id="confirmNewRun"><i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i>确认重开</button></div>'));
+  $("modalContent").addEventListener("click", (event) => {
+    if (event.target.closest("#cancelNewRun")) closeModal();
+    if (event.target.closest("#confirmNewRun")) newTowerRun();
+  });
   $("modalClose").addEventListener("click", () => closeModal()); $("modal").addEventListener("click", (event) => { if (event.target === $("modal")) closeModal(); });
   $("helpButton").addEventListener("click", showHelp);
   ["cardSearch", "schoolFilter", "costFilter"].forEach((id) => $(id).addEventListener(id === "cardSearch" ? "input" : "change", renderGrimoire));

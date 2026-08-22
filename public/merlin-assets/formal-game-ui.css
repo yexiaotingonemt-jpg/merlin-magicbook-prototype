@@ -460,6 +460,173 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
 .archive-detail section p { color: #c9c0b1; line-height: 1.75; }
 .archive-detail section.echo b { color: #a98bb2; }
 
+/* Formal modal system */
+.modal {
+  padding: 22px;
+  background: #030405de;
+  backdrop-filter: blur(14px) saturate(.72);
+}
+.modal-card {
+  width: min(860px, 100%);
+  max-height: min(88vh, 760px);
+  padding: 31px 34px 32px;
+  overflow: auto;
+  border: 1px solid #8e784f;
+  border-radius: 2px;
+  color: #eee7d8;
+  background:
+    linear-gradient(100deg, #111310f2, #171713e9 48%, #0c0e0df5),
+    url("./merlin-magicbook-background-left.webp") 58% 30% / cover;
+  box-shadow: 0 40px 120px #000, inset 0 0 0 5px #070908, inset 0 0 0 6px #6e60472b;
+  animation: formal-modal-arrive .2s ease-out both;
+}
+.modal-card::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  pointer-events: none;
+  border: 1px solid #d0b16c14;
+}
+.modal-close {
+  z-index: 2;
+  top: 15px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #695d4d;
+  border-radius: 0;
+  color: #c8bda9;
+  background: #0c0e0dec;
+  transition: border-color .16s ease, color .16s ease, background .16s ease;
+}
+.modal-close:hover,
+.modal-close:focus-visible {
+  border-color: #c4a66b;
+  color: #fff4db;
+  background: #242116;
+  outline: none;
+}
+.modal-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #b99a5d;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .2em;
+}
+.modal-kicker i { font-size: 11px; }
+.modal-card h2 {
+  margin: 0;
+  padding: 0 48px 13px 0;
+  border-bottom: 1px solid #625946;
+  color: #f0eadc;
+  font: 700 31px/1.2 Georgia, "Songti SC", STSong, SimSun, serif;
+}
+.modal-card > div > p,
+.modal-card .modal-lead {
+  color: #b1aa9d;
+  line-height: 1.7;
+}
+.modal-card .modal-lead {
+  margin: 13px 0 18px;
+  font-size: 13px;
+}
+.restart-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #504a3e;
+  background: #504a3e;
+}
+.restart-summary section {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-content: start;
+  gap: 10px;
+  min-height: 128px;
+  padding: 17px 15px;
+  background: #111310ee;
+}
+.restart-summary section.retained { background: #171711ee; }
+.restart-summary section > i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #716447;
+  color: #c9ad6e;
+  background: #0b0d0c;
+}
+.restart-summary b {
+  color: #e3d8c4;
+  font: 700 14px Georgia, "Songti SC", serif;
+}
+.restart-summary p {
+  margin: 7px 0 0;
+  color: #999287;
+  font-size: 11px;
+  line-height: 1.65;
+}
+.restart-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+.modal-card .primary,
+.modal-card .secondary {
+  min-width: 116px;
+  padding: 10px 16px;
+  border-radius: 0;
+  cursor: pointer;
+}
+.modal-card .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #e0c17a;
+  color: #211708;
+  background: linear-gradient(180deg, #ebcf87, #b98b42);
+  box-shadow: inset 0 1px #fff5cc, 0 8px 22px #0009;
+}
+.modal-card .secondary {
+  color: #c8bda9;
+  background: #0e100fdd;
+}
+.modal-card .choice-grid { gap: 9px; }
+.modal-card .choice-button {
+  border-color: #554d40;
+  border-radius: 0;
+  color: #e6dece;
+  background: #101210ed;
+}
+.modal-card .choice-button:hover,
+.modal-card .choice-button:focus-visible {
+  border-color: #c0a263;
+  box-shadow: 0 10px 26px #0009, inset 3px 0 #b89759;
+  outline: none;
+}
+.modal-card .choice-button p { color: #a49d91; }
+.modal-card .decision-context {
+  border-color: #554d40;
+  border-radius: 0;
+  background: #0e100f;
+}
+.modal-card .decision-context > header { background: #171815; }
+.modal-card .decision-context-grid { background: #4c463b; }
+.modal-card .decision-context-grid > div { background: #101210; }
+@keyframes formal-modal-arrive {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-card { animation: none; }
+}
+
 /* Desktop viewport fit: optimized for 1672 × 939, with long collections scrolling inside their panels. */
 @media (min-width: 1281px) and (min-height: 820px) {
   html,
@@ -708,6 +875,18 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
   #archiveSchoolFilter { display: block; width: 100%; margin-top: 8px; padding: 10px; border: 1px solid #5a5347; color: #ddd3c2; background: #111310; }
   .archive-tabs { display: none; }
   .archive-card { min-height: 250px; }
+  .modal { align-items: end; padding: 10px; }
+  .modal-card {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+    padding: 25px 19px 22px;
+  }
+  .modal-card h2 { padding-right: 38px; font-size: 26px; }
+  .restart-summary { grid-template-columns: 1fr; }
+  .restart-summary section { min-height: 0; }
+  .restart-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .modal-card .primary,
+  .modal-card .secondary { min-width: 0; }
 }
 
 @media (max-width: 520px) {

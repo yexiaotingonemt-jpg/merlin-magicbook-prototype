@@ -49,7 +49,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=30"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=31"/);
   assert.ok(game.indexOf('class="battle-lower"') > game.indexOf('class="spell-focus"'));
   assert.ok(game.indexOf('class="battle-lower"') < game.indexOf('id="enemyCombatant"'));
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
