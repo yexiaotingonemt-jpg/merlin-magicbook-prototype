@@ -101,9 +101,9 @@ export function storeAcquiredPage(card) {
 }
 export function upgradePageWithReward(card, targetId) {
   const target = CARD_BY_ID.get(targetId);
-  if (!target || target.basePage || !state.deck.includes(targetId) || cardLevel(targetId) >= 6) return null;
+  if (!target || target.id !== card?.id || target.basePage || !state.deck.includes(targetId) || cardLevel(targetId) >= 6) return null;
   state.collection[targetId] = cardLevel(targetId) + 1;
-  return `将《${card.name}》作为升级材料，《${target.name}》提升至 Lv.${cardLevel(targetId)}`;
+  return `消耗同名《${card.name}》，已装订书页提升至 Lv.${cardLevel(targetId)}`;
 }
 export function replacePageWithReward(card, outgoingId) {
   if (state.deck.includes(card.id) || !state.deck.includes(outgoingId)) return null;
@@ -116,7 +116,7 @@ export function replacePageWithReward(card, outgoingId) {
   }
   return `《${card.name}》替换了《${CARD_BY_ID.get(outgoingId).name}》；旧书页${CARD_BY_ID.get(outgoingId).basePage ? "回归基础页库" : "已收入仓库"}`;
 }
-function confirmReplacement(card, outgoingId, onReplace, locked, onActionBack) {
+function confirmReplacement(card, outgoingId, onReplace, locked, onActionBack, onConfirmBack = null) {
   const remainingDeck = state.deck.filter((id) => id !== outgoingId);
   const previewDeck = state.deck.map((id) => id === outgoingId ? card.id : id);
   const missing = missingBuildElements(card, remainingDeck);
@@ -124,7 +124,7 @@ function confirmReplacement(card, outgoingId, onReplace, locked, onActionBack) {
   const names = missing.map((element) => `${ELEMENTS[element].icon}${ELEMENTS[element].name}元素`).join("、");
   showModal(`<h2>替换后将引入新元素系</h2><p>《${card.name}》会引入当前起始元素和替换后魔法书中完全没有的 <b>${names}</b>。这可能扩大元素缺口，但不会禁止装订。</p><div class="confirm-balance"><span>替换后理论余缺</span><div class="element-balance-chips">${elementBalanceHtml(previewDeck)}</div>${damageForecastHtml(previewDeck, {}, "替换后")}</div><div class="confirmation-actions"><button class="secondary" data-back-replace>返回选择</button><button class="primary" data-confirm-replace>仍然替换</button></div>`, locked);
   $("modalContent").onclick = (event) => {
-    if (event.target.closest("[data-back-replace]")) { showReplacementModal(card, onReplace, locked, onActionBack); return; }
+    if (event.target.closest("[data-back-replace]")) { if (onConfirmBack) onConfirmBack(); else showReplacementModal(card, onReplace, locked, onActionBack); return; }
     if (event.target.closest("[data-confirm-replace]")) onReplace(outgoingId);
   };
 }
@@ -138,36 +138,101 @@ export function showReplacementModal(card, onReplace, locked = false, onActionBa
   };
 }
 export function showAcquiredPageModal(card) {
-  const upgradeTargets = state.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage && cardLevel(id) < 6);
-  showModal(`<h2>获得《${card.name}》</h2><p>新书页不会自动改变构筑。你可以替换当前一页、将它作为材料升级一张已装订咒语，或收入仓库；进入下一步后仍可返回重新选择处理方式。</p>${decisionContextHtml()}<div class="choice-grid acquire-actions"><button class="choice-button ${card.school}" data-acquire-action="replace">${cardMetadataHtml(card)}<h3>替换一页</h3><p>装订新书页，并将被替换的非基础页收入仓库。</p></button><button class="choice-button arcane" data-acquire-action="upgrade" ${upgradeTargets.length ? "" : "disabled"}><span class="spell-meta arcane">✶ 奥术 · 书页精炼</span><h3>升级一页</h3><p>${upgradeTargets.length ? "消耗这张新书页，选择一张未满级的已装订咒语升级。" : "当前没有可以升级的已装订咒语。"}</p></button><button class="choice-button arcane" data-acquire-action="store"><span class="spell-meta arcane">✶ 奥术 · 暂存</span><h3>收入仓库</h3><p>保留新书页，不改变当前10页构筑。</p></button></div>`, false);
-  $("modalContent").onclick = (event) => {
-    const action = event.target.closest("[data-acquire-action]")?.dataset.acquireAction;
-    if (action === "store") {
-      showModal(`<h2>将《${card.name}》收入仓库？</h2><p>当前10页魔法书不会改变；确认后完成本次事件。</p>${damageForecastHtml(state.deck, {}, "保持") }<div class="confirmation-actions"><button class="secondary" data-back-acquire>返回选择处理方式</button><button class="primary" data-confirm-store>确认收入仓库</button></div>`, false);
-      $("modalContent").onclick = (storeEvent) => {
-        if (storeEvent.target.closest("[data-back-acquire]")) { showAcquiredPageModal(card); return; }
-        if (storeEvent.target.closest("[data-confirm-store]")) completeEvent("书页入库", storeAcquiredPage(card));
-      };
+  showLibraryWorkbench([card], card.id);
+}
+
+function workbenchCandidateHtml(card, selectedId) {
+  const known = cardLevel(card.id);
+  const location = state.deck.includes(card.id) ? `已装订 · Lv.${known}` : known ? `仓库 · Lv.${known}` : "新咒语";
+  return `<button class="library-candidate ${card.school}${selectedId === card.id ? " selected" : ""}" draggable="true" data-reward-card="${card.id}" aria-pressed="${selectedId === card.id}">${cardMetadataHtml(card)}<h3>${esc(card.name)}</h3>${cardCostHtml(card)}<p>${esc(card.full)}</p><footer><span>${location}</span><b><i class="fa-solid fa-hand-pointer" aria-hidden="true"></i> 点击或拖拽</b></footer></button>`;
+}
+function workbenchPageHtml(id, selectedCard, replaceMode) {
+  const page = CARD_BY_ID.get(id);
+  const same = selectedCard?.id === id;
+  const canUpgrade = same && !page.basePage && cardLevel(id) < 6;
+  const canReplace = Boolean(selectedCard && !state.deck.includes(selectedCard.id) && !same);
+  const previewDeck = selectedCard && canReplace ? state.deck.map((currentId) => currentId === id ? selectedCard.id : currentId) : state.deck;
+  const preview = expectedDeckPerformance(previewDeck);
+  const action = canUpgrade ? "upgrade" : canReplace ? "replace" : "blocked";
+  const hint = !selectedCard ? "选择左侧候选页" : canUpgrade ? `同名升级至 Lv.${cardLevel(id) + 1}` : canReplace ? `替换后预期 ${preview.damagePct}%` : same ? "同名页已满级" : "该候选已装订";
+  return `<button class="workbench-page ${page.school} ${action}${replaceMode && canReplace ? " awaiting" : ""}" data-workbench-page="${id}" data-drop-action="${action}" ${replaceMode && canReplace ? "" : "tabindex=\"-1\""}>${cardMetadataHtml(page)}<h3>${esc(page.name)}</h3><div class="workbench-page-cost">${cardCostHtml(page, true)}<span>${page.basePage ? "基础页" : `Lv.${cardLevel(id)}`}</span></div><small>${hint}</small></button>`;
+}
+function workbenchActionsHtml(card, replaceMode) {
+  if (!card) return `<aside class="library-action-drawer empty"><i class="fa-solid fa-hand-sparkles" aria-hidden="true"></i><div><b>选择一张候选咒语</b><span>可直接拖到右侧书页；也可点击后选择处理方式。</span></div></aside>`;
+  const known = cardLevel(card.id);
+  const bound = state.deck.includes(card.id);
+  if (replaceMode) return `<aside class="library-action-drawer active"><div><b>正在装订《${esc(card.name)}》</b><span>点击右侧任意不同名书页完成替换，或直接拖拽到目标书页。</span></div><button class="secondary" data-workbench-action="cancel-replace">取消替换</button></aside>`;
+  if (bound) return `<aside class="library-action-drawer active"><div><b>同名书页已装订</b><span>${known >= 6 ? "这张咒语已经达到最高等级。" : `仅能用它升级右侧同名页：Lv.${known} → Lv.${known + 1}。`}</span></div><button class="primary" data-workbench-action="upgrade" ${known >= 6 ? "disabled" : ""}>升级同名页</button></aside>`;
+  return `<aside class="library-action-drawer active"><div><b>处理《${esc(card.name)}》</b><span>${known ? `仓库已有 Lv.${known}；收入仓库将升级这张同名咒语。` : "装订会替换右侧一页；入库不会改变当前构筑。"}</span></div><div class="library-action-buttons"><button class="primary" data-workbench-action="replace">替换书页</button><button class="secondary" data-workbench-action="store">${known ? "升级仓库同名页" : "放入仓库"}</button></div></aside>`;
+}
+function performWorkbenchTarget(cards, card, outgoingId) {
+  if (card.id === outgoingId) {
+    const result = upgradePageWithReward(card, outgoingId);
+    if (result) completeEvent("同名升级完成", result);
+    else toast(cardLevel(outgoingId) >= 6 ? "该同名书页已经满级。" : "只有拖到已装订的同名书页上才能升级。");
+    return;
+  }
+  if (state.deck.includes(card.id)) { toast("这张候选咒语已经装订，只能拖到同名页上升级。"); return; }
+  confirmReplacement(card, outgoingId, (targetId) => {
+    const result = replacePageWithReward(card, targetId);
+    if (result) completeEvent("替换完成", result);
+  }, false, null, () => showLibraryWorkbench(cards, card.id, true));
+}
+export function showLibraryWorkbench(cards, selectedId = null, replaceMode = false) {
+  const selectedCard = cards.find((card) => card.id === selectedId) || null;
+  const performance = expectedDeckPerformance();
+  const counts = startElementCounts();
+  const elements = Object.entries(counts).map(([element, amount]) => `<span class="context-element ${element}">${ELEMENTS[element].icon} ${ELEMENTS[element].name} ×${amount}</span>`).join("") || '<span class="context-empty">暂无起始元素</span>';
+  const pages = state.deck.map((id) => workbenchPageHtml(id, selectedCard, replaceMode)).join("");
+  showModal(`<div class="library-workbench"><header class="library-workbench-header"><div><span>RUINED LIBRARY · BINDING DESK</span><h2>残破书库 · 六系六选一</h2><p>把候选咒语拖到不同名书页上进行替换；拖到同名书页上才能升级。点击候选页也可选择处理方式。</p></div><div class="build-score"><span>当前构筑</span><b>${performance.damagePct}%</b><small>完整施法率 ${performance.fullCastRate}%</small></div></header><div class="library-workbench-body"><section class="library-candidate-pane"><div class="workbench-section-title"><div><span>REWARD PAGES</span><h3>候选书页</h3></div><b>${cards.length} 选 1</b></div><div class="library-candidate-grid">${cards.map((card) => workbenchCandidateHtml(card, selectedId)).join("")}</div>${workbenchActionsHtml(selectedCard, replaceMode)}</section><section class="library-build-pane"><div class="workbench-section-title"><div><span>COMBAT GRIMOIRE</span><h3>当前已装订书页</h3></div><b>${state.deck.length} / ${COMBAT_DECK_CAP}</b></div><div class="workbench-build-meta"><div><span>起始元素 ${state.startElements.length} / ${slotCap()}</span><div>${elements}</div></div><div><span>拖放规则</span><p><b>不同名</b>替换 · <b>同名</b>升级</p></div></div><div class="workbench-page-grid">${pages}</div></section></div></div>`, false);
+  const content = $("modalContent");
+  let draggedCardId = null;
+  content.onclick = (event) => {
+    const candidateId = event.target.closest("[data-reward-card]")?.dataset.rewardCard;
+    if (candidateId) { showLibraryWorkbench(cards, candidateId, false); return; }
+    const action = event.target.closest("[data-workbench-action]")?.dataset.workbenchAction;
+    if (action === "cancel-replace") { showLibraryWorkbench(cards, selectedCard?.id, false); return; }
+    if (!selectedCard || !action) {
+      const outgoingId = replaceMode ? event.target.closest("[data-workbench-page]")?.dataset.workbenchPage : null;
+      if (outgoingId && selectedCard) performWorkbenchTarget(cards, selectedCard, outgoingId);
       return;
     }
-    if (action === "replace") {
-      showReplacementModal(card, (outgoingId) => {
-        const result = replacePageWithReward(card, outgoingId);
-        if (result) completeEvent("替换完成", result);
-      }, false, () => showAcquiredPageModal(card));
-      return;
-    }
-    if (action === "upgrade" && upgradeTargets.length) {
-      showModal(`<h2>选择要升级的书页</h2><p>《${card.name}》将作为升级材料消耗，不会进入收藏。</p><div class="modal-step-actions"><button class="secondary" data-back-acquire>← 返回选择处理方式</button></div>${decisionContextHtml()}<div class="choice-grid">${upgradeTargets.map((id) => { const target = CARD_BY_ID.get(id), nextLevel = cardLevel(id) + 1; return `<button class="choice-button ${target.school}" data-upgrade-reward="${id}">${cardMetadataHtml(target)}<h3>${target.name}</h3><p>Lv.${cardLevel(id)} → Lv.${nextLevel}</p>${damageForecastHtml(state.deck, { [id]: nextLevel }, "升级后")}</button>`; }).join("")}</div>`, false);
-      $("modalContent").onclick = (upgradeEvent) => {
-        if (upgradeEvent.target.closest("[data-back-acquire]")) { showAcquiredPageModal(card); return; }
-        const targetId = upgradeEvent.target.closest("[data-upgrade-reward]")?.dataset.upgradeReward;
-        if (!targetId) return;
-        const result = upgradePageWithReward(card, targetId);
-        if (result) completeEvent("升级完成", result);
-      };
+    if (action === "replace") { showLibraryWorkbench(cards, selectedCard.id, true); return; }
+    if (action === "store") { completeEvent(cardLevel(selectedCard.id) ? "同名升级完成" : "书页入库", storeAcquiredPage(selectedCard)); return; }
+    if (action === "upgrade") {
+      const result = upgradePageWithReward(selectedCard, selectedCard.id);
+      if (result) completeEvent("同名升级完成", result);
     }
   };
+  content.ondragstart = (event) => {
+    const candidate = event.target.closest("[data-reward-card]");
+    if (!candidate) return;
+    draggedCardId = candidate.dataset.rewardCard;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", candidate.dataset.rewardCard);
+    candidate.classList.add("dragging");
+  };
+  content.ondragover = (event) => {
+    const target = event.target.closest("[data-workbench-page]");
+    const draggedCard = CARD_BY_ID.get(draggedCardId);
+    const same = draggedCard?.id === target?.dataset.workbenchPage;
+    const valid = Boolean(target && draggedCard && ((same && !draggedCard.basePage && cardLevel(draggedCard.id) < 6) || (!same && !state.deck.includes(draggedCard.id))));
+    if (!valid) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    content.querySelectorAll(".workbench-page.drag-over").forEach((page) => page.classList.remove("drag-over"));
+    target.classList.add("drag-over");
+  };
+  content.ondrop = (event) => {
+    const target = event.target.closest("[data-workbench-page]");
+    const card = CARD_BY_ID.get(event.dataTransfer.getData("text/plain"));
+    draggedCardId = null;
+    content.querySelectorAll(".drag-over,.dragging").forEach((node) => node.classList.remove("drag-over", "dragging"));
+    if (!target || !card || !cards.some((candidate) => candidate.id === card.id)) return;
+    event.preventDefault();
+    performWorkbenchTarget(cards, card, target.dataset.workbenchPage);
+  };
+  content.ondragend = () => { draggedCardId = null; content.querySelectorAll(".drag-over,.dragging").forEach((node) => node.classList.remove("drag-over", "dragging")); };
 }
 export function resolveEvent(eventId) {
   if (state.activeEventId && state.activeEventId !== eventId) { toast("已选定其他事件，请先完成当前处理。"); return; }
@@ -190,10 +255,10 @@ export function resolveEvent(eventId) {
   if (type === "library") {
     const pool = CARDS.filter((card) => LIBRARY_SCHOOLS.includes(card.school) && !cardLevel(card.id));
     if (!pool.length || Math.random() < PASSIVE_LIBRARY_CHANCE) { choosePassiveModal(); return; }
-    const fallbackPool = CARDS.filter((card) => LIBRARY_SCHOOLS.includes(card.school) && cardLevel(card.id) < 6 && !state.deck.includes(card.id));
+    const fallbackPool = CARDS.filter((card) => LIBRARY_SCHOOLS.includes(card.school) && cardLevel(card.id) < 6);
     const choices = librarySpellChoices(pool, fallbackPool);
     if (choices.length < LIBRARY_SCHOOLS.length) { choosePassiveModal(); return; }
-    chooseCardModal("残破书库 · 六系六选一", choices, showAcquiredPageModal, `火、水、风、土、光、暗各提供一张候选咒语。选择后可替换当前一页、作为升级材料或收入仓库；魔法书始终保持${COMBAT_DECK_CAP}页。`); return;
+    showLibraryWorkbench(choices); return;
   }
   if (type === "upgrade") {
     const cards = state.deck.map((id) => CARD_BY_ID.get(id)).filter((c) => c && !c.basePage && cardLevel(c.id) < 6);

@@ -697,12 +697,194 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
 .modal-card .element-balance-chip b { color: #c9c0b1; }
 .modal-card .damage-forecast b { color: #d0b16f; }
 .modal-card .damage-forecast small { color: #8f887d; }
+
+/* Ruined library binding workbench */
+.modal:has(.library-workbench) { padding: 14px; }
+.modal:has(.library-workbench) .modal-card {
+  width: min(1500px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  padding: 18px 20px 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 10%, #88672c1c, transparent 35%),
+    linear-gradient(105deg, #111310f7, #181814f4 52%, #0a0c0bf9),
+    url("./art/event-ruined-library.webp") center / cover;
+}
+.library-workbench {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: min(860px, calc(100vh - 66px));
+  min-height: 620px;
+}
+.library-workbench-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 26px;
+  padding: 0 44px 15px 4px;
+  border-bottom: 1px solid #665a43;
+}
+.library-workbench-header > div:first-child > span,
+.workbench-section-title span {
+  color: #b89859;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+.modal-card .library-workbench-header h2 {
+  margin: 4px 0 5px;
+  padding: 0;
+  border: 0;
+  font-size: 28px;
+}
+.library-workbench-header p { margin: 0; color: #aaa294; font-size: 12px; line-height: 1.55; }
+.build-score {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  gap: 0 10px;
+  min-width: 172px;
+  padding: 10px 13px;
+  border: 1px solid #655a45;
+  background: #0c0f0ded;
+}
+.build-score span { color: #8f877a; font-size: 9px; letter-spacing: .12em; }
+.build-score b { grid-row: span 2; color: #e0bd6d; font: 700 31px/1 Georgia, serif; }
+.build-score small { color: #b8afa0; font-size: 9px; }
+.library-workbench-body {
+  display: grid;
+  grid-template-columns: minmax(470px, .9fr) minmax(650px, 1.25fr);
+  min-height: 0;
+  padding-top: 12px;
+}
+.library-candidate-pane,
+.library-build-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  border: 1px solid #554d3e;
+  background: #0c0f0df0;
+}
+.library-candidate-pane { border-right: 0; background: linear-gradient(145deg, #171812f5, #0b0d0cf5); }
+.library-build-pane { grid-template-rows: auto auto minmax(0, 1fr); background: linear-gradient(145deg, #111410f7, #080b09f7); }
+.workbench-section-title { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid #494338; }
+.workbench-section-title h3 { margin: 3px 0 0; color: #eee6d7; font: 700 19px Georgia, "Songti SC", serif; }
+.workbench-section-title > b { color: #d7b66e; font-size: 11px; }
+.library-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 0;
+}
+.library-candidate-grid:has(> :only-child) { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.library-candidate {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 11px 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--school, #9b8559) 48%, #554c3c);
+  color: #eee6d7;
+  text-align: left;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--school, #8b7450) 10%, #171914), #0a0d0b 72%);
+  box-shadow: inset 3px 0 color-mix(in srgb, var(--school, #b89d64) 70%, #756547);
+  cursor: grab;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.library-candidate:hover,
+.library-candidate:focus-visible,
+.library-candidate.selected { border-color: color-mix(in srgb, var(--school, #d1b36f) 70%, #e8d199); box-shadow: inset 4px 0 var(--school, #b99b60), 0 10px 28px #000a; outline: none; transform: translateY(-2px); }
+.library-candidate.dragging { opacity: .45; cursor: grabbing; }
+.library-candidate .spell-meta { color: color-mix(in srgb, var(--school, #b99b60) 72%, #e5d6b7); font-size: 9px; }
+.library-candidate h3 { margin: 4px 0; font: 700 17px Georgia, "Songti SC", serif; }
+.library-candidate .spell-cost { margin: 2px 0 5px; }
+.library-candidate > p { margin: 0; overflow: hidden; color: #aaa294; font-size: 10px; line-height: 1.48; }
+.library-candidate footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; padding-top: 6px; border-top: 1px solid #3f3b32; color: #8e877b; font-size: 8px; }
+.library-candidate footer b { color: #c8aa69; font-weight: 600; }
+.library-action-drawer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 9px 11px;
+  border: 1px solid #504839;
+  background: #10130f;
+}
+.library-action-drawer.empty { color: #777166; }
+.library-action-drawer.active { border-color: #9a7e49; background: linear-gradient(90deg, #1d1d14, #10120f); }
+.library-action-drawer > i { color: #ae945f; font-size: 20px; }
+.library-action-drawer > div:first-of-type { display: grid; flex: 1; gap: 3px; }
+.library-action-drawer b { color: #e2d6c1; font-size: 11px; }
+.library-action-drawer span { color: #948c80; font-size: 9px; line-height: 1.4; }
+.library-action-buttons { display: flex !important; flex: 0 0 auto !important; gap: 7px !important; }
+.library-action-drawer button { min-width: 105px; padding: 8px 10px; }
+.workbench-build-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #494338;
+}
+.workbench-build-meta > div { min-width: 0; }
+.workbench-build-meta > div > span { color: #8f877a; font-size: 8px; letter-spacing: .1em; }
+.workbench-build-meta > div > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.workbench-build-meta .context-element { padding: 4px 7px; border: 1px solid color-mix(in srgb, var(--school, #8d7a55) 45%, #524a3e); color: #d8cdb9; background: #121511; box-shadow: inset 2px 0 var(--school, #9d8554); font-size: 8px; }
+.workbench-build-meta p { margin: 5px 0 0; color: #a29a8d; font-size: 9px; }
+.workbench-build-meta p b:first-child { color: #d0b16f; }
+.workbench-build-meta p b:last-child { color: #9cc6a9; }
+.workbench-page-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  min-height: 0;
+  padding-top: 10px;
+}
+.workbench-page {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  min-width: 0;
+  min-height: 0;
+  padding: 9px 10px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--school, #8d7a55) 38%, #4f493e);
+  color: #e6ddcd;
+  text-align: left;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--school, #8d7a55) 7%, #171a16), #0b0e0c);
+  box-shadow: inset 3px 0 color-mix(in srgb, var(--school, #9e8758) 62%, #665a43);
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.workbench-page .spell-meta { grid-column: 1 / -1; overflow: hidden; color: color-mix(in srgb, var(--school, #b99b60) 68%, #d4c5a9); font-size: 8px; white-space: nowrap; text-overflow: ellipsis; }
+.workbench-page h3 { margin: 4px 0 2px; overflow: hidden; font: 700 13px Georgia, "Songti SC", serif; white-space: nowrap; text-overflow: ellipsis; }
+.workbench-page-cost { display: flex; align-items: center; justify-content: end; gap: 7px; }
+.workbench-page-cost .spell-cost { margin: 0; }
+.workbench-page-cost > span { color: #8c857a; font-size: 8px; }
+.workbench-page > small { grid-column: 1 / -1; align-self: end; color: #7f796f; font-size: 8px; }
+.workbench-page.replace,
+.workbench-page.upgrade,
+.workbench-page.awaiting { cursor: pointer; }
+.workbench-page.awaiting { border-color: #bd9c58; box-shadow: inset 4px 0 #c7a65f, 0 0 18px #c5a35b22; }
+.workbench-page.upgrade { border-color: #69967a; }
+.workbench-page.drag-over { z-index: 2; border-color: #f0d589; background: #2d2b1c; box-shadow: inset 0 0 0 2px #e5c56e, 0 0 28px #d2aa4a66; transform: scale(1.018); }
+.workbench-page.drag-over.upgrade { border-color: #91d2aa; background: #17271c; box-shadow: inset 0 0 0 2px #7fc79b, 0 0 28px #61b98555; }
+
 @keyframes formal-modal-arrive {
   from { opacity: 0; transform: translateY(12px) scale(.985); }
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .modal-card { animation: none; }
+  .library-candidate,
+  .workbench-page { transition: none; }
 }
 
 /* Desktop viewport fit: optimized for 1672 × 939, with long collections scrolling inside their panels. */
@@ -911,6 +1093,10 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
   .battle-stage { grid-template-columns: 210px minmax(0, 1fr) 210px; }
   .current-card { min-height: 560px; padding: 20px 18px; }
   .archive-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .library-workbench-body { grid-template-columns: minmax(0, .9fr) minmax(0, 1.15fr); }
+  .library-action-drawer { align-items: stretch; flex-direction: column; }
+  .library-action-buttons { width: 100%; }
+  .library-action-buttons button { flex: 1; }
 }
 
 @media (max-width: 1050px) {
@@ -977,6 +1163,18 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
   .restart-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .modal-card .primary,
   .modal-card .secondary { min-width: 0; }
+  .modal:has(.library-workbench) { align-items: start; padding: 8px; }
+  .modal:has(.library-workbench) .modal-card { width: 100%; max-height: calc(100vh - 16px); padding: 15px; overflow: auto; }
+  .library-workbench { display: block; height: auto; min-height: 0; }
+  .library-workbench-header { align-items: start; flex-direction: column; padding: 0 38px 12px 0; }
+  .build-score { grid-template-columns: 1fr auto; width: 100%; }
+  .library-workbench-body { display: block; padding-top: 10px; }
+  .library-candidate-pane { border-right: 1px solid #554d3e; }
+  .library-candidate-grid,
+  .workbench-page-grid { grid-template-columns: 1fr; grid-template-rows: none; }
+  .library-candidate { min-height: 170px; }
+  .library-build-pane { margin-top: 10px; }
+  .workbench-page { min-height: 78px; }
 }
 
 @media (max-width: 520px) {

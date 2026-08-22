@@ -50,8 +50,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=31"/);
-  assert.match(game, /formal-game-ui\.css\?v=43/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=32"/);
+  assert.match(game, /formal-game-ui\.css\?v=44/);
   assert.match(formalUi, /grid-template-rows: auto auto minmax\(0, 1fr\)/);
   assert.match(formalUi, /\.event-facts strong \{ font-size: 12px/);
   assert.match(formalUi, /minmax\(760px, 2\.4fr\)/);
@@ -76,7 +76,10 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.battle, /export function spellPageHtml\(card/);
   assert.match(sources.battle, /export function enemyBasicPage\(enemy/);
   assert.match(sources.state, /export const COMBAT_DECK_CAP = 10/);
-  assert.match(sources.exploration, /替换当前一页、作为升级材料或收入仓库/);
+  assert.match(sources.exploration, /library-workbench/);
+  assert.match(sources.exploration, /target\.id !== card\?\.id/);
+  assert.match(formalUi, /grid-template-columns: minmax\(470px, \.9fr\) minmax\(650px, 1\.25fr\)/);
+  assert.match(formalUi, /\.workbench-page\.drag-over/);
   for (const label of ["法攻", "法防", "命中", "闪避", "暴击", "抗暴"]) assert.match(sources.battle, new RegExp(`\\["${label}"`));
   assert.match(sources.battle, /实际 \$\{percent\(evasionChance/);
   assert.match(sources.core, /export function variance\(\)/);
@@ -111,9 +114,11 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(sources.app, /continueExplore|continueButton/);
   assert.match(sources.state, /export function theoreticalElementBalance\(/);
   assert.match(sources.state, /export function missingBuildElements\(/);
-  assert.match(sources.exploration, /data-acquire-action="replace"/);
-  assert.match(sources.exploration, /data-acquire-action="upgrade"/);
-  assert.match(sources.exploration, /data-acquire-action="store"/);
+  assert.match(sources.exploration, /data-workbench-action="replace"/);
+  assert.match(sources.exploration, /data-workbench-action="upgrade"/);
+  assert.match(sources.exploration, /data-workbench-action="store"/);
+  assert.match(sources.exploration, /ondragstart/);
+  assert.match(sources.exploration, /ondrop/);
   assert.doesNotMatch(sources.battle, /data-battle-retry|export function restartBattle/);
   assert.doesNotMatch(sources.app, /data-battle-retry|\brestartBattle\b/);
   assert.match(sources.battle, /确认结算并重新开始/);
@@ -126,8 +131,8 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(sources.battle, /battle-result-loser/);
   assert.match(sources.state, /export function expectedDeckPerformance/);
   assert.match(sources.ui, /export function damageForecastHtml/);
-  assert.match(sources.exploration, /data-back-acquire/);
-  assert.match(sources.exploration, /data-confirm-store/);
+  assert.match(sources.exploration, /data-workbench-page/);
+  assert.match(sources.exploration, /只有拖到已装订的同名书页上才能升级/);
 });
 
 test("renders the next-level preview and its responsive styling", async () => {

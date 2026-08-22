@@ -112,7 +112,7 @@ test("new mages begin with ten pages, three elemental replacements, and an empty
   assert.deepEqual(Object.keys(current.collection).sort(), current.deck.filter((id) => !CARD_BY_ID.get(id)?.basePage).sort());
 });
 
-test("new pages can replace, upgrade, or enter the warehouse without changing ten slots", () => {
+test("new pages can replace, upgrade only their bound namesake, or enter the warehouse", () => {
   const current = setState(freshState());
   const incoming = CARDS.find((card) => !current.collection[card.id]);
   const outgoingBase = current.deck.find((id) => CARD_BY_ID.get(id)?.basePage);
@@ -121,12 +121,13 @@ test("new pages can replace, upgrade, or enter the warehouse without changing te
   assert.ok(current.deck.includes(incoming.id));
   assert.equal(current.collection[incoming.id], 1);
 
-  const material = CARDS.find((card) => !current.collection[card.id]);
   const targetId = current.deck.find((id) => !CARD_BY_ID.get(id)?.basePage);
+  const material = CARD_BY_ID.get(targetId);
   const beforeLevel = current.collection[targetId];
-  assert.match(upgradePageWithReward(material, targetId), /升级材料/);
+  const unrelated = CARDS.find((card) => card.id !== targetId);
+  assert.equal(upgradePageWithReward(unrelated, targetId), null);
+  assert.match(upgradePageWithReward(material, targetId), /同名/);
   assert.equal(current.collection[targetId], beforeLevel + 1);
-  assert.equal(current.collection[material.id], undefined);
 
   const stored = CARDS.find((card) => !current.collection[card.id]);
   assert.match(storeAcquiredPage(stored), /仓库/);

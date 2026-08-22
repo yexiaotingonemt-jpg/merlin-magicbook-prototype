@@ -4,7 +4,7 @@ import { glossaryDetailHtml } from "./glossary.js?v=28";
 import { runtime, setState, state } from "./store.js?v=28";
 import { freshState, generateEvents, hydrate, loadLocal, organizeBoundPage, replaceBoundPage, saveState } from "./state.js?v=28";
 import { archiveDetailHtml, closeModal, render, renderArchive, renderGrimoire, shopCost, shopLevel, SHOP, showModal, showView, toast } from "./ui.js?v=28";
-import { completeEvent, newTowerRun, resolveEvent, restartAfterPveDefeat, showReplacementModal } from "./exploration.js?v=28";
+import { completeEvent, newTowerRun, resolveEvent, restartAfterPveDefeat, showReplacementModal } from "./exploration.js?v=29";
 import { cycleBattleSpeed, renderBattle, scheduleBattle, stepBattle, toggleBattlePause, toggleBattleStatusPanel } from "./battle.js?v=28";
 
 export function populateFilters() {
@@ -13,7 +13,7 @@ export function populateFilters() {
   $("archiveSchoolTabs").innerHTML = [`<button class="active" data-archive-school="all"><i class="fa-solid fa-compass" aria-hidden="true"></i><span>全部</span></button>`, ...SCHOOL_ORDER.slice(0, 6).map((school) => `<button class="${school}" data-archive-school="${school}">${ELEMENTS[school].icon}<span>${ELEMENTS[school].name}</span></button>`)].join("");
 }
 export function showHelp() {
-  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 序章＋六章探索</h3><p>序章固定展示元素池、残破书库和元素试炼。普通章预先生成有限事件池；每处理1个事件，其他有限事件倒计时减1，正面事件会自燃，怪物与镜像会升级。</p></article><article class="choice-button"><h3>2 · 固定10页组卡</h3><p>开局10页中有7张基础咒术页，另有火、水、风随机双系的3张元素页。获得新页时可替换、升级或入库，不会自动稀释构筑。</p></article><article class="choice-button"><h3>3 · 自动战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素；基础页只支付不影响未翻元素页的富余元素。</p></article></div><p><b>方差规则：</b>元素效果保留40%–300%偏态方差；最终伤害和治疗再独立乘95%–105%微方差。</p><p><b>继承规则：</b>章内生命继承，进入下一章前补满。重新进入法师塔时，塔内等级、经验、生命、魔法书、咒语收藏与起始元素重置；积分与场外商店属性永久保留。</p>`);
+  showModal(`<h2>玩法说明</h2><p>这是一个可完整游玩的系统原型，用于验证探索、元素经济、组卡与自动战斗的衔接。</p><div class="choice-grid"><article class="choice-button"><h3>1 · 序章＋六章探索</h3><p>序章固定展示元素池、残破书库和元素试炼。普通章预先生成有限事件池；每处理1个事件，其他有限事件倒计时减1，正面事件会自燃，怪物与镜像会升级。</p></article><article class="choice-button"><h3>2 · 固定10页组卡</h3><p>开局10页中有7张基础咒术页，另有火、水、风随机双系的3张元素页。获得新页时可拖到不同名页上替换，拖到同名页上升级，或点击后收入仓库。</p></article><article class="choice-button"><h3>3 · 自动战斗</h3><p>书页不放回随机，全部翻完后洗回。元素足够时自动完整施法，否则发动残响且不消耗元素；基础页只支付不影响未翻元素页的富余元素。</p></article></div><p><b>方差规则：</b>元素效果保留40%–300%偏态方差；最终伤害和治疗再独立乘95%–105%微方差。</p><p><b>继承规则：</b>章内生命继承，进入下一章前补满。重新进入法师塔时，塔内等级、经验、生命、魔法书、咒语收藏与起始元素重置；积分与场外商店属性永久保留。</p>`);
 }
 export function bindEvents() {
   document.addEventListener("click", (event) => {
