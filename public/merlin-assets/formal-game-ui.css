@@ -422,6 +422,187 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
 .archive-detail section p { color: #c9c0b1; line-height: 1.75; }
 .archive-detail section.echo b { color: #a98bb2; }
 
+/* Desktop viewport fit: optimized for 1672 × 939, with long collections scrolling inside their panels. */
+@media (min-width: 1281px) and (min-height: 820px) {
+  html,
+  body,
+  .game-shell { height: 100%; overflow: hidden; }
+
+  .topbar {
+    min-height: 60px;
+    height: 60px;
+    padding: 4px clamp(20px, 2vw, 34px);
+  }
+  .brand-mark { width: 36px; height: 36px; }
+  .brand b { font-size: 17px; }
+  .stat-chip { min-width: 82px; padding: 6px 11px; }
+  .main-nav button { padding: 8px 11px; }
+
+  .view {
+    height: calc(100vh - 60px);
+    padding: 14px clamp(20px, 2vw, 34px) 16px;
+    overflow: hidden;
+  }
+
+  .tower-hero {
+    min-height: 72px;
+    margin: 0 0 10px;
+    align-items: center;
+  }
+  .tower-hero h1 { font-size: 38px; }
+  .tower-hero p:not(.eyebrow) { max-width: 900px; margin-top: 5px; line-height: 1.4; font-size: 12px; }
+  .explore-layout { height: calc(100% - 82px); gap: 16px; }
+  .tower-panel { height: 100%; min-height: 0; padding: 14px; }
+  .tower-panel > .panel-heading { min-height: 50px; margin-bottom: 10px; padding-bottom: 9px; }
+  .event-grid { height: calc(100% - 60px); gap: 13px; }
+  .event-card { height: 100%; min-height: 0; }
+  .event-visual { height: 248px; flex-basis: 248px; }
+  .event-icon { width: 54px; height: 54px; font-size: 20px; }
+  .event-card-body { padding: 13px 14px 12px; }
+  .event-card h3 { margin-bottom: 4px; font-size: 20px; }
+  .event-card p { font-size: 10px; line-height: 1.45; }
+  .event-facts { margin-top: 8px; padding-top: 7px; }
+  .event-facts > span { font-size: 9px; line-height: 1.35; }
+  .event-card b { padding-top: 8px; font-size: 9px; }
+  .event-timer { padding: 5px 8px; font-size: 12px; }
+
+  .status-column {
+    height: 100%;
+    grid-template-rows: auto auto auto;
+    gap: 7px;
+  }
+  .status-card { min-height: 0; padding: 10px 12px; }
+  .status-title { margin-bottom: 7px; padding-bottom: 6px; }
+  .wizard-status-portrait { height: 122px; margin: 0 0 7px; }
+  .combat-attribute-grid { gap: 4px; margin-top: 6px; }
+  .combat-attribute { padding: 4px 6px; }
+  .combat-attribute span { font-size: 7px; }
+  .combat-attribute b { font-size: 9px; }
+  .combat-attribute small { font-size: 6px; }
+  .progress { height: 5px; }
+  .status-card > small { margin-top: 6px; font-size: 9px; }
+  .level-preview { margin-top: 7px; padding-top: 6px; }
+  .level-preview[open] > div { max-height: 92px; overflow: auto; }
+  .element-orb { width: 29px; height: 29px; font-size: 11px; }
+  .deck-profile { margin-bottom: 4px; }
+  .profile-chip { padding: 3px 6px; font-size: 8px; }
+
+  .battle-view { height: 100vh; padding: 0 14px 12px; }
+  .battle-header {
+    min-height: 58px;
+    height: 58px;
+    margin: 0 -14px 10px;
+    padding: 5px 22px;
+  }
+  .battle-header h1 { font-size: 20px; }
+  .battle-stage { height: calc(100% - 68px); gap: 12px; }
+  .combatant,
+  .spell-focus { height: 100%; min-height: 0; padding: 10px; overflow: hidden; }
+  .combatant-identity { padding-bottom: 8px; }
+  .combatant-identity .portrait { height: 142px; margin-bottom: 7px; }
+  .combatant-identity h2 { margin: 4px 0 7px; font-size: 17px; }
+  .combatant #playerBattleStats,
+  .combatant #enemyBattleStats { margin: 6px 0; }
+  .battle-stat { margin: 4px 0; }
+  .combat-side-section,
+  .status-overview,
+  .enemy-list { margin-top: 7px; padding-top: 7px; }
+  .combat-side-section .element-pool,
+  .status-overview .status-pills { margin-top: 5px; }
+  .status-toggle { margin-top: 5px; padding: 5px 7px; }
+  .enemy-list { max-height: 130px; overflow: auto; }
+  .enemy-card { margin-top: 4px; padding: 7px; }
+
+  .spell-focus {
+    display: grid;
+    grid-template-rows: 16px minmax(0, 1fr) 126px;
+    align-items: stretch;
+  }
+  .turn-rune { margin: 0; }
+  .dual-grimoire { height: 100%; min-height: 0; gap: 7px; }
+  .book-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 7px;
+  }
+  .book-panel > header { margin-bottom: 5px; padding-bottom: 4px; }
+  .current-card {
+    height: 100%;
+    min-height: 0;
+    padding: 13px 14px;
+    overflow: auto;
+  }
+  .current-card h2 { margin: 5px 0 4px; font-size: 22px; }
+  .current-card .spell-meta { min-height: 18px; }
+  .current-card .spell-cost { margin: 4px 0 6px; }
+  .spell-tags { min-height: 18px; margin-bottom: 5px; }
+  .spell-rules { gap: 5px; }
+  .effect-row { padding: 6px 7px; }
+  .effect-row p { margin-top: 3px; font-size: 9px; line-height: 1.4; }
+  .deck-cycle { margin-top: 5px; }
+
+  .battle-lower {
+    display: flex;
+    width: 100%;
+    height: 118px;
+    min-height: 0;
+    gap: 8px;
+    margin: 8px 0 0;
+  }
+  .battle-log-panel { flex: 1; height: 100%; min-height: 0; padding: 7px 10px; overflow: hidden; }
+  .battle-log-panel .panel-heading { margin-bottom: 4px; padding-bottom: 4px; }
+  .battle-log-panel .panel-heading h2 { font-size: 14px; }
+  .battle-log { height: calc(100% - 27px); }
+  .log-entry { padding: 3px 0; font-size: 8px; line-height: 1.35; }
+  .battle-summary { flex: 0 0 270px; height: 100%; min-height: 0; padding: 9px; overflow: auto; }
+  .battle-summary h2 { margin: 0 0 4px; font-size: 18px; }
+  .battle-summary p { margin: 3px 0; font-size: 9px; }
+  .battle-summary button { padding: 7px 10px; }
+
+  #grimoireView,
+  #archiveView,
+  #shopView { display: none; }
+  #grimoireView { grid-template-rows: auto auto auto minmax(0, 1fr); }
+  #archiveView { grid-template-rows: auto auto minmax(0, 1fr); }
+  #shopView { grid-template-rows: auto minmax(0, 1fr); }
+  #grimoireView.active,
+  #archiveView.active,
+  #shopView.active { display: grid; }
+  .page-heading { min-height: 54px; margin: 0 0 8px; }
+  .page-heading h1 { font-size: 31px; }
+  .page-heading p:not(.eyebrow) { margin-top: 4px; line-height: 1.35; font-size: 10px; }
+  .build-evaluation-grid { margin-bottom: 8px; }
+  .element-balance-panel,
+  .damage-estimate-panel { padding: 9px 11px; border-radius: 0; }
+  .element-balance-panel h2,
+  .damage-estimate-panel h2 { font-size: 15px; }
+  .element-balance-chips { margin-top: 7px; }
+  .element-balance-panel > p,
+  .damage-estimate-panel > p { display: none; }
+  .damage-estimate-result { margin-top: 7px; }
+  .damage-estimate-result strong { font-size: 23px; }
+  .filters { margin-bottom: 8px; }
+  .filters input,
+  .filters select { padding: 7px 10px; }
+  .book-layout { min-height: 0; gap: 12px; }
+  .book-column { height: 100%; min-height: 0; padding: 11px; overflow: hidden; }
+  .book-column > .panel-heading { margin-bottom: 7px; padding-bottom: 7px; }
+  .card-list { height: calc(100% - 50px); overflow: auto; padding-right: 4px; }
+  .spell-row { padding: 7px; }
+
+  #archiveView .page-heading { min-height: 54px; margin: 0 0 8px; }
+  #archiveView .page-heading h1 { font-size: 38px; }
+  .archive-tools { margin-bottom: 8px; }
+  .archive-search { margin-bottom: 7px; }
+  .archive-search input { padding: 8px 0; }
+  .archive-tabs button { padding: 8px; }
+  .archive-grid { min-height: 0; overflow: auto; padding-right: 4px; }
+  .archive-card { min-height: 236px; }
+
+  .shop-grid { min-height: 0; overflow: auto; align-content: start; }
+}
+
 @media (max-width: 1280px) {
   .battle-stage { grid-template-columns: 250px minmax(0, 1fr) 250px; }
   .current-card { min-height: 560px; padding: 20px 18px; }
@@ -441,7 +622,7 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
 
 @media (max-width: 760px) {
   body::before { background-position: 35% center; }
-  .topbar { border-top: 0; }
+  .topbar { border-top: 0; backdrop-filter: none; }
   .main-nav { border: 1px solid #62594b; border-radius: 0; background: #0b0c0cf2; }
   .main-nav button { justify-content: center; }
   .main-nav button span { display: none; }
