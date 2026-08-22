@@ -51,9 +51,14 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
   assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=31"/);
-  assert.match(game, /formal-game-ui\.css\?v=35/);
+  assert.match(game, /formal-game-ui\.css\?v=40/);
   assert.match(formalUi, /grid-template-rows: auto auto minmax\(0, 1fr\)/);
   assert.match(formalUi, /\.event-facts strong \{ font-size: 12px/);
+  assert.match(formalUi, /minmax\(720px, 2\.25fr\)/);
+  assert.match(formalUi, /padding: 7\.5% 13% 10%/);
+  assert.match(formalUi, /\.modal-card \.context-page \{ min-width: 126px/);
+  assert.match(formalUi, /scrollbar-color: #806a43 #090b09/);
+  assert.match(formalUi, /\.modal-card \.confirm-balance/);
   assert.ok(game.indexOf('class="battle-lower"') > game.indexOf('class="spell-focus"'));
   assert.ok(game.indexOf('class="battle-lower"') < game.indexOf('id="enemyCombatant"'));
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
