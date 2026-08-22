@@ -1,62 +1,74 @@
-# Formal UI Design QA
+# Design QA
 
-## Visual truth and captures
+## Comparison Target
 
 - Source visual truth:
   - `C:\Users\onemt\Documents\KC策划案撰写和检查\outputs\merlin-formal-ui-concepts-v2-20260822\01-main-exploration-ui.png`
   - `C:\Users\onemt\Documents\KC策划案撰写和检查\outputs\merlin-formal-ui-concepts-v2-20260822\02-battle-ui.png`
-  - `C:\Users\onemt\Documents\KC策划案撰写和检查\outputs\merlin-formal-ui-concepts-v2-20260822\03-spell-archive-ui.png`
-- Browser-rendered implementation captures:
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\exploration-1672x939.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\battle-1672x939.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\grimoire-1672x939.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\archive-1672x939.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\shop-1672x939.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\exploration-390x844.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\battle-390x844.png`
-- Full-view comparison evidence:
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\compare-exploration.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\compare-battle.png`
-  - `C:\Users\onemt\AppData\Local\Temp\merlin-viewport-fit-qa\compare-archive.png`
+- Browser-rendered implementation:
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-qa\06-exploration-final.png`
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-qa\03-battle-readable.png`
+- Local route: `http://127.0.0.1:4173/game.html`
+- Viewport: 1672×939 CSS pixels, device density 1.
+- Pixel normalization: source and implementation captures are both 1672×939, so no resampling was required.
+- State:
+  - Exploration source is Chapter 1 with three choices; implementation is the prologue with three choices. Event names differ, but the card count, layout and decision hierarchy are directly comparable.
+  - Battle source is an active turn; implementation is a completed PVE turn. The central book, left/right combatant panels, page content and combat log remain directly comparable.
 
-## Capture conditions
+## Full-view Comparison Evidence
 
-- CSS viewport: 1672 × 939.
-- Source pixels: 1672 × 939 for each reference.
-- Implementation pixels: 1672 × 939 for each desktop capture.
-- Density normalization: source and implementation were captured at the same pixel dimensions; both sides were proportionally reduced to 836 × 469 only when composing each side-by-side comparison.
-- States: fresh prologue exploration with three events; active PVE battle with both spell pages and battle log visible; complete 10-page binding desk; spell archive with learned and locked entries; shop inventory.
-- Responsive evidence: 390 × 844 exploration and battle captures. The mobile layout intentionally becomes vertically scrollable while preserving a viewport-fixed bottom navigation.
-- Focused-region comparison was not needed because the complete information architecture and all major controls are readable in the full 1672 × 939 captures. Internal list scrollbars were inspected directly in the binding desk, archive, and battle log.
+- Exploration: all three event cards now use readable 3:2 narrative scenes instead of elemental color textures. Card proportions, scene-first hierarchy, timer position and right-side character panel follow the selected source.
+- Battle: the center is now one connected physical open grimoire with a spine, page thickness, cover and bookmarks. Dynamic player and enemy content is embedded into the left and right page safe areas.
+- Desktop fit: both primary screens remain fully visible at the requested 1672×939 viewport.
 
-## Primary interactions tested
+## Focused-region Comparison Evidence
 
-- Main navigation between exploration and spell archive.
-- Six-school archive tabs, search filtering, spell-detail modal, modal close.
-- Immediate PVE event entry, pause/resume, speed changes, single-step action, player and enemy page-cast animation states.
-- Battle victory settlement and return to exploration.
-- New-run confirmation and fresh prologue restoration.
-- 1672 × 939 page-scroll elimination across exploration, battle, binding desk, archive, and shop; long collections remain available through panel-local scrolling.
-- 390 × 844 responsive exploration and battle layouts, including the fixed bottom navigation.
-- Browser console was checked after desktop and mobile interaction passes; no errors or warnings were reported. Automated HTML/module tests cover the remaining render graph.
+- Event art was inspected individually at 960×640 after WebP conversion to verify subject clarity, crop safety and compression quality.
+- The grimoire asset was inspected at 1536×1024, then rechecked in the rendered battle screen to verify the gutter, page edges, writing safe areas and dynamic content alignment.
+- Responsive captures:
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-qa\04-battle-1280.png`
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-qa\05-battle-760.png`
 
-## Comparison history
+## Required Fidelity Surfaces
 
-1. P2 — Icon glyphs were blank because only the Font Awesome weight sheet was loaded. Added the local Font Awesome base stylesheet and verified rendered icons in the browser.
-2. P2 — The environmental background sat behind the document stacking context. Corrected the body/game-shell stacking order and re-captured all screens.
-3. P2 — Archive cards used a nested button-like interaction model. Replaced it with a semantic dedicated detail button while retaining mouse access on the card surface.
-4. P2 — The 390 px battle header wrapped the title into several lines. Changed the small-screen header to a two-row control layout and verified the mobile capture.
-5. P2 — Locked archive entries lacked a readable state. Added a visible “尚未学习” label and increased readable effect-copy size.
-6. P2 — The desktop experience required page scrolling to reach the battle record, lower status cards, and long collections. Added a 1672 × 939 viewport-fit layout, moved the battle record into the central combat stage, and confined long lists to panel-local scrolling.
-7. P2 — The first compact binding-desk pass hid its filter row because the grid declared only three tracks for four children. Added an explicit filter track and re-captured the complete screen.
-8. P2 — The mobile bottom navigation rendered inside the sticky header because the header backdrop filter created a fixed-position containing block. Disabled that filter at the mobile breakpoint and verified the navigation at the viewport bottom.
+- Fonts and typography: display headings retain the Song/Georgia fantasy hierarchy. Battle page body text was increased after the first render and remains readable without overflowing the page regions.
+- Spacing and layout rhythm: event art and copy use a clear image/content split. The open book uses symmetric left/right safe areas and a protected central gutter.
+- Colors and visual tokens: charcoal, aged bronze, warm parchment and restrained candlelight match the source direction. Semantic danger, victory and defeat colors remain intact.
+- Image quality and asset fidelity: ten generated production assets replace the former abstract textures and standalone parchment cards. Assets are WebP and retain enough resolution for the maximum displayed size.
+- Copy and content: all text remains live DOM content sourced from the current game state; no gameplay text is baked into the generated images.
+- Icons: existing Font Awesome controls remain functional and sit above the new scene art without replacing the art itself.
+- Accessibility and motion: event choices remain semantic buttons, focus styling remains visible, page animations preserve the existing reduced-motion behavior, and narrow layouts remain scrollable.
 
-Post-fix evidence is contained in the three `compare-*-final.png` files above.
+## Comparison History
 
-## Final findings
+### Iteration 1
 
-- No actionable P0, P1, or P2 issues remain.
-- P3: compared with the original concept paintings, the 1672 × 939 implementation deliberately uses denser typography and shallower imagery to satisfy the new single-viewport requirement. The graphite/brass palette, parchment treatment, symmetric battle stage, filtering, and core interaction model remain consistent.
-- Residual test gap: no dedicated screen-reader session was run; semantic snapshots and keyboard-capable native controls were inspected instead.
+- [P1] Event cards used four abstract texture files, producing near-solid color blocks.
+  - Fix: generated and mapped nine event-family narrative scene illustrations.
+  - Post-fix evidence: `06-exploration-final.png`.
+- [P1] Battle center remained two independent rectangular cards.
+  - Fix: generated a coherent open-book asset and rebuilt the two dynamic panels as left/right page regions inside one shared book.
+  - Post-fix evidence: `02-battle.png`.
+
+### Iteration 2
+
+- [P2] Battle page copy was too small and low-contrast at 1672×939.
+  - Fix: increased page header, title, metadata and effect text sizes and strengthened parchment ink contrast.
+  - Post-fix evidence: `03-battle-readable.png`.
+
+## Findings
+
+- No actionable P0, P1 or P2 visual mismatches remain for the requested event-art and open-grimoire replacement scope.
+
+## Follow-up Polish
+
+- [P3] The source mockup uses slightly larger ornamental display typography and more decorative outer frames. The implementation intentionally keeps its denser live rule text and existing full-game navigation.
+- [P3] Tablet layouts are scroll-first rather than single-screen; the requested 1672×939 desktop viewport remains the primary single-screen target.
+
+## Verification
+
+- Primary interactions tested: restart tower, confirm restart, select Element Trial, run PVE battle, display result, confirm result and return to exploration.
+- Browser console errors and warnings: none.
+- Automated suite: 47/47 passed.
 
 final result: passed

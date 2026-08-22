@@ -161,31 +161,34 @@ body::after {
 .event-visual {
   position: relative;
   display: grid;
-  place-items: center;
+  place-items: end start;
   height: 210px;
   flex: 0 0 210px;
   overflow: hidden;
   border-bottom: 1px solid #6a6152;
   background-position: center;
   background-size: cover;
-  filter: saturate(.62) contrast(1.12) brightness(.82);
+  filter: saturate(.92) contrast(1.05) brightness(.94);
+  transition: filter .22s ease, background-size .35s ease;
 }
-.event-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 45%, #111310e8); }
-.event-monster .event-visual { background-image: url("./event-fire.webp"); }
-.event-library .event-visual,
-.event-experience .event-visual { background-image: url("./card-page-angel.webp"); }
-.event-element .event-visual { background-image: url("./event-electric.webp"); }
-.event-rest .event-visual,
-.event-player .event-visual { background-image: url("./event-wind.webp"); }
-.event-transmute .event-visual,
-.event-upgrade .event-visual,
-.event-organize .event-visual { background-image: url("./event-thunder.webp"); }
+.event-card:hover .event-visual,
+.event-card:focus-visible .event-visual { filter: saturate(1.02) contrast(1.08) brightness(1.02); background-size: 103%; }
+.event-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 68%, #111310c7); }
+.event-monster .event-visual { background-image: url("./art/event-monster-trial.webp"); }
+.event-library .event-visual { background-image: url("./art/event-ruined-library.webp"); }
+.event-experience .event-visual { background-image: url("./art/event-magic-classroom.webp"); }
+.event-element .event-visual { background-image: url("./art/event-element-pool.webp"); }
+.event-rest .event-visual { background-image: url("./art/event-rest-chamber.webp"); }
+.event-player .event-visual { background-image: url("./art/event-mirror-mage.webp"); }
+.event-transmute .event-visual { background-image: url("./art/event-transmutation-lab.webp"); }
+.event-upgrade .event-visual { background-image: url("./art/event-ghost-mentor.webp"); }
+.event-organize .event-visual { background-image: url("./art/event-bookbinding.webp"); }
 .event-icon {
   position: relative;
   z-index: 2;
   width: 72px;
   height: 72px;
-  margin: 0;
+  margin: 0 0 14px 14px;
   border: 1px solid #b69d6b;
   border-radius: 50%;
   color: #e6d6ae;
@@ -291,34 +294,69 @@ body[data-game-view="battle"]::before { background-position: center; filter: gra
 
 .spell-focus { position: relative; padding: 13px; background: #0e100ee6; }
 .turn-rune { width: 100%; margin-bottom: 10px; color: #c7b98f; text-align: center; }
-.dual-grimoire { gap: 8px; }
-.book-panel { position: relative; padding: 10px; border: 1px solid #554f43; border-radius: 0; background: #0a0b0a; }
-.book-panel > header { padding: 2px 6px 9px; }
-.book-panel > header span { color: #c0a66e; font-size: 10px; }
-.current-card {
-  min-height: 612px;
-  padding: 26px 24px;
-  border: 1px solid #8b7d62;
-  border-radius: 2px 10px 10px 2px;
-  color: var(--parchment-ink);
-  background: linear-gradient(#f6f0dfd9, #d7cbb2ed), url("./card-page-angel.webp") center / cover;
-  box-shadow: inset 0 0 0 3px #8a785337, 0 14px 32px #000c;
-  transform-origin: right center;
+.dual-grimoire {
+  position: relative;
+  align-self: center;
+  width: 100%;
+  max-height: 100%;
+  aspect-ratio: 3 / 2;
+  gap: 5.5%;
+  padding: 8% 10.5% 12%;
+  background: url("./art/battle-open-grimoire.webp") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 24px 28px #000c);
 }
-.enemy-current-card { border-radius: 10px 2px 2px 10px; transform-origin: left center; }
+.book-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.book-panel > header { margin: 0 0 6px; padding: 0 4px 5px; border-bottom: 1px solid #7d705a73; }
+.book-panel > header span { color: #584325; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.book-panel > header b { color: #60441f; font-size: 11px; }
+.current-card {
+  height: 100%;
+  min-height: 0;
+  padding: 8px 7px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  color: var(--parchment-ink);
+  background: transparent;
+  box-shadow: none;
+  transform-origin: right center;
+  scrollbar-color: #8c7046 transparent;
+  scrollbar-width: thin;
+}
+.enemy-current-card { border-radius: 0; transform-origin: left center; }
 .current-card.casting { animation: formal-page-cast .46s ease both; }
 .current-card.empty { opacity: .82; }
 .current-card .spell-meta { color: color-mix(in srgb, var(--school, #69635a) 75%, #26231e); }
 .current-card .spell-meta button.spell-term { color: inherit; }
-.current-card h2 { color: #29251f; font: 700 26px Georgia, "Songti SC", serif; }
+.current-card h2 { color: #211d18; font: 700 26px Georgia, "Songti SC", serif; }
 .current-card .spell-cost-orb { box-shadow: none; }
-.spell-tags { color: #5a554c !important; }
+.current-card .spell-meta,
+.current-card .spell-tags { font-size: 11px; }
+.spell-tags { color: #4e463b !important; }
 .effect-row { border-color: #9e9179; border-radius: 0; background: #ffffff24; }
-.effect-row b { color: #6e5327; }
-.effect-row p { color: #39352f; font-size: 11px; }
+.effect-row b { color: #604417; font-size: 11px; }
+.effect-row p { color: #2f2a24; font-size: 11px; line-height: 1.52; }
 .effect-row.active { border-color: #96703a; box-shadow: inset 3px 0 #b1884b; }
 .effect-row.active.echo { border-color: #73587b; box-shadow: inset 3px 0 #806086; }
 .effect-row.inactive { border-color: #b2a994; background: #a79e8c12; opacity: .42; }
+.book-panel .deck-cycle { margin-top: 5px; color: #695a42; }
+.book-panel .progress { background: #67543a3d; }
+.book-panel .progress i { background: #75552b; }
+.enemy-book-panel details summary { color: #6d532c; }
+.enemy-book-panel details p,
+.enemy-book-panel details small { color: #6f6658; }
 .effect-row.inactive b,
 .effect-row.inactive p { color: #80796e !important; }
 .effect-row.casting-rules b { color: #4e6570; }
@@ -519,27 +557,36 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
     align-items: stretch;
   }
   .turn-rune { margin: 0; }
-  .dual-grimoire { height: 100%; min-height: 0; gap: 7px; }
+  .dual-grimoire {
+    align-self: center;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: 100%;
+    gap: 5.5%;
+    padding: 8% 10.5% 12%;
+  }
   .book-panel {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
     min-height: 0;
-    padding: 7px;
+    padding: 0;
   }
   .book-panel > header { margin-bottom: 5px; padding-bottom: 4px; }
   .current-card {
     height: 100%;
     min-height: 0;
-    padding: 13px 14px;
+    padding: 5px 6px;
     overflow: auto;
   }
-  .current-card h2 { margin: 5px 0 4px; font-size: 22px; }
+  .current-card h2 { margin: 5px 0 4px; font-size: 24px; }
   .current-card .spell-meta { min-height: 18px; }
   .current-card .spell-cost { margin: 4px 0 6px; }
   .spell-tags { min-height: 18px; margin-bottom: 5px; }
   .spell-rules { gap: 5px; }
   .effect-row { padding: 6px 7px; }
-  .effect-row p { margin-top: 3px; font-size: 9px; line-height: 1.4; }
+  .effect-row b { font-size: 10px; }
+  .effect-row p { margin-top: 3px; font-size: 10px; line-height: 1.48; }
   .deck-cycle { margin-top: 5px; }
 
   .battle-lower {
@@ -635,6 +682,19 @@ body[data-game-view="archive"]::before { background-position: 45% center; filter
   .battle-title-group { display: block; }
   .battle-stage,
   .dual-grimoire { grid-template-columns: 1fr; }
+  .dual-grimoire {
+    aspect-ratio: auto;
+    gap: 12px;
+    padding: 0;
+    background: none;
+    filter: none;
+  }
+  .book-panel {
+    padding: 16px;
+    border: 1px solid #8b7d62;
+    background: linear-gradient(#f6f0dfed, #d7cbb2f2), url("./card-page-angel.webp") center / cover;
+    box-shadow: 0 14px 32px #000c;
+  }
   .spell-focus,
   .player-side,
   .enemy-side { order: initial; grid-column: auto; }
