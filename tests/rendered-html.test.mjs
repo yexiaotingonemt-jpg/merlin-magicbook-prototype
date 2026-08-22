@@ -42,6 +42,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
     ...routes.map((route) => access(new URL(`../app/api/${route}/route.ts`, import.meta.url))),
   ]);
   const game = await readFile(new URL("../public/game.html", import.meta.url), "utf8");
+  const formalUi = await readFile(new URL("../public/merlin-assets/formal-game-ui.css", import.meta.url), "utf8");
   const sources = Object.fromEntries(await Promise.all(modules.map(async (module) => [module, await readFile(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url), "utf8")])));
   const engine = Object.values(sources).join("\n");
   for (const id of ["exploreView", "battleView", "grimoireView", "archiveView", "shopView", "enemyBattleStats", "enemyBattleElements", "enemyBattleStatuses", "enemyCurrentCard", "playerBookCount", "enemyBookCount", "playerCombatant", "enemyCombatant", "playerResultStamp", "enemyResultStamp", "expectedDamagePct", "expectedFullCastRate"]) assert.match(game, new RegExp(`id="${id}"`));
@@ -50,6 +51,9 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
   assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=31"/);
+  assert.match(game, /formal-game-ui\.css\?v=35/);
+  assert.match(formalUi, /grid-template-rows: auto auto minmax\(0, 1fr\)/);
+  assert.match(formalUi, /\.event-facts strong \{ font-size: 12px/);
   assert.ok(game.indexOf('class="battle-lower"') > game.indexOf('class="spell-focus"'));
   assert.ok(game.indexOf('class="battle-lower"') < game.indexOf('id="enemyCombatant"'));
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
