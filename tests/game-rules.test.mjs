@@ -64,7 +64,7 @@ test("spell presentation hides internal ids and visualizes elemental payment", (
   const cost = cardCostHtml(tempest);
   assert.equal((cost.match(/spell-cost-orb wind/g) || []).length, 2);
   assert.doesNotMatch(cost, /WI-03|消耗 2风/);
-  assert.match(cardMetadataHtml(tempest), /🌪 风 · 多段·单体递增/);
+  assert.match(cardMetadataHtml(tempest), /fa-solid fa-wind[^>]*><\/i><span>风 · 多段·单体递增<\/span>/);
 
   const fullPage = spellPageHtml(tempest, "full");
   assert.doesNotMatch(fullPage, /WI-03|本次：完整施法|cast-badge/);

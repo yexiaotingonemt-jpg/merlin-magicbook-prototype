@@ -32,6 +32,11 @@ test("ships exploration, deck building, battle and persistence", async () => {
     access(new URL("../public/merlin-assets/level-preview.css", import.meta.url)),
     access(new URL("../public/merlin-assets/battle-redesign.css", import.meta.url)),
     access(new URL("../public/merlin-assets/spell-glossary.css", import.meta.url)),
+    access(new URL("../public/merlin-assets/formal-game-ui.css", import.meta.url)),
+    access(new URL("../public/merlin-assets/art/wizard-player.webp", import.meta.url)),
+    access(new URL("../public/merlin-assets/art/wizard-enemy.webp", import.meta.url)),
+    access(new URL("../public/merlin-assets/vendor/fontawesome/css/solid.min.css", import.meta.url)),
+    access(new URL("../public/merlin-assets/vendor/fontawesome/css/fontawesome.min.css", import.meta.url)),
     ...modules.map((module) => access(new URL(`../public/merlin-assets/game/${module}.js`, import.meta.url))),
     access(new URL("../app/api/admin/reset-leaderboard/route.ts", import.meta.url)),
     ...routes.map((route) => access(new URL(`../app/api/${route}/route.ts`, import.meta.url))),
@@ -44,7 +49,7 @@ test("ships exploration, deck building, battle and persistence", async () => {
   assert.doesNotMatch(game, /continueButton|继续探索/);
   assert.match(game, /id="elementBalance"/);
   assert.match(game, /理论元素余缺/);
-  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=28"/);
+  assert.match(game, /type="module" src="\.\/merlin-assets\/game\/app\.js\?v=29"/);
   const cardIds = new Set([...engine.matchAll(/"((?:FI|WA|WI|EA|LI|DA|HY|CO)-\d{2})"/g)].map((match) => match[1]));
   assert.equal(cardIds.size, 91);
   assert.match(sources.state, /export function generateEvents\(\)/);

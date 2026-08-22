@@ -1,0 +1,485 @@
+:root {
+  --bg: #090b0d;
+  --panel: #171817;
+  --panel2: #20201e;
+  --ink: #eee8da;
+  --muted: #a7a093;
+  --line: #5d5548;
+  --gold: #c6a86b;
+  --gold2: #66512f;
+  --shadow: 0 22px 60px #000c;
+  --parchment: #d9cfb8;
+  --parchment-ink: #27231d;
+}
+
+html { background: #07090a; }
+body {
+  min-width: 320px;
+  position: relative;
+  isolation: isolate;
+  background: #07090a;
+  color: var(--ink);
+  font-family: "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  font-size: 15px;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(90deg, #05070878, #0b0d0d72 55%, #05060796), url("./merlin-magicbook-background-left.webp") center / cover no-repeat;
+  filter: grayscale(.42) saturate(.62) contrast(1.08) brightness(.9);
+  transform: scale(1.015);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(#ffffff06 1px, transparent 1px), linear-gradient(90deg, #ffffff04 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: .12;
+  mix-blend-mode: soft-light;
+}
+
+.game-shell { position: relative; z-index: 1; min-height: 100vh; background: transparent; }
+.view { max-width: 1600px; padding: 28px clamp(22px, 3vw, 48px) 56px; }
+
+.topbar {
+  min-height: 72px;
+  grid-template-columns: minmax(270px, 1fr) auto auto 40px;
+  padding: 8px clamp(20px, 3vw, 48px);
+  border: 1px solid #7a6b50;
+  border-width: 1px 0;
+  background: #0b0c0cf2;
+  box-shadow: 0 12px 34px #000c, inset 0 1px #ffffff0a;
+  backdrop-filter: blur(18px);
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #8c7955;
+  border-radius: 0;
+  color: #cdb276;
+  background: #131411;
+  box-shadow: inset 0 0 18px #c3a66b12;
+  font-size: 18px;
+}
+.brand b { color: #d8c9a7; font: 700 20px/1.15 Georgia, "Songti SC", SimSun, serif; letter-spacing: .03em; }
+.brand small { color: #7f735d; }
+
+.run-stats { gap: 2px; }
+.stat-chip {
+  display: grid;
+  grid-template-columns: 18px auto;
+  min-width: 92px;
+  padding: 9px 14px;
+  border: 0;
+  border-left: 1px solid #3c392f;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.stat-chip > i { grid-row: 1 / 3; align-self: center; color: #bca16a; }
+.stat-chip span { color: #7f7b72; font-size: 8px; }
+.stat-chip b { color: #e4dccb; font: 600 13px Georgia, serif; }
+
+.main-nav { gap: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.main-nav button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border-radius: 0;
+  color: #a9a092;
+  transition: color .18s ease, background .18s ease;
+}
+.main-nav button i { color: #6f6758; font-size: 11px; }
+.main-nav button:hover,
+.main-nav button.active { color: #e4d4ae; background: #ffffff08; box-shadow: inset 0 -1px #c4a66b; }
+.main-nav button:hover i,
+.main-nav button.active i { color: #c4a66b; }
+.icon-button { border-color: #5d5548; border-radius: 0; background: #121310; }
+
+.eyebrow { color: #a89161; letter-spacing: .18em; }
+.tower-hero h1,
+.page-heading h1,
+.battle-header h1 { color: #f0eadc; font-family: Georgia, "Songti SC", STSong, SimSun, serif; font-weight: 700; }
+.tower-hero { margin: 28px 0 22px; }
+.tower-hero h1 { font-size: clamp(36px, 4vw, 58px); }
+.tower-hero p:not(.eyebrow),
+.page-heading p:not(.eyebrow) { color: #a49d91; }
+.secondary,
+.battle-controls button,
+.filters select,
+.filters input { border: 1px solid #62594b; border-radius: 0; background: #151614e8; }
+
+/* Exploration */
+.explore-layout { grid-template-columns: minmax(0, 1fr) 318px; gap: 24px; }
+.tower-panel,
+.status-card,
+.book-column,
+.battle-log-panel,
+.battle-summary,
+.shop-item {
+  border-color: #5b5448;
+  border-radius: 0;
+  background: #171817ed;
+  box-shadow: var(--shadow), inset 0 1px #ffffff07;
+}
+.tower-panel { min-height: 620px; padding: 20px; }
+.parchment-panel { background: #111311e8; }
+.panel-heading { padding-bottom: 14px; border-bottom: 1px solid #474239; }
+.panel-heading h2 { color: #e9e0cf; font-family: Georgia, "Songti SC", serif; }
+.panel-heading span { color: #9c8355; }
+.event-grid { gap: 18px; }
+.event-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #6b6254;
+  border-radius: 0;
+  color: #eee7d9;
+  background: #1b1c1a;
+  box-shadow: 0 16px 36px #0009, inset 0 0 0 3px #090a09;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.event-card::after { display: none; }
+.event-card:hover,
+.event-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: #d3984d;
+  box-shadow: 0 20px 42px #000d, 0 0 18px #e1903438, inset 0 0 0 3px #12100c;
+  outline: none;
+}
+.event-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 210px;
+  flex: 0 0 210px;
+  overflow: hidden;
+  border-bottom: 1px solid #6a6152;
+  background-position: center;
+  background-size: cover;
+  filter: saturate(.62) contrast(1.12) brightness(.82);
+}
+.event-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 45%, #111310e8); }
+.event-monster .event-visual { background-image: url("./event-fire.webp"); }
+.event-library .event-visual,
+.event-experience .event-visual { background-image: url("./card-page-angel.webp"); }
+.event-element .event-visual { background-image: url("./event-electric.webp"); }
+.event-rest .event-visual,
+.event-player .event-visual { background-image: url("./event-wind.webp"); }
+.event-transmute .event-visual,
+.event-upgrade .event-visual,
+.event-organize .event-visual { background-image: url("./event-thunder.webp"); }
+.event-icon {
+  position: relative;
+  z-index: 2;
+  width: 72px;
+  height: 72px;
+  margin: 0;
+  border: 1px solid #b69d6b;
+  border-radius: 50%;
+  color: #e6d6ae;
+  background: #11130fd9;
+  box-shadow: 0 10px 28px #000b;
+  font-size: 26px;
+}
+.event-card-body { position: relative; display: flex; flex: 1; flex-direction: column; padding: 19px 18px 18px; text-align: left; }
+.event-card h3 { margin-bottom: 7px; color: #ede5d5; font: 700 24px Georgia, "Songti SC", serif; }
+.event-card p { color: #aaa397; font-size: 11px; }
+.event-facts > span { font-size: 10px; line-height: 1.45; }
+.event-card b { position: static; display: inline-flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 14px; color: #d0b16f; }
+.event-timer { z-index: 4; top: 12px; right: 12px; padding: 7px 10px; border: 1px solid #6c6251; background: #10110fed; font-size: 13px; }
+.event-timer .event-hourglass { color: #d0b16f; }
+.event-timer.urgent { border-color: #b84f47; color: #f07469; }
+.event-facts { margin-top: 14px; border-top-color: #454138; }
+.event-facts > span { color: #d4ccbd; }
+.event-facts em { color: #817b70; }
+.event-level-label { font-family: "Microsoft YaHei", sans-serif; }
+.event-result-mark { color: #cbb071; font-size: 34px; }
+
+.status-column { gap: 12px; }
+.status-card { padding: 16px; }
+.status-title { padding-bottom: 10px; border-bottom: 1px solid #49443a; }
+.wizard-status-portrait { height: 202px; margin: -2px 0 14px; overflow: hidden; border: 1px solid #4f4a41; background: #10110f; }
+.wizard-status-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; filter: saturate(.72) contrast(1.05); }
+.combat-attribute { border-color: #454138; border-radius: 0; background: #111310; }
+.combat-attribute span { color: #958f84; }
+.combat-attribute b { color: #e8e0d1; }
+.combat-attribute small { color: #aa8d59; }
+.element-orb {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  color: var(--c, #b5a478);
+  background: #111310;
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--c, #b5a478) 18%, transparent);
+  font-size: 14px;
+}
+.element-orb.empty { color: #5d584f; }
+.profile-chip { display: inline-flex; align-items: center; gap: 5px; border-color: #4e493f; border-radius: 0; background: #111310; }
+
+/* Battle */
+body[data-game-view="battle"] > .game-shell > .topbar { display: none; }
+body[data-game-view="battle"]::before { background-position: center; filter: grayscale(.56) saturate(.54) contrast(1.14) brightness(.66); }
+.battle-view { max-width: 1720px; padding: 0 18px 28px; }
+.battle-header {
+  position: sticky;
+  z-index: 24;
+  top: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin: 0 -18px 18px;
+  min-height: 72px;
+  padding: 9px 28px;
+  border: 1px solid #73674f;
+  border-width: 1px 0;
+  background: #090a09f4;
+  box-shadow: 0 14px 36px #000c;
+}
+.battle-title-group { display: flex; align-items: baseline; gap: 14px; }
+.battle-header h1 { font-size: 22px; }
+.battle-header .eyebrow { margin: 0; }
+.battle-round { display: flex; align-items: center; gap: 14px; color: #d3c09a; font: 600 15px Georgia, "Songti SC", serif; letter-spacing: .08em; }
+.battle-round i { color: #806d49; font-size: 6px; }
+.battle-controls { justify-self: end; }
+.battle-controls button { padding: 8px 12px; color: #c8c0b2; background: #151614; }
+.battle-stage { grid-template-columns: minmax(250px, .72fr) minmax(620px, 1.8fr) minmax(250px, .72fr); gap: 16px; }
+.combatant,
+.spell-focus { min-height: 760px; border: 1px solid #635b4e; border-radius: 0; background: #111310e9; box-shadow: var(--shadow); }
+.combatant { padding: 14px; }
+.combatant-identity { display: block; padding-bottom: 14px; text-align: center; border-bottom-color: #49443a; }
+.combatant-identity .portrait {
+  width: 100%;
+  height: 225px;
+  margin: 0 0 12px;
+  overflow: hidden;
+  border: 1px solid #544f45;
+  border-radius: 0;
+  background: #0d0e0d;
+  box-shadow: none;
+}
+.combatant-identity .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; filter: saturate(.7) contrast(1.08); transition: filter .25s ease; }
+.combatant-identity .portrait.defeated img { filter: grayscale(1) brightness(.45); }
+.combatant-identity h2 { margin-top: 7px; text-align: center; color: #e8dfcf; font-family: Georgia, "Songti SC", serif; }
+.enemy-identity { text-align: center; }
+.combatant #playerBattleStats,
+.combatant #enemyBattleStats { margin: 11px 0; }
+.battle-stat { grid-template-columns: 36px 1fr auto; }
+.battle-stat span { color: #a7a095; }
+.battle-stat b { color: #eee5d7; }
+.combat-attribute-grid { gap: 5px; }
+.combat-attribute { padding: 6px 8px; }
+.status-overview,
+.combat-side-section,
+.enemy-list { border-top-color: #464238; }
+.status-pill,
+.status-toggle { border-radius: 0; background: #111310; }
+.status-toggle { border-color: #514c42; }
+.enemy-card { border-radius: 0; border-color: #4a453c; background: #0e100e; }
+.enemy-card.target { border-color: #aa7657; }
+
+.spell-focus { position: relative; padding: 13px; background: #0e100ee6; }
+.turn-rune { width: 100%; margin-bottom: 10px; color: #c7b98f; text-align: center; }
+.dual-grimoire { gap: 8px; }
+.book-panel { position: relative; padding: 10px; border: 1px solid #554f43; border-radius: 0; background: #0a0b0a; }
+.book-panel > header { padding: 2px 6px 9px; }
+.book-panel > header span { color: #c0a66e; font-size: 10px; }
+.current-card {
+  min-height: 612px;
+  padding: 26px 24px;
+  border: 1px solid #8b7d62;
+  border-radius: 2px 10px 10px 2px;
+  color: var(--parchment-ink);
+  background: linear-gradient(#f6f0dfd9, #d7cbb2ed), url("./card-page-angel.webp") center / cover;
+  box-shadow: inset 0 0 0 3px #8a785337, 0 14px 32px #000c;
+  transform-origin: right center;
+}
+.enemy-current-card { border-radius: 10px 2px 2px 10px; transform-origin: left center; }
+.current-card.casting { animation: formal-page-cast .46s ease both; }
+.current-card.empty { opacity: .82; }
+.current-card .spell-meta { color: color-mix(in srgb, var(--school, #69635a) 75%, #26231e); }
+.current-card .spell-meta button.spell-term { color: inherit; }
+.current-card h2 { color: #29251f; font: 700 26px Georgia, "Songti SC", serif; }
+.current-card .spell-cost-orb { box-shadow: none; }
+.spell-tags { color: #5a554c !important; }
+.effect-row { border-color: #9e9179; border-radius: 0; background: #ffffff24; }
+.effect-row b { color: #6e5327; }
+.effect-row p { color: #39352f; font-size: 11px; }
+.effect-row.active { border-color: #96703a; box-shadow: inset 3px 0 #b1884b; }
+.effect-row.active.echo { border-color: #73587b; box-shadow: inset 3px 0 #806086; }
+.effect-row.inactive { border-color: #b2a994; background: #a79e8c12; opacity: .42; }
+.effect-row.inactive b,
+.effect-row.inactive p { color: #80796e !important; }
+.effect-row.casting-rules b { color: #4e6570; }
+.deck-cycle { width: 100%; color: #8c8578; }
+.battle-lower { width: min(940px, 62vw); grid-template-columns: 1fr; margin: 14px auto 0; }
+.battle-log-panel,
+.battle-summary { min-height: 170px; border-radius: 0; background: #0d0f0ded; }
+.battle-log { height: 140px; }
+.log-entry { border-bottom-color: #333129; color: #b7afa1; }
+
+@keyframes formal-page-cast {
+  0% { transform: perspective(900px) rotateY(0) translateY(0); filter: brightness(1); }
+  45% { transform: perspective(900px) rotateY(-4deg) translateY(-5px); filter: brightness(1.15); }
+  100% { transform: perspective(900px) rotateY(0) translateY(0); filter: brightness(1); }
+}
+
+/* Spell archive */
+body[data-game-view="archive"]::before { background-position: 45% center; filter: grayscale(.46) saturate(.58) contrast(1.12) brightness(.7); }
+#archiveView { max-width: 1500px; }
+#archiveView .page-heading { justify-content: center; margin: 8px 0 20px; text-align: center; }
+#archiveView .page-heading > div:first-child { display: contents; }
+#archiveView .page-heading .eyebrow,
+#archiveView .page-heading p { display: none; }
+#archiveView .page-heading h1 { position: relative; font-size: clamp(42px, 5vw, 66px); }
+#archiveView .page-heading h1::before,
+#archiveView .page-heading h1::after { content: ""; position: absolute; top: 56%; width: 150px; height: 1px; background: linear-gradient(90deg, transparent, #8d754a); }
+#archiveView .page-heading h1::before { right: calc(100% + 28px); }
+#archiveView .page-heading h1::after { left: calc(100% + 28px); transform: scaleX(-1); }
+#archiveView .token-badge { position: absolute; right: clamp(22px, 4vw, 56px); border-radius: 0; border-color: #645a48; background: #101210; }
+.archive-tools { margin-bottom: 18px; }
+.archive-search { display: flex; align-items: center; gap: 10px; width: min(720px, 100%); margin: 0 auto 14px; padding: 0 14px; border: 1px solid #655b4b; background: #0e100eef; }
+.archive-search i { color: #9e885d; }
+.archive-search input { width: 100%; padding: 12px 0; border: 0; color: #eee7d8; background: transparent; outline: none; }
+#archiveSchoolFilter { display: none; }
+.archive-tabs { display: grid; grid-template-columns: repeat(7, 1fr); width: min(1040px, 100%); margin: auto; border: 1px solid #5a5347; }
+.archive-tabs button { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 11px 8px; border: 0; border-right: 1px solid #4a453c; color: #a9a196; background: #111310e8; cursor: pointer; }
+.archive-tabs button:last-child { border-right: 0; }
+.archive-tabs button i { color: var(--school, #9b885e); }
+.archive-tabs button:hover,
+.archive-tabs button.active { color: #e6d5af; background: #25231ddd; box-shadow: inset 0 -2px #bc9856; }
+.archive-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.archive-card {
+  display: grid;
+  grid-template-columns: 42% 58%;
+  min-height: 268px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--school, #776e5d) 60%, #7b6e55);
+  border-radius: 0;
+  color: #2d2923;
+  background: #d9cfb8;
+  box-shadow: 0 14px 34px #000c, inset 0 0 0 3px #6e624a24;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.archive-card:hover,
+.archive-card:focus-visible { transform: translateY(-4px); border-color: #d0ad65; box-shadow: 0 20px 44px #000e, 0 0 15px color-mix(in srgb, var(--school, #b49a60) 25%, transparent); outline: none; }
+.archive-card-art { position: relative; min-height: 100%; border-right: 1px solid #82765f; background-position: center; background-size: cover; filter: saturate(.7) contrast(1.12); }
+.archive-card-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 55%, #d9cfb8d9); }
+.archive-card.fire .archive-card-art { background-image: url("./event-fire.webp"); }
+.archive-card.water .archive-card-art { background-image: url("./event-electric.webp"); }
+.archive-card.wind .archive-card-art { background-image: url("./event-wind.webp"); }
+.archive-card.earth .archive-card-art { background-image: url("./event-thunder.webp"); }
+.archive-card.light .archive-card-art { background-image: url("./card-page-angel.webp"); }
+.archive-card.dark .archive-card-art { background-image: url("./card-page-demon-v3.webp"); }
+.archive-card.arcane .archive-card-art,
+.archive-card.hybrid .archive-card-art { background-image: url("./merlin-magicbook-background.webp"); }
+.archive-school-seal { position: absolute; z-index: 2; top: 12px; left: 12px; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #b49b66; border-radius: 50%; color: var(--school, #d1b476); background: #10120fe8; box-shadow: 0 8px 18px #0008; }
+.archive-card-copy { position: relative; min-width: 0; padding: 18px 15px 15px; }
+.archive-card .spell-meta { color: color-mix(in srgb, var(--school, #60584b) 76%, #2d2923); }
+.archive-card .spell-meta button.spell-term { color: inherit; }
+.archive-card h3 { margin: 9px 0 8px; color: #2b2721; font: 700 22px Georgia, "Songti SC", serif; }
+.archive-card .spell-cost { margin: 3px 0 9px; }
+.archive-card > p,
+.archive-card-copy > p { color: #4d473e; font-size: 11.5px; line-height: 1.65; }
+.archive-card footer { left: 15px; right: 15px; bottom: 12px; color: #5f574a; }
+.archive-open {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid #766b58;
+  border-radius: 50%;
+  color: #554b3b;
+  background: #f1e8d4a8;
+}
+.archive-open:hover,
+.archive-open:focus-visible { color: #171712; border-color: #9d7b3f; background: #fff4d8; outline: 2px solid #9d7b3f55; }
+.archive-card.locked { filter: none; opacity: 1; color: #a49b8c; background: #171816; }
+.archive-card.locked .archive-card-art { grid-column: 1 / -1; border-right: 0; filter: grayscale(1) brightness(.32); }
+.archive-card.locked .archive-card-art::after { background: #0b0c0a66; }
+.archive-card.locked .archive-school-seal { top: 50%; left: 50%; width: 62px; height: 62px; transform: translate(-50%, -50%); color: #b8a274; font-size: 22px; }
+.archive-card.locked .archive-card-copy { display: none; }
+.archive-card.locked::after { content: "尚未学习"; position: absolute; left: 50%; top: calc(50% + 52px); transform: translateX(-50%); color: #81796c; font: 600 11px/1 "Microsoft YaHei", sans-serif; letter-spacing: .18em; }
+.archive-detail > header { display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid #544c3f; }
+.archive-detail > header strong { color: #c8a968; }
+.archive-detail section { margin-top: 14px; padding: 14px; border: 1px solid #554d40; background: #111310; }
+.archive-detail section b { color: #d0b16f; }
+.archive-detail section p { color: #c9c0b1; line-height: 1.75; }
+.archive-detail section.echo b { color: #a98bb2; }
+
+@media (max-width: 1280px) {
+  .battle-stage { grid-template-columns: 250px minmax(0, 1fr) 250px; }
+  .current-card { min-height: 560px; padding: 20px 18px; }
+  .archive-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1050px) {
+  .topbar { grid-template-columns: 1fr auto auto; }
+  .run-stats { display: none; }
+  .battle-stage { grid-template-columns: 1fr 1fr; }
+  .spell-focus { grid-column: 1 / -1; order: 3; min-height: auto; }
+  .player-side { order: 1; }
+  .enemy-side { order: 2; grid-column: auto; }
+  .combatant { min-height: auto; }
+  .archive-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  body::before { background-position: 35% center; }
+  .topbar { border-top: 0; }
+  .main-nav { border: 1px solid #62594b; border-radius: 0; background: #0b0c0cf2; }
+  .main-nav button { justify-content: center; }
+  .main-nav button span { display: none; }
+  .explore-layout { grid-template-columns: 1fr; }
+  .event-grid { grid-template-columns: 1fr; }
+  .event-card { min-height: 460px; }
+  .status-column { grid-template-columns: 1fr; }
+  .battle-header { grid-template-columns: 1fr auto; padding: 9px 14px; }
+  .battle-round { display: none; }
+  .battle-title-group { display: block; }
+  .battle-stage,
+  .dual-grimoire { grid-template-columns: 1fr; }
+  .spell-focus,
+  .player-side,
+  .enemy-side { order: initial; grid-column: auto; }
+  .combatant-identity .portrait { height: 300px; }
+  .current-card { min-height: auto; }
+  .battle-lower { width: 100%; }
+  #archiveView .page-heading { align-items: center; }
+  #archiveView .page-heading h1::before,
+  #archiveView .page-heading h1::after { display: none; }
+  #archiveView .token-badge { position: static; }
+  #archiveSchoolFilter { display: block; width: 100%; margin-top: 8px; padding: 10px; border: 1px solid #5a5347; color: #ddd3c2; background: #111310; }
+  .archive-tabs { display: none; }
+  .archive-card { min-height: 250px; }
+}
+
+@media (max-width: 520px) {
+  .battle-header { grid-template-columns: 1fr; gap: 8px; }
+  .battle-title-group { display: flex; justify-content: space-between; align-items: baseline; }
+  .battle-header h1 { white-space: nowrap; font-size: 20px; }
+  .battle-controls { justify-self: stretch; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .battle-controls button { min-width: 0; padding: 8px 6px; }
+  .archive-grid { grid-template-columns: 1fr; }
+  .archive-card { min-height: 240px; }
+  .wizard-status-portrait { height: 250px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

@@ -1,13 +1,13 @@
 export const EVENTS = {
-  experience: { name: "魔法课堂", icon: "✥", copy: "获得角色经验，提升本次探索的基础属性。" },
-  element: { name: "元素池", icon: "◈", copy: "增加或替换一个起始元素。" },
-  library: { name: "残破书库", icon: "📖", copy: "从火、水、风、土、光、暗各一张候选咒语中选择一张，再决定替换书页、升级现有咒语或收入仓库。" },
-  monster: { name: "元素试炼", icon: "⚔", copy: "挑战塔中怪物，获得经验与积分。" },
-  rest: { name: "休息室", icon: "☽", copy: "回复生命值；生命会在探索中继承。" },
-  transmute: { name: "沸腾实验室", icon: "⚗", copy: "将选定的已学单系咒语，随机替换为当前起始元素中与目标不同系、同消耗的单系咒语，并保留等级和装订位置。" },
-  upgrade: { name: "幽灵导师", icon: "♕", copy: "直接提升一张战斗书页的等级。" },
-  organize: { name: "装订台", icon: "☷", copy: "获得一次安全拆页机会，保留咒语等级。" },
-  player: { name: "镜像法师", icon: "⚜", copy: "与玩家快照进行异步战斗，双方满血且随机先手。" }
+  experience: { name: "魔法课堂", icon: '<i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>', copy: "获得角色经验，提升本次探索的基础属性。" },
+  element: { name: "元素池", icon: '<i class="fa-solid fa-gem" aria-hidden="true"></i>', copy: "增加或替换一个起始元素。" },
+  library: { name: "残破书库", icon: '<i class="fa-solid fa-book-open" aria-hidden="true"></i>', copy: "从火、水、风、土、光、暗各一张候选咒语中选择一张，再决定替换书页、升级现有咒语或收入仓库。" },
+  monster: { name: "元素试炼", icon: '<i class="fa-solid fa-khanda" aria-hidden="true"></i>', copy: "挑战塔中怪物，获得经验与积分。" },
+  rest: { name: "休息室", icon: '<i class="fa-solid fa-mug-hot" aria-hidden="true"></i>', copy: "回复生命值；生命会在探索中继承。" },
+  transmute: { name: "沸腾实验室", icon: '<i class="fa-solid fa-flask" aria-hidden="true"></i>', copy: "将选定的已学单系咒语，随机替换为当前起始元素中与目标不同系、同消耗的单系咒语，并保留等级和装订位置。" },
+  upgrade: { name: "幽灵导师", icon: '<i class="fa-solid fa-crown" aria-hidden="true"></i>', copy: "直接提升一张战斗书页的等级。" },
+  organize: { name: "装订台", icon: '<i class="fa-solid fa-layer-group" aria-hidden="true"></i>', copy: "获得一次安全拆页机会，保留咒语等级。" },
+  player: { name: "镜像法师", icon: '<i class="fa-solid fa-user-secret" aria-hidden="true"></i>', copy: "与玩家快照进行异步战斗，双方满血且随机先手。" }
 };
 
 export const CHAPTER_RULES = {

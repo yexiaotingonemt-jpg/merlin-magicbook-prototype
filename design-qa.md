@@ -1,32 +1,53 @@
-# Design QA（历史视觉验收记录）
+# Formal UI Design QA
 
-> 本文只记录社交面板布局的一次历史验收，不是玩法或数值规则来源。当前规则以 `docs/DESIGN_BASELINE.md` 为准。
+## Visual truth and captures
 
-## Source reference
+- Source visual truth:
+  - `C:\Users\onemt\Documents\KC策划案撰写和检查\outputs\merlin-formal-ui-concepts-v2-20260822\01-main-exploration-ui.png`
+  - `C:\Users\onemt\Documents\KC策划案撰写和检查\outputs\merlin-formal-ui-concepts-v2-20260822\02-battle-ui.png`
+  - `C:\Users\onemt\Documents\KC策划案撰写和检查\outputs\merlin-formal-ui-concepts-v2-20260822\03-spell-archive-ui.png`
+- Browser-rendered implementation captures:
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-ui-qa\exploration-fresh.png`
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-ui-qa\battle-active.png`
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-ui-qa\archive-final.png`
+- Full-view comparison evidence:
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-ui-qa\compare-exploration-final.png`
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-ui-qa\compare-battle-final.png`
+  - `C:\Users\onemt\AppData\Local\Temp\merlin-formal-ui-qa\compare-archive-final.png`
 
-- Screenshot: `C:\Users\onemt\AppData\Local\Temp\codex-clipboard-1d9fc2fe-b84b-4311-a89e-e7710fff1463.png`
-- Source viewport: 1920 x 920 px
-- Interpreted annotation: move the bottom-left ranking/projection panel into the empty area beneath the settlement record and align it with the left content column.
+## Capture conditions
 
-## Implementation evidence
+- CSS viewport: 1672 × 939.
+- Source pixels: 1672 × 939 for each reference.
+- Implementation pixels: 1672 × 939 for each desktop capture.
+- Density normalization: source and implementation were captured at the same pixel dimensions; both sides were proportionally reduced to 836 × 469 only when composing each side-by-side comparison.
+- States: fresh prologue exploration with three events; active PVE battle with both spell pages visible; spell archive with learned and locked entries.
+- Focused-region comparison was not needed because all three source screens and their major UI regions fit completely inside the matched full viewport. The spell detail modal and mobile battle header were inspected separately as functional/responsive checks.
 
-- Preview: `https://social-dock-layout.merlin-magicbook-yexiaoting.pages.dev/?v=6952f92`
-- Screenshot: `C:\Users\onemt\AppData\Local\Temp\merlin-social-dock-layout-6952f92.jpg`
-- Captured viewport: 1920 x 911 px
-- Captured state: logged-in Chapter 1 game, leaderboard tab visible.
-- Desktop geometry: panel `left=362`, `top=564.8`, `width=330`, aligned with the main left column and positioned directly beneath the settlement record.
-- Mobile verification: 390 x 844 px, panel remains bottom-docked at 8 px on both sides; horizontal overflow is 0 px.
+## Primary interactions tested
 
-## Findings
+- Main navigation between exploration and spell archive.
+- Six-school archive tabs, search filtering, spell-detail modal, modal close.
+- Immediate PVE event entry, pause/resume, speed changes, single-step action, player and enemy page-cast animation states.
+- Battle victory settlement and return to exploration.
+- New-run confirmation and fresh prologue restoration.
+- 390 × 844 responsive battle layout.
+- Browser console was checked during exploration; no errors were reported. Automated HTML/module tests cover the remaining render graph.
 
-- Pass: the panel no longer touches the viewport edge on desktop.
-- Pass: the panel is visually grouped with the left-side game controls and occupies the annotated empty area.
-- Pass: ranking and cross-player projection tabs remain interactive.
-- Pass: the responsive mobile behavior is preserved without horizontal overflow.
-- No blocking visual mismatches found for the requested relocation.
+## Comparison history
 
-## Iteration history
+1. P2 — Icon glyphs were blank because only the Font Awesome weight sheet was loaded. Added the local Font Awesome base stylesheet and verified rendered icons in the browser.
+2. P2 — The environmental background sat behind the document stacking context. Corrected the body/game-shell stacking order and re-captured all screens.
+3. P2 — Archive cards used a nested button-like interaction model. Replaced it with a semantic dedicated detail button while retaining mouse access on the card surface.
+4. P2 — The 390 px battle header wrapped the title into several lines. Changed the small-screen header to a two-row control layout and verified the mobile capture.
+5. P2 — Locked archive entries lacked a readable state. Added a visible “尚未学习” label and increased readable effect-copy size.
 
-1. Replaced fixed bottom-left positioning with container-aligned desktop positioning.
-2. Added a short-height desktop fallback so the panel remains reachable on smaller displays.
-3. Preserved the existing mobile bottom-dock behavior.
+Post-fix evidence is contained in the three `compare-*-final.png` files above.
+
+## Final findings
+
+- No actionable P0, P1, or P2 issues remain.
+- P3: event and archive illustrations reuse the current production asset set, so their subject matter is more abstract than the concept paintings. The composition, hierarchy, graphite/brass palette, parchment treatment, symmetric battle stage, filtering, and core interaction model are preserved.
+- Residual test gap: no dedicated screen-reader session was run; semantic snapshots and keyboard-capable native controls were inspected instead.
+
+final result: passed

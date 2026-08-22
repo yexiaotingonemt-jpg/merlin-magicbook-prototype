@@ -12,10 +12,14 @@ export const shuffle = (a) => {
   return result;
 };
 export const ELEMENTS = {
-  fire: { name: "火", icon: "🔥" }, water: { name: "水", icon: "💧" },
-  wind: { name: "风", icon: "🌪" }, earth: { name: "土", icon: "◆" },
-  light: { name: "光", icon: "☀" }, dark: { name: "暗", icon: "☾" }, arcane: { name: "奥术", icon: "✶" },
-  hybrid: { name: "复合", icon: "✦" }
+  fire: { name: "火", icon: '<i class="fa-solid fa-fire" aria-hidden="true"></i>' },
+  water: { name: "水", icon: '<i class="fa-solid fa-droplet" aria-hidden="true"></i>' },
+  wind: { name: "风", icon: '<i class="fa-solid fa-wind" aria-hidden="true"></i>' },
+  earth: { name: "土", icon: '<i class="fa-solid fa-mountain" aria-hidden="true"></i>' },
+  light: { name: "光", icon: '<i class="fa-solid fa-sun" aria-hidden="true"></i>' },
+  dark: { name: "暗", icon: '<i class="fa-solid fa-moon" aria-hidden="true"></i>' },
+  arcane: { name: "奥术", icon: '<i class="fa-solid fa-wand-sparkles" aria-hidden="true"></i>' },
+  hybrid: { name: "复合", icon: '<i class="fa-solid fa-shapes" aria-hidden="true"></i>' }
 };
 export const SCHOOL_ORDER = ["fire", "water", "wind", "earth", "light", "dark", "hybrid", "arcane"];
 export const cost = (type, amount, parts) => ({ type, amount, parts });

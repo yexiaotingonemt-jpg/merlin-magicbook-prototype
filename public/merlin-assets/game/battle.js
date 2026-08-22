@@ -131,7 +131,7 @@ export function createEnemies(mode, spec = {}) {
   if (mode === "pvp") {
     const names = ["灰塔的艾莉亚", "翠风学徒罗伊", "暗月记录者", "赤焰魔导师"];
     const hp = Math.round(maxHp() * eventScale);
-    return [{ id: "mirror", name: pick(names), hp, maxHp: hp, shield: 0, atk: attack() * eventScale, def: defense() * eventScale, hit: hit() * eventScale, dodge: dodge() * eventScale, crit: critStat() * eventScale, resist: resist() * eventScale, attackPct: 70, elements: state.startElements.slice(0, poolCap()), book: state.deck.slice(), burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: [], actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: "♙" }];
+    return [{ id: "mirror", name: pick(names), hp, maxHp: hp, shield: 0, atk: attack() * eventScale, def: defense() * eventScale, hit: hit() * eventScale, dodge: dodge() * eventScale, crit: critStat() * eventScale, resist: resist() * eventScale, attackPct: 70, elements: state.startElements.slice(0, poolCap()), book: state.deck.slice(), burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: [], actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: '<i class="fa-solid fa-user-secret" aria-hidden="true"></i>' }];
   }
   const boss = Boolean(spec.boss);
   const names = boss ? ["星辉魔像", "深渊典藏官", "六相元素龙"] : ["灰烬小鬼", "结晶魔犬", "风之鸦", "苔石傀儡", "书页幽灵", "虚空信徒"];
@@ -140,7 +140,7 @@ export function createEnemies(mode, spec = {}) {
   return [{ id: "enemy-0", name: spec.name || pick(names), hp, maxHp: hp, shield: 0, atk: attack() * (boss ? 1 : .7) * scale, def: defense() * (boss ? 1 : .5) * scale,
     hit: hit(), dodge: Math.max(0, dodge() - 20), crit: critStat(), resist: resist(), attackPct: 70,
     elements: [], book: [], burn: 0, curse: 0, thunder: 0, erosion: 0, vulnerable: 0, passives: passiveSet(eventLevel, boss, spec.finalBoss),
-    boss, shellReady: true, shellSpent: false, shellCooldown: 0, shellRefreshes: 0, hitSegments: 0, actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: boss ? "♛" : "♞" }];
+    boss, shellReady: true, shellSpent: false, shellCooldown: 0, shellRefreshes: 0, hitSegments: 0, actionCount: 0, mirrorStacks: 0, breakBoost: false, icon: boss ? '<i class="fa-solid fa-crown" aria-hidden="true"></i>' : '<i class="fa-solid fa-chess-knight" aria-hidden="true"></i>' }];
 }
 export function startBattle(mode, restartSpec = null) {
   if (!state.deck.length) { toast("战斗魔法书没有书页，无法开始战斗。"); showView("grimoire"); return; }
@@ -550,6 +550,7 @@ export function renderBattle() {
   renderPvePanelOutcomes(b);
   $("battleMode").textContent = b.mode === "pve" ? "PVE · 玩家先手 · 怪物不预告" : `PVP 镜像 · 随机先手 · 疲劳 ${b.enemyFatigue}`;
   $("battleTitle").textContent = b.mode === "pve" ? `${b.spec.boss ? "首领" : "元素"}试炼` : "镜像法师对决";
+  $("battleRound").querySelector("b").textContent = `第 ${Math.max(1, Math.ceil((b.logs.length + 1) / 2))} 回合`;
   $("battleSpeed").textContent = `速度 ×${battleSpeed}`; $("battlePause").textContent = paused ? "继续" : "暂停"; $("battleStep").hidden = !paused;
   const target = targetLowest();
   const inspectedEnemy = target || b.enemies[0];
@@ -561,15 +562,16 @@ export function renderBattle() {
   if (b.currentCard) {
     const card = b.currentCard; $("currentCard").className = `current-card ${card.school} ${cardMotion.player ? "casting" : ""}`;
     $("currentCard").innerHTML = spellPageHtml(card, b.castType);
-  } else { $("currentCard").className = "current-card empty"; $("currentCard").innerHTML = '<span class="card-school">WAITING</span><h2>等待翻页</h2><p>我方每张书页在本轮只会出现一次；翻出后会在这里同时显示完整施法、残响、支付条件和目标规则。</p>'; }
+  } else { $("currentCard").className = "current-card empty"; $("currentCard").innerHTML = '<span class="card-school">待翻页</span><h2>等待翻页</h2><p>我方每张书页在本轮只会出现一次；翻出后会在这里同时显示完整施法、残响、支付条件和目标规则。</p>'; }
   $("playerBookCount").textContent = `${state.deck.length}页`;
   $("cycleText").textContent = `第 ${b.cycle} 轮 · ${b.drawnInCycle} / ${state.deck.length}`; $("cycleBar").style.width = `${b.drawnInCycle / Math.max(1, state.deck.length) * 100}%`;
   $("enemyGroupTitle").textContent = inspectedEnemy?.name || "塔中敌人";
-  $("enemyPortrait").textContent = inspectedEnemy?.hp > 0 ? inspectedEnemy.icon : "☠";
+  $("enemyPortrait").classList.toggle("defeated", !inspectedEnemy || inspectedEnemy.hp <= 0);
+  $("enemyPortrait").querySelector("img").alt = inspectedEnemy?.name || "敌方魔法师";
   $("enemyBattleStats").innerHTML = inspectedEnemy ? combatStatsHtml({ ...inspectedEnemy, shield: inspectedEnemy.shield || 0 }, playerStats) : "";
   $("enemyBattleElements").innerHTML = inspectedEnemy?.elements?.length ? inspectedEnemy.elements.map((e) => elementOrb(e)).join("") : '<span class="no-element-copy">无元素</span>';
   $("enemyBattleStatuses").innerHTML = statusPanelHtml(enemyStatusItems(inspectedEnemy), "enemy", b.statusPanels?.enemy);
-  $("enemyList").innerHTML = `<span class="combat-side-label">目标列表 · ${b.enemies.filter((e) => e.hp > 0).length}存活</span>${b.enemies.map((e) => `<article class="enemy-card ${target?.id === e.id ? "target" : ""}"><header><b>${e.hp > 0 ? e.icon : "☠"} ${esc(e.name)}</b><small>${Math.ceil(e.hp)}/${e.maxHp}</small></header><div class="mini-bar"><i style="width:${e.hp / e.maxHp * 100}%"></i></div></article>`).join("")}`;
+  $("enemyList").innerHTML = `<span class="combat-side-label">目标列表 · ${b.enemies.filter((e) => e.hp > 0).length}存活</span>${b.enemies.map((e) => `<article class="enemy-card ${target?.id === e.id ? "target" : ""}"><header><b>${e.hp > 0 ? e.icon : '<i class="fa-solid fa-skull" aria-hidden="true"></i>'} ${esc(e.name)}</b><small>${Math.ceil(e.hp)}/${e.maxHp}</small></header><div class="mini-bar"><i style="width:${e.hp / e.maxHp * 100}%"></i></div></article>`).join("")}`;
   const enemyPage = b.enemyCurrentCard || enemyBasicPage(inspectedEnemy, b.mode);
   $("enemyCurrentCard").className = `current-card enemy-current-card ${enemyPage.school} ${cardMotion.enemy ? "casting" : ""}`;
   $("enemyCurrentCard").innerHTML = spellPageHtml(enemyPage, "page");

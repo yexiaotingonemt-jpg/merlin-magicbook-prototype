@@ -3,7 +3,7 @@ import { CARDS, CARD_BY_ID } from "./cards.js?v=28";
 import { EVENTS, PASSIVE_LIBRARY_CHANCE } from "./content.js?v=28";
 import { glossaryTextHtml } from "./glossary.js?v=28";
 import { runtime, state } from "./store.js?v=28";
-import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, schoolLabel, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=28";
+import { attack, battleRewards, cardLevel, chapterLabel, COMBAT_DECK_CAP, criticalChance, defense, dodge, eventThreatScale, evasionChance, expNeed, expectedDeckPerformance, hit, LEVEL_UP_HEAL, maxHp, poolCap, resist, slotCap, theoreticalElementBalance, crit as critStat } from "./state.js?v=28";
 
 export function toast(message) {
   $("toast").textContent = message;
@@ -25,9 +25,9 @@ export function closeModal(force = false) {
   return true;
 }
 export function elementOrb(element, empty = false) {
-  if (empty) return '<span class="element-orb empty">+</span>';
+  if (empty) return '<span class="element-orb empty"><i class="fa-solid fa-plus" aria-hidden="true"></i></span>';
   const colors = { fire: "#e46f46", water: "#4aa8dc", wind: "#77cdbd", earth: "#b08b5d", light: "#f1d56f", dark: "#aa76c7" };
-  return `<span class="element-orb" style="--c:${colors[element]}">${ELEMENTS[element].name}</span>`;
+  return `<span class="element-orb ${element}" style="--c:${colors[element]}" title="${ELEMENTS[element].name}元素" aria-label="${ELEMENTS[element].name}元素">${ELEMENTS[element].icon}</span>`;
 }
 function costOrb(element, label, icon) {
   return `<span class="spell-cost-orb ${element}" title="${esc(label)}" aria-label="${esc(label)}">${icon}</span>`;
@@ -39,12 +39,12 @@ export function cardCostHtml(card, compact = false) {
     tokens = Object.entries(cost.parts || {}).flatMap(([element, amount]) => Array.from({ length: amount }, () => costOrb(element, `${ELEMENTS[element].name}元素`, ELEMENTS[element].icon)));
   } else if (["any", "random"].includes(cost.type)) {
     const label = cost.type === "any" ? "任意元素" : "随机元素";
-    const icon = cost.type === "any" ? "✦" : "?";
+    const icon = cost.type === "any" ? '<i class="fa-solid fa-wand-sparkles" aria-hidden="true"></i>' : '<i class="fa-solid fa-dice" aria-hidden="true"></i>';
     tokens = Array.from({ length: cost.amount }, () => costOrb("arcane", label, icon));
   } else if (cost.type === "all") {
     tokens = Object.entries(cost.parts || {}).flatMap(([element, amount]) => Array.from({ length: amount }, () => costOrb(element, `${ELEMENTS[element].name}元素`, ELEMENTS[element].icon)));
     const required = Object.values(cost.parts || {}).reduce((sum, amount) => sum + amount, 0);
-    tokens.push(...Array.from({ length: Math.max(0, cost.amount - required) }, () => costOrb("arcane", "任意元素", "✦")));
+    tokens.push(...Array.from({ length: Math.max(0, cost.amount - required) }, () => costOrb("arcane", "任意元素", '<i class="fa-solid fa-wand-sparkles" aria-hidden="true"></i>')));
   }
   const free = !cost.amount ? '<span class="spell-cost-free">零元素</span>' : "";
   const all = cost.type === "all" ? `<span class="spell-cost-rule">全部 ≥${cost.amount}</span>` : "";
@@ -54,8 +54,8 @@ export function cardMetadataHtml(card, interactive = false) {
   const redundantTag = `${ELEMENTS[card.school]?.name || ""}势`;
   const tags = String(card.tags || "").split("·").filter(Boolean);
   if (tags[0] === redundantTag) tags.shift();
-  const copy = `${schoolLabel(card.school)}${tags.length ? ` · ${tags.join("·")}` : ""}`;
-  return `<span class="spell-meta ${card.school}">${interactive ? glossaryTextHtml(copy) : esc(copy)}</span>`;
+  const copy = `${ELEMENTS[card.school]?.name || ""}${tags.length ? ` · ${tags.join("·")}` : ""}`;
+  return `<span class="spell-meta ${card.school}">${ELEMENTS[card.school]?.icon || ""}<span>${interactive ? glossaryTextHtml(copy) : esc(copy)}</span></span>`;
 }
 export function levelPips(level) { return `<span class="level-pips">${Array.from({ length: 6 }, (_, i) => `<i class="${i < level ? "on" : ""}"></i>`).join("")}</span>`; }
 export function deckCounts() {
@@ -84,13 +84,14 @@ export function damageForecastHtml(deck = state.deck, levelOverrides = {}, label
 export function showView(name) {
   if (name !== "battle" && state.battle) { toast(state.battle.over ? "请先确认战斗结果。" : "战斗进行中，请先完成战斗。"); return; }
   runtime.currentView = name;
+  document.body.dataset.gameView = name;
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === `${name}View`));
   document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === name));
   render();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 export function renderRunStats() {
-  $("runStats").innerHTML = `<div class="stat-chip"><span>章节</span><b>${state.chapter === 0 ? "序章" : `${state.chapter}/6`}</b></div><div class="stat-chip"><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><span>积分</span><b>${state.score}</b></div>`;
+  $("runStats").innerHTML = `<div class="stat-chip"><i class="fa-solid fa-tower-observation" aria-hidden="true"></i><span>章节</span><b>${state.chapter === 0 ? "序章" : `${state.chapter}/6`}</b></div><div class="stat-chip"><i class="fa-solid fa-heart" aria-hidden="true"></i><span>生命</span><b>${Math.ceil(state.hp)}/${maxHp()}</b></div><div class="stat-chip"><i class="fa-solid fa-coins" aria-hidden="true"></i><span>积分</span><b>${state.score}</b></div>`;
 }
 function percent(value) { return `${Math.round(value * 100)}%`; }
 export function expectedBattleHpLoss(event) {
@@ -156,11 +157,11 @@ export function renderExplore() {
   $("startElements").innerHTML = [...state.startElements.map((e) => elementOrb(e)), ...Array.from({ length: Math.max(0, slotCap() - state.startElements.length) }, () => elementOrb(null, true))].join("");
   $("deckCount").textContent = `${state.deck.length} 页`;
   const counts = deckCounts();
-  $("deckProfile").innerHTML = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([s, n]) => `<span class="profile-chip ${s}">${schoolLabel(s)} ${n}</span>`).join("");
+  $("deckProfile").innerHTML = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([s, n]) => `<span class="profile-chip ${s}">${ELEMENTS[s].icon}<span>${ELEMENTS[s].name} ×${n}</span></span>`).join("");
   $("eventChoices").hidden = Boolean(state.eventResult);
   $("eventResult").hidden = !state.eventResult;
   if (state.eventResult) {
-    $("eventResult").innerHTML = `<div style="font-size:38px">✦</div><h2>${esc(state.eventResult.title)}</h2><p>${esc(state.eventResult.copy)}</p>`;
+    $("eventResult").innerHTML = `<div class="event-result-mark"><i class="fa-solid fa-wand-sparkles" aria-hidden="true"></i></div><h2>${esc(state.eventResult.title)}</h2><p>${esc(state.eventResult.copy)}</p>`;
   } else {
     const visibleEvents = state.activeEventId ? state.events.filter((event) => event.id === state.activeEventId) : state.events;
     $("eventChoices").classList.toggle("committed", Boolean(state.activeEventId));
@@ -175,7 +176,7 @@ export function renderExplore() {
       const factRows = [["收益", facts.reward], ["代价", facts.risk], ["战斗", facts.combat], ["警示", facts.warning], ["时限", facts.timer]];
       const titleClass = isThreat ? ` event-title-level-${threatLevel}` : "";
       const levelLabel = isThreat ? `<span class="event-level-label">${eventThreatLevelLabel(threatLevel)}</span>` : "";
-      return `<button class="event-card" data-event="${event.id}" style="--event-glow:${glow}"><span class="event-timer${timerClass}"><span class="event-hourglass" aria-hidden="true">⌛</span><strong>${timer}</strong></span><span class="event-icon">${meta.icon}</span><h3 class="event-title${titleClass}"><span>${event.name || meta.name}</span>${levelLabel}</h3><p>${meta.copy}</p><span class="event-facts">${factRows.filter(([, value]) => value).map(([label, value]) => `<span class="${label === "警示" && facts.lethal ? "event-fact-danger" : ""}"><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"} →</b></button>`;
+      return `<button class="event-card event-${event.type}" data-event="${event.id}" style="--event-glow:${glow}"><span class="event-timer${timerClass}"><span class="event-hourglass" aria-hidden="true"><i class="fa-solid fa-hourglass-half"></i></span><strong>${timer}</strong></span><span class="event-visual" aria-hidden="true"><span class="event-icon">${meta.icon}</span></span><span class="event-card-body"><h3 class="event-title${titleClass}"><span>${event.name || meta.name}</span>${levelLabel}</h3><p>${meta.copy}</p><span class="event-facts">${factRows.filter(([, value]) => value).map(([label, value]) => `<span class="${label === "警示" && facts.lethal ? "event-fact-danger" : ""}"><em>${label}</em><strong>${value}</strong></span>`).join("")}</span><b>${event.boss ? "立即挑战" : "选择后立即处理"}<i class="fa-solid fa-arrow-right" aria-hidden="true"></i></b></span></button>`;
     }).join("");
   }
 }
@@ -221,8 +222,12 @@ export function renderArchive() {
   $("catalogProgress").innerHTML = `已学 <b>${Object.keys(state.collection).length}</b> / ${CARDS.length}`;
   $("archiveGrid").innerHTML = filtered.map((card) => {
     const lv = cardLevel(card.id);
-    return `<article class="archive-card ${card.school} ${lv ? "" : "locked"}">${cardMetadataHtml(card, true)}<h3>${card.name}</h3>${cardCostHtml(card)}<p>${glossaryTextHtml(card.full)}</p><footer><span>${lv ? `Lv.${lv}` : "未学习"}</span></footer></article>`;
+    return `<article class="archive-card ${card.school} ${lv ? "" : "locked"}" data-archive-card="${card.id}"><div class="archive-card-art" aria-hidden="true"><span class="archive-school-seal">${lv ? ELEMENTS[card.school]?.icon || "" : '<i class="fa-solid fa-lock"></i>'}</span></div><div class="archive-card-copy">${cardMetadataHtml(card, true)}<h3>${card.name}</h3>${cardCostHtml(card)}<p>${glossaryTextHtml(card.full)}</p><footer><span>${lv ? `Lv.${lv}` : "未学习"}</span><button class="archive-open" data-archive-open="${card.id}" aria-label="查看${esc(card.name)}详情"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button></footer></div></article>`;
   }).join("");
+}
+export function archiveDetailHtml(card) {
+  const lv = cardLevel(card.id);
+  return `<article class="archive-detail ${card.school}"><header><div>${cardMetadataHtml(card, true)}<h2>${esc(card.name)}</h2></div><strong>${lv ? `Lv.${lv}` : "未学习"}</strong></header>${cardCostHtml(card)}<section><b>完整施法</b><p>${glossaryTextHtml(card.full)}</p></section><section class="echo"><b>残响</b><p>${glossaryTextHtml(card.echo)}</p></section></article>`;
 }
 export const SHOP = [
   { id: "attack", icon: "✦", name: "法攻手稿", copy: "永久提高4点基础法术攻击。", base: 100, apply: () => { state.meta.attack += 4; } },
